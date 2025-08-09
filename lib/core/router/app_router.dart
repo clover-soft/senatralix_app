@@ -16,16 +16,17 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
         final auth = container.read(authDataProvider).state;
 
         final loc = state.uri.toString();
-        final isAuthRoute = loc.startsWith('/auth');
-        final isSplash = loc == '/splash';
+        final path = state.uri.path; // robust on web hash strategy
+        final isAuthRoute = path.startsWith('/auth');
+        final isSplash = path == '/splash';
 
         // While /me is loading, show splash to avoid flicker/loops
         if (!auth.ready && !isSplash) {
           return '/splash';
         }
 
-        // If not logged in and trying to access a non-auth route -> go to login
-        if (auth.ready && !auth.loggedIn && !isAuthRoute && !isSplash) {
+        // If not logged in -> go to login (even from splash)
+        if (auth.ready && !auth.loggedIn && !isAuthRoute) {
           final from = Uri.encodeComponent(loc);
           return '/auth/login?from=$from';
         }
