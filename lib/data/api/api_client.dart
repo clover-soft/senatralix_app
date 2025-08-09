@@ -2,6 +2,8 @@
 // Accepts backend base URL in the constructor and exposes simple helpers.
 
 import 'package:dio/dio.dart';
+import 'package:dio_web_adapter/dio_web_adapter.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ApiException implements Exception {
   final String message;
@@ -23,13 +25,32 @@ class ApiClient {
     Duration? connectTimeout,
     Duration? receiveTimeout,
   }) : _dio = Dio(
-         BaseOptions(
-           baseUrl: 'https://jsonplaceholder.typicode.com',
-           connectTimeout: connectTimeout ?? const Duration(seconds: 10),
-           receiveTimeout: receiveTimeout ?? const Duration(seconds: 20),
-           headers: {'Content-Type': 'application/json', ...?defaultHeaders},
-         ),
-       );
+          BaseOptions(
+            baseUrl: 'https://api.sentralix.ru',
+            connectTimeout: connectTimeout ?? const Duration(seconds: 10),
+            receiveTimeout: receiveTimeout ?? const Duration(seconds: 20),
+            headers: {'Content-Type': 'application/json', ...?defaultHeaders},
+            // For fetch adapter, ensure credentials are included as well
+            extra: const {'withCredentials': true},
+          ),
+        ) {
+    // Enable cookies on Web by using BrowserHttpClientAdapter
+    if (kIsWeb) {
+      _dio.httpClientAdapter = BrowserHttpClientAdapter()
+        ..withCredentials = true; // attach cookies to requests
+    }
+
+    // Optionally, attach an interceptor to observe 401s
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onError: (e, handler) {
+          // NOTE: Auth state should be updated by higher-level providers.
+          // Here we just pass the error through.
+          return handler.next(e);
+        },
+      ),
+    );
+  }
 
   // Expose underlying Dio if advanced usage is needed.
   Dio get dio => _dio;
