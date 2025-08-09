@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter (web-server 0.0.0.0:8080)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "web-server",
+      "args": [
+        "--web-port",
+        "8080",
+        "--web-hostname",
+        "0.0.0.0"
+      ]
+    }
+  ]
+}
