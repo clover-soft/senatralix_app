@@ -1,0 +1,14 @@
+name: sentralix backend deploy scripts
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  deploy:
+    runs-on: [ self-hosted, Linux, X64, tardis ]
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
