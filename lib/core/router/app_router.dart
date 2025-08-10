@@ -39,6 +39,16 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
           return from ?? '/';
         }
 
+        // If logged in and on splash -> go home
+        if (auth.ready && auth.loggedIn && isSplash) {
+          return '/';
+        }
+
+        // If not logged in and on splash -> go to login
+        if (auth.ready && !auth.loggedIn && isSplash) {
+          return '/auth/login';
+        }
+
         return null;
       },
       routes: [
