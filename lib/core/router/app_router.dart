@@ -5,6 +5,7 @@ import 'package:sentralix_app/features/registration/screens/registration_screen.
 import 'package:sentralix_app/features/auth/screens/auth_screen.dart';
 import 'package:sentralix_app/features/auth/screens/splash_screen.dart';
 import 'package:sentralix_app/data/providers/auth_data_provider.dart';
+import 'package:sentralix_app/features/dashboard/screens/dashboard_screen.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -19,6 +20,7 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
         final path = state.uri.path; // robust on web hash strategy
         final isAuthRoute = path.startsWith('/auth');
         final isSplash = path == '/splash';
+        final isRegistration = path == '/registration';
 
         // While /me is loading, show splash to avoid flicker/loops
         if (!auth.ready && !isSplash) {
@@ -26,7 +28,7 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
         }
 
         // If not logged in -> go to login (even from splash)
-        if (auth.ready && !auth.loggedIn && !isAuthRoute) {
+        if (auth.ready && !auth.loggedIn && !isAuthRoute && !isRegistration) {
           final from = Uri.encodeComponent(loc);
           return '/auth/login?from=$from';
         }
@@ -48,6 +50,12 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
         ),
         GoRoute(
           path: '/',
+          pageBuilder: (context, state) {
+            return const MaterialPage(child: DashboardScreen());
+          },
+        ),
+        GoRoute(
+          path: '/registration',
           pageBuilder: (context, state) {
             return MaterialPage(child: RegistrationScreen());
           },
