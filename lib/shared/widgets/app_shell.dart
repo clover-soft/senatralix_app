@@ -12,7 +12,10 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final expanded = ref.watch(shellRailExpandedProvider);
-    int selectedIndex = 0; // 0 -> Dashboard
+    // featureIndex: index of current feature destination (0 => Dashboard)
+    int featureIndex = 0;
+    // selectedIndex in rail: +1 because 0 is reserved for toggle/brand item
+    int selectedIndex = featureIndex + 1;
 
     final avatar = const CircleAvatar(child: Icon(Icons.person, size: 18));
 
@@ -43,46 +46,34 @@ class AppShell extends ConsumerWidget {
     final rail = NavigationRail(
       selectedIndex: selectedIndex,
       onDestinationSelected: (idx) {
+        // idx 0 reserved for toggle item
+        if (idx == 0) {
+          ref.read(shellRailExpandedProvider.notifier).state = !expanded;
+          return;
+        }
         switch (idx) {
-          case 0:
+          case 1: // Dashboard
             context.go('/');
             break;
         }
       },
       labelType: expanded ? null : NavigationRailLabelType.none,
       extended: expanded,
-      // Leading: brand + toggle inside the rail, no top padding to reach very top
-      leading: Padding(
-        padding: const EdgeInsets.only(top: 0.0),
-        child: expanded
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(width: 8),
-                  IconButton(
-                    tooltip: 'Collapse menu',
-                    onPressed: () => ref.read(shellRailExpandedProvider.notifier).state = false,
-                    icon: const Icon(Icons.menu),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Sentralix',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              )
-            : IconButton(
-                tooltip: 'Expand menu',
-                onPressed: () => ref.read(shellRailExpandedProvider.notifier).state = true,
-                icon: const Icon(Icons.menu),
-              ),
-      ),
+      // No custom leading; toggle is the first destination for consistent styling
+      leading: const SizedBox(height: 0),
       trailing: Padding(
         padding: const EdgeInsets.only(bottom: 12.0),
         child: userMenu,
       ),
-      destinations: const [
-        NavigationRailDestination(
+      destinations: [
+        // 0: Toggle/Brand item — looks like a normal destination
+        const NavigationRailDestination(
+          icon: Icon(Icons.menu),
+          selectedIcon: Icon(Icons.menu),
+          label: Text('Sentralix'),
+        ),
+        // 1: Dashboard
+        const NavigationRailDestination(
           icon: Icon(Icons.dashboard_outlined),
           selectedIcon: Icon(Icons.dashboard),
           label: Text('Dashboard'),
