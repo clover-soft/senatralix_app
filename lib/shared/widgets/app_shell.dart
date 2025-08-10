@@ -59,22 +59,15 @@ class AppShell extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const SizedBox(width: 8),
-                  const Text(
-                    'Sentralix',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(width: 8),
                   IconButton(
                     tooltip: 'Collapse menu',
                     onPressed: () => ref.read(shellRailExpandedProvider.notifier).state = false,
-                    icon: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.menu),
-                        SizedBox(width: 2),
-                        Icon(Icons.arrow_right),
-                      ],
-                    ),
+                    icon: const Icon(Icons.menu),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Sentralix',
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ],
               )
