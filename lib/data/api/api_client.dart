@@ -25,15 +25,15 @@ class ApiClient {
     Duration? connectTimeout,
     Duration? receiveTimeout,
   }) : _dio = Dio(
-          BaseOptions(
-            baseUrl: 'https://api.sentralix.ru',
-            connectTimeout: connectTimeout ?? const Duration(seconds: 10),
-            receiveTimeout: receiveTimeout ?? const Duration(seconds: 20),
-            headers: {'Content-Type': 'application/json', ...?defaultHeaders},
-            // For fetch adapter, ensure credentials are included as well
-            extra: const {'withCredentials': true},
-          ),
-        ) {
+         BaseOptions(
+           baseUrl: 'https://api.sentralix.ru',
+           connectTimeout: connectTimeout ?? const Duration(seconds: 10),
+           receiveTimeout: receiveTimeout ?? const Duration(seconds: 20),
+           headers: {'Content-Type': 'application/json', ...?defaultHeaders},
+           // For fetch adapter, ensure credentials are included as well
+           extra: const {'withCredentials': true},
+         ),
+       ) {
     // Enable cookies on Web by using BrowserHttpClientAdapter
     if (kIsWeb) {
       _dio.httpClientAdapter = BrowserHttpClientAdapter()
@@ -41,47 +41,53 @@ class ApiClient {
     }
 
     // Attach logging + basic 401 observation
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) {
-        // comment: start timer for duration measurement
-        options.extra['__sw'] = Stopwatch()..start();
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          // comment: start timer for duration measurement
+          options.extra['__sw'] = Stopwatch()..start();
 
-        final method = options.method;
-        final url = _fullUrl(options);
-        final dataInfo = _briefData(options.data);
-        // Console log
-        // 🙂 Request log
-        // ignore: avoid_print
-        print('[API] → $method $url  data=$dataInfo');
-        return handler.next(options);
-      },
-      onResponse: (response, handler) {
-        final sw = response.requestOptions.extra['__sw'] as Stopwatch?;
-        sw?.stop();
-        final ms = sw?.elapsedMilliseconds;
-        final method = response.requestOptions.method;
-        final url = _fullUrl(response.requestOptions);
-        final status = response.statusCode;
-        final size = _briefData(response.data);
-        // 🙂 Response log
-        // ignore: avoid_print
-        print('[API] ← $method $url  status=$status  ${ms != null ? 'in ${ms}ms' : ''}  data=$size');
-        return handler.next(response);
-      },
-      onError: (e, handler) {
-        final sw = e.requestOptions.extra['__sw'] as Stopwatch?;
-        sw?.stop();
-        final ms = sw?.elapsedMilliseconds;
-        final method = e.requestOptions.method;
-        final url = _fullUrl(e.requestOptions);
-        final status = e.response?.statusCode;
-        final body = _briefData(e.response?.data);
-        // ☠️ Error log
-        // ignore: avoid_print
-        print('[API] ✖ $method $url  status=$status  ${ms != null ? 'in ${ms}ms' : ''}  error=${e.type}  data=$body');
-        return handler.next(e);
-      },
-    ));
+          final method = options.method;
+          final url = _fullUrl(options);
+          final dataInfo = _briefData(options.data);
+          // Console log
+          // 🙂 Request log
+          // ignore: avoid_print
+          print('[API] → $method $url  data=$dataInfo');
+          return handler.next(options);
+        },
+        onResponse: (response, handler) {
+          final sw = response.requestOptions.extra['__sw'] as Stopwatch?;
+          sw?.stop();
+          final ms = sw?.elapsedMilliseconds;
+          final method = response.requestOptions.method;
+          final url = _fullUrl(response.requestOptions);
+          final status = response.statusCode;
+          final size = _briefData(response.data);
+          // 🙂 Response log
+          // ignore: avoid_print
+          print(
+            '[API] ← $method $url  status=$status  ${ms != null ? 'in ${ms}ms' : ''}  data=$size',
+          );
+          return handler.next(response);
+        },
+        onError: (e, handler) {
+          final sw = e.requestOptions.extra['__sw'] as Stopwatch?;
+          sw?.stop();
+          final ms = sw?.elapsedMilliseconds;
+          final method = e.requestOptions.method;
+          final url = _fullUrl(e.requestOptions);
+          final status = e.response?.statusCode;
+          final body = _briefData(e.response?.data);
+          // ☠️ Error log
+          // ignore: avoid_print
+          print(
+            '[API] ✖ $method $url  status=$status  ${ms != null ? 'in ${ms}ms' : ''}  error=${e.type}  data=$body',
+          );
+          return handler.next(e);
+        },
+      ),
+    );
   }
 
   // Expose underlying Dio if advanced usage is needed.
@@ -154,9 +160,15 @@ class ApiClient {
   // comment: helpers for logging
   String _fullUrl(RequestOptions o) {
     // Dio will resolve baseUrl + path internally, but for logging we combine simply
-    final p = o.path.startsWith('http') ? o.path : '${_dio.options.baseUrl}${o.path}';
+    final p = o.path.startsWith('http')
+        ? o.path
+        : '${_dio.options.baseUrl}${o.path}';
     if (o.queryParameters.isEmpty) return p;
-    return Uri.parse(p).replace(queryParameters: o.queryParameters.map((k, v) => MapEntry(k, '$v'))).toString();
+    return Uri.parse(p)
+        .replace(
+          queryParameters: o.queryParameters.map((k, v) => MapEntry(k, '$v')),
+        )
+        .toString();
   }
 
   String _briefData(dynamic data) {

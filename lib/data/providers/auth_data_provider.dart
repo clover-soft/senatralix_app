@@ -25,14 +25,18 @@ class AuthState {
     Map<String, dynamic>? user,
     String? error,
   }) => AuthState(
-        ready: ready ?? this.ready,
-        loading: loading ?? this.loading,
-        loggedIn: loggedIn ?? this.loggedIn,
-        user: user ?? this.user,
-        error: error,
-      );
+    ready: ready ?? this.ready,
+    loading: loading ?? this.loading,
+    loggedIn: loggedIn ?? this.loggedIn,
+    user: user ?? this.user,
+    error: error,
+  );
 
-  static const initial = AuthState(ready: false, loading: false, loggedIn: false);
+  static const initial = AuthState(
+    ready: false,
+    loading: false,
+    loggedIn: false,
+  );
 }
 
 /// Provides authentication operations and state.
@@ -42,15 +46,26 @@ class AuthDataProvider with ChangeNotifier {
   AuthState _state = AuthState.initial;
   AuthState get state => _state;
 
-  AuthDataProvider({AuthService? service}) : _service = service ?? AuthService();
+  AuthDataProvider({AuthService? service})
+    : _service = service ?? AuthService();
 
   /// Initialize: check current session via /me
   Future<void> init() async {
     try {
       final me = await _service.me();
-      _state = _state.copyWith(ready: true, loggedIn: true, user: me, error: null);
+      _state = _state.copyWith(
+        ready: true,
+        loggedIn: true,
+        user: me,
+        error: null,
+      );
     } catch (e) {
-      _state = _state.copyWith(ready: true, loggedIn: false, user: null, error: null);
+      _state = _state.copyWith(
+        ready: true,
+        loggedIn: false,
+        user: null,
+        error: null,
+      );
     }
     notifyListeners();
   }
@@ -64,11 +79,20 @@ class AuthDataProvider with ChangeNotifier {
     notifyListeners();
     try {
       final user = await _service.login(email: email, password: password);
-      _state = _state.copyWith(loading: false, loggedIn: true, user: user, error: null);
+      _state = _state.copyWith(
+        loading: false,
+        loggedIn: true,
+        user: user,
+        error: null,
+      );
       notifyListeners();
       return true;
     } catch (e) {
-      _state = _state.copyWith(loading: false, loggedIn: false, error: e.toString());
+      _state = _state.copyWith(
+        loading: false,
+        loggedIn: false,
+        error: e.toString(),
+      );
       notifyListeners();
       return false;
     }
@@ -94,4 +118,3 @@ final authDataProvider = ChangeNotifierProvider<AuthDataProvider>((ref) {
   p.init();
   return p;
 });
-

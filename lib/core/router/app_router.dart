@@ -10,71 +10,75 @@ import 'package:sentralix_app/features/dashboard/screens/dashboard_screen.dart';
 final navigatorKey = GlobalKey<NavigatorState>();
 
 GoRouter createAppRouter(ProviderContainer container) => GoRouter(
-      navigatorKey: navigatorKey,
-      // comment: re-evaluate redirects when authDataProvider notifies
-      refreshListenable: container.read(authDataProvider),
-      redirect: (context, state) {
-        final auth = container.read(authDataProvider).state;
+  navigatorKey: navigatorKey,
+  // comment: re-evaluate redirects when authDataProvider notifies
+  refreshListenable: container.read(authDataProvider),
+  redirect: (context, state) {
+    final auth = container.read(authDataProvider).state;
 
-        final loc = state.uri.toString();
-        final path = state.uri.path; // robust on web hash strategy
-        final isAuthRoute = path.startsWith('/auth');
-        final isSplash = path == '/splash';
-        final isRegistration = path == '/registration';
+    final loc = state.uri.toString();
+    final path = state.uri.path; // robust on web hash strategy
+    final isAuthRoute = path.startsWith('/auth');
+    final isSplash = path == '/splash';
+    final isRegistration = path == '/registration';
 
-        // While /me is loading, show splash to avoid flicker/loops
-        if (!auth.ready && !isSplash) {
-          return '/splash';
-        }
-
-        // If not logged in -> go to login (even from splash)
-        if (auth.ready && !auth.loggedIn && !isAuthRoute && !isRegistration) {
-          final from = Uri.encodeComponent(loc);
-          return '/auth/login?from=$from';
-        }
-
-        // If logged in and on auth route -> go back to original location or home
-        if (auth.ready && auth.loggedIn && isAuthRoute) {
-          final from = state.uri.queryParameters['from'];
-          return from ?? '/';
-        }
-
-        // If logged in and on splash -> go home
-        if (auth.ready && auth.loggedIn && isSplash) {
-          return '/';
-        }
-
-        // If not logged in and on splash -> go to login
-        if (auth.ready && !auth.loggedIn && isSplash) {
-          return '/auth/login';
-        }
-
-        return null;
-      },
-      routes: [
-        GoRoute(
-          path: '/splash',
-          pageBuilder: (context, state) {
-            return const MaterialPage(child: SplashScreen());
-          },
-        ),
-        GoRoute(
-          path: '/',
-          pageBuilder: (context, state) {
-            return const MaterialPage(child: DashboardScreen());
-          },
-        ),
-        GoRoute(
-          path: '/registration',
-          pageBuilder: (context, state) {
-            return MaterialPage(child: RegistrationScreen());
-          },
-        ),
-        GoRoute(
-          path: '/auth/login',
-          pageBuilder: (context, state) {
-            return const MaterialPage(child: AuthScreen());
-          },
-        ),
-      ],
+    print(
+      'redirect: ${state.uri} path: $path isAuthRoute: $isAuthRoute isSplash: $isSplash isRegistration: $isRegistration',
     );
+
+    // While /me is loading, show splash to avoid flicker/loops
+    if (!auth.ready && !isSplash) {
+      return '/splash';
+    }
+
+    // If not logged in -> go to login (even from splash)
+    if (auth.ready && !auth.loggedIn && !isAuthRoute && !isRegistration) {
+      final from = Uri.encodeComponent(loc);
+      return '/auth/login?from=$from';
+    }
+
+    // If logged in and on auth route -> go back to original location or home
+    if (auth.ready && auth.loggedIn && isAuthRoute) {
+      final from = state.uri.queryParameters['from'];
+      return from ?? '/';
+    }
+
+    // If logged in and on splash -> go home
+    if (auth.ready && auth.loggedIn && isSplash) {
+      return '/';
+    }
+
+    // If not logged in and on splash -> go to login
+    if (auth.ready && !auth.loggedIn && isSplash) {
+      return '/auth/login';
+    }
+
+    return null;
+  },
+  routes: [
+    GoRoute(
+      path: '/splash',
+      pageBuilder: (context, state) {
+        return const MaterialPage(child: SplashScreen());
+      },
+    ),
+    GoRoute(
+      path: '/',
+      pageBuilder: (context, state) {
+        return const MaterialPage(child: DashboardScreen());
+      },
+    ),
+    GoRoute(
+      path: '/registration',
+      pageBuilder: (context, state) {
+        return MaterialPage(child: RegistrationScreen());
+      },
+    ),
+    GoRoute(
+      path: '/auth/login',
+      pageBuilder: (context, state) {
+        return const MaterialPage(child: AuthScreen());
+      },
+    ),
+  ],
+);
