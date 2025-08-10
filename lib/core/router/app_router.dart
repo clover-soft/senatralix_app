@@ -6,6 +6,7 @@ import 'package:sentralix_app/features/auth/screens/auth_screen.dart';
 import 'package:sentralix_app/features/auth/screens/splash_screen.dart';
 import 'package:sentralix_app/data/providers/auth_data_provider.dart';
 import 'package:sentralix_app/features/dashboard/screens/dashboard_screen.dart';
+import 'package:sentralix_app/shared/widgets/app_shell.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -62,11 +63,18 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
         return const MaterialPage(child: SplashScreen());
       },
     ),
-    GoRoute(
-      path: '/',
-      pageBuilder: (context, state) {
-        return const MaterialPage(child: DashboardScreen());
-      },
+    // Shell with persistent layout (left menu + top bar)
+    ShellRoute(
+      builder: (context, state, child) => AppShell(child: child),
+      routes: [
+        GoRoute(
+          path: '/',
+          pageBuilder: (context, state) {
+            return const MaterialPage(child: DashboardScreen());
+          },
+        ),
+        // Add more feature routes here, they will render inside AppShell
+      ],
     ),
     GoRoute(
       path: '/registration',
