@@ -49,9 +49,45 @@ class AppShell extends ConsumerWidget {
             break;
         }
       },
-      labelType: expanded ? NavigationRailLabelType.all : NavigationRailLabelType.none,
+      labelType: expanded ? null : NavigationRailLabelType.none,
       extended: expanded,
-      // leading left empty; avatar/menu is in AppBar leading per requirement
+      // Leading: brand + toggle inside the rail, no top padding to reach very top
+      leading: Padding(
+        padding: const EdgeInsets.only(top: 0.0),
+        child: expanded
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Sentralix',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: 'Collapse menu',
+                    onPressed: () => ref.read(shellRailExpandedProvider.notifier).state = false,
+                    icon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.menu),
+                        SizedBox(width: 2),
+                        Icon(Icons.arrow_right),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+            : IconButton(
+                tooltip: 'Expand menu',
+                onPressed: () => ref.read(shellRailExpandedProvider.notifier).state = true,
+                icon: const Icon(Icons.menu),
+              ),
+      ),
+      trailing: Padding(
+        padding: const EdgeInsets.only(bottom: 12.0),
+        child: userMenu,
+      ),
       destinations: const [
         NavigationRailDestination(
           icon: Icon(Icons.dashboard_outlined),
@@ -62,26 +98,6 @@ class AppShell extends ConsumerWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        titleSpacing: 0,
-        title: Row(
-          children: [
-            // Avatar + user menu strictly on the left
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: userMenu,
-            ),
-            const SizedBox(width: 8),
-            // Collapse/expand toggle for the left menu
-            IconButton(
-              tooltip: expanded ? 'Collapse menu' : 'Expand menu',
-              icon: Icon(expanded ? Icons.chevron_left : Icons.chevron_right),
-              onPressed: () => ref.read(shellRailExpandedProvider.notifier).state = !expanded,
-            ),
-          ],
-        ),
-      ),
       body: Row(
         children: [
           rail,
