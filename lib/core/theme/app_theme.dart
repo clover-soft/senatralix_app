@@ -11,18 +11,32 @@ class AppTheme {
       colorScheme: isLight ? ColorScheme.light() : ColorScheme.dark(),
     );
 
+    // Apply default font family Akrobat across text themes
+    final akrobatTextTheme = baseTheme.textTheme.apply(fontFamily: 'Akrobat');
+    final akrobatPrimaryTextTheme = baseTheme.primaryTextTheme.apply(fontFamily: 'Akrobat');
+
     return baseTheme.copyWith(
       colorScheme: baseTheme.colorScheme.copyWith(
         primary: isLight ? const Color(0xFF0F507B) : Colors.blueGrey,
         onPrimary: isLight ? Colors.white : Colors.grey[200],
       ),
-      textTheme: baseTheme.textTheme.copyWith(
+      textTheme: akrobatTextTheme.copyWith(
         bodyMedium: TextStyle(
           color: isLight ? Colors.grey[800] : Colors.grey[400],
         ),
         titleMedium: TextStyle(
           color: isLight ? Colors.grey[800] : Colors.grey[400],
         ),
+      ),
+      primaryTextTheme: akrobatPrimaryTextTheme,
+      // comment: NavigationRail theming (indicator, icon/label colors)
+      navigationRailTheme: const NavigationRailThemeData(
+        indicatorColor: Color(0x143F51B5),
+        indicatorShape: StadiumBorder(),
+        selectedIconTheme: IconThemeData(color: Color(0xFF3F51B5)),
+        unselectedIconTheme: IconThemeData(color: Colors.grey),
+        selectedLabelTextStyle: TextStyle(color: Color(0xFF3F51B5)),
+        unselectedLabelTextStyle: TextStyle(color: Colors.grey),
       ),
       cardTheme: CardThemeData(
         color: isLight ? Colors.grey[200] : Colors.grey[900],
