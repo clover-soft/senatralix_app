@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/core/theme/app_theme.dart';
 import 'package:sentralix_app/core/router/app_router.dart';
+import 'package:sentralix_app/data/providers/context_data_provider.dart';
 import 'package:go_router/go_router.dart';
 
 void main() async {
@@ -9,6 +10,11 @@ void main() async {
 
   final container = ProviderContainer();
   final router = createAppRouter(container);
+
+  // Ensure contextDataProvider is instantiated so it can listen to auth changes
+  // and load context on login
+  // ignore: unused_result
+  container.read(contextDataProvider);
 
   runApp(
     UncontrolledProviderScope(
