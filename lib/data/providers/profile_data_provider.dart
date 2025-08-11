@@ -50,6 +50,11 @@ class ProfileDataProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void clear() {
+    _state = ProfileDataState.initial;
+    notifyListeners();
+  }
+
   Future<bool> updateName(String username, WidgetRef ref) async {
     _state = _state.copyWith(loading: true, error: null);
     notifyListeners();
@@ -89,7 +94,22 @@ class ProfileDataProvider with ChangeNotifier {
 
 final profileDataProvider = ChangeNotifierProvider<ProfileDataProvider>((ref) {
   final p = ProfileDataProvider();
-  // ignore: discarded_futures
-  p.load();
+  // первичная загрузка, если уже авторизованы
+  final auth = ref.read(authDataProvider).state;
+  if (auth.loggedIn) {
+    // ignore: discarded_futures
+    p.load();
+  }
+  // слушаем смену авторизации
+  ref.listen(authDataProvider, (prev, next) {
+    final wasIn = prev?.state.loggedIn ?? false;
+    final nowIn = next.state.loggedIn;
+    if (!wasIn && nowIn) {
+      // ignore: discarded_futures
+      p.load();
+    } else if (wasIn && !nowIn) {
+      p.clear();
+    }
+  });
   return p;
 });
