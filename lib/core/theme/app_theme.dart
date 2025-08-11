@@ -49,11 +49,15 @@ class AppTheme {
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: appBarBg,
-        // comment: unify AppBar fonts with Akrobat across the app
-        titleTextStyle: akrobatPrimaryTextTheme.titleLarge
-            ?.copyWith(color: isLight ? Colors.white : Colors.grey[200]),
-        toolbarTextStyle: akrobatPrimaryTextTheme.bodyMedium
-            ?.copyWith(color: isLight ? Colors.white : Colors.grey[200]),
+        // comment: AppBar title uses Akrobat SemiBold and larger size
+        titleTextStyle: akrobatPrimaryTextTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontSize: (akrobatPrimaryTextTheme.titleLarge?.fontSize ?? 20) + 2,
+          color: isLight ? Colors.white : Colors.grey[200],
+        ),
+        toolbarTextStyle: akrobatPrimaryTextTheme.bodyMedium?.copyWith(
+          color: isLight ? Colors.white : Colors.grey[200],
+        ),
         iconTheme: IconThemeData(
           color: isLight ? Colors.grey[50] : Colors.grey[400],
         ),
