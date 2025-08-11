@@ -12,12 +12,29 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final expanded = ref.watch(shellRailExpandedProvider);
+    final currentPath = GoRouterState.of(context).uri.path;
     final minExpandedWidth = 200.0;
     final minCollapsedWidth = 80.0;
     // featureIndex: index of current feature destination (0 => Dashboard)
-    int featureIndex = 0;
+    int? featureIndex;
+    // Map known destinations to feature indices
+    if (currentPath == '/') {
+      featureIndex = 0; // Dashboard
+    } else {
+      featureIndex = null; // not a rail destination (e.g., /profile)
+    }
     // selectedIndex in rail: +1 because 0 is reserved for toggle/brand item
-    int selectedIndex = featureIndex + 1;
+    int selectedIndex = (featureIndex ?? 0) + 1; // keep in-bounds; will neutralize visuals when null
+    final baseNavTheme = Theme.of(context).navigationRailTheme;
+    final bool neutralizeSelection = featureIndex == null; // when on non-rail routes
+    final NavigationRailThemeData overrideTheme = neutralizeSelection
+        ? baseNavTheme.copyWith(
+            indicatorColor: Colors.transparent,
+            selectedIconTheme: baseNavTheme.unselectedIconTheme,
+            selectedLabelTextStyle: baseNavTheme.unselectedLabelTextStyle,
+          )
+        : baseNavTheme;
+
     final rail = NavigationRail(
       minWidth: minCollapsedWidth,
       minExtendedWidth: minExpandedWidth,
@@ -61,7 +78,10 @@ class AppShell extends ConsumerWidget {
     return Scaffold(
       body: Row(
         children: [
-          rail,
+          NavigationRailTheme(
+            data: overrideTheme,
+            child: rail,
+          ),
           const VerticalDivider(width: 1),
           Expanded(child: child),
         ],
