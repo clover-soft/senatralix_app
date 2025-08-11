@@ -1,0 +1,147 @@
+Памятка для фронтенд-агента: операции с пользователями
+Ниже перечислены все доступные роуты модулей 
+me
+ и 
+user
+ с примерами запросов/ответов, кодами ошибок и примечаниями для интеграции на фронтенде.
+
+Общие замечания
+Аутентификация: используется HttpOnly cookie sid. Устанавливается при успешном логине (/auth/login). Все me/* роуты требуют валидной сессии.
+Формат: JSON, Content-Type: application/json.
+Пароли: отправляются в виде строки; хэширование и соль выполняются на сервере.
+Роуты модуля 
+user
+ (
+app/api/user.py
+)
+POST /users/register — регистрация пользователя
+Request
+json
+{
+  "email": "user@example.com",
+  "password": "PlainTextPassword",
+  "phone": "+79990001122",
+  "username": "Ivan Petrov"
+}
+Success 201
+json
+{
+  "id": 123,
+  "email": "user@example.com",
+  "username": "Ivan Petrov",
+  "phone": "+79990001122"
+}
+Errors
+409 Email already exists
+409 Phone already exists
+422 Validation error
+Примечания:
+
+Роут обновления пользователя по user_id удалён. Вся работа с профилем и паролем — через me/*.
+Роуты модуля 
+me
+ (
+app/api/me.py
+)
+GET /me — проверка текущей сессии
+Cookie: sid (HttpOnly)
+Success 200
+json
+{ "user_id": "123" }
+Errors: 401 Unauthorized (нет cookie, неактивная/просроченная сессия)
+GET /me/profile — получить профиль текущего пользователя
+Cookie: sid (HttpOnly)
+Success 200
+json
+{
+  "id": 123,
+  "email": "user@example.com",
+  "username": "Ivan Petrov",
+  "phone": "+79990001122"
+}
+Errors:
+401 Unauthorized (нет/просрочена/неактивна сессия)
+404 User not found (редкий случай рассинхронизации)
+PATCH /me/profile — обновить имя пользователя (только 
+username
+)
+Cookie: sid (HttpOnly)
+Request
+json
+{ "username": "New Name" }
+Success 200 (возвращает актуальный профиль)
+json
+{
+  "id": 123,
+  "email": "user@example.com",
+  "username": "New Name",
+  "phone": "+79990001122"
+}
+Errors:
+401 Unauthorized
+404 User not found
+422 Validation error (пустой/некорректный 
+username
+)
+POST /me/password — смена пароля
+Cookie: sid (HttpOnly)
+Request
+json
+{
+  "old_password": "OldPlain",
+  "new_password": "NewPlain"
+}
+Success 200
+json
+{ "ok": true }
+Errors:
+401 Unauthorized
+403 Old password incorrect
+400 Invalid password format (редкий случай повреждённых данных)
+404 User not found
+422 Validation error
+Быстрые примеры (fetch)
+Получить профиль
+ts
+// Comments: requires HttpOnly sid cookie to be sent automatically by browser
+await fetch('/me/profile', { method: 'GET', credentials: 'include' });
+Обновить имя
+ts
+await fetch('/me/profile', {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
+  body: JSON.stringify({ username: 'New Name' }),
+});
+Сменить пароль
+ts
+await fetch('/me/password', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
+  body: JSON.stringify({ old_password: 'OldPlain', new_password: 'NewPlain' }),
+});
+Регистрация
+ts
+await fetch('/users/register', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    password: 'PlainTextPassword',
+    phone: '+79990001122',
+    username: 'Ivan Petrov',
+  }),
+});
+Обработка ошибок на фронтенде
+Проверяйте response.status:
+401 — редирект/показ логина, сброс локального состояния сессии.
+403 — показать сообщение: неверный старый пароль.
+409 — при регистрации: email/phone уже заняты; подсветить соответствующие поля.
+404 — повторная загрузка профиля или выход из аккаунта.
+422 — показать ошибки валидации рядом с полями.
+Краткое резюме: фронтенду нужен только /users/register для регистрации и набор 
+me
+-роутов для чтения/обновления профиля и смены пароля. Все операции с текущим пользователем требуют валидной HttpOnly-сессии через cookie sid.
+
+Feedback submitted
