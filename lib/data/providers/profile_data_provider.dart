@@ -100,38 +100,40 @@ final profileDataProvider = ChangeNotifierProvider<ProfileDataProvider>((ref) {
     // ignore: discarded_futures
     p.load();
   }
-  // слушаем смену авторизации
-  ref.listen(authDataProvider, (prev, next) {
-    final wasIn = prev?.state.loggedIn ?? false;
-    final nowIn = next.state.loggedIn;
+  // слушаем смену авторизации (именно состояние AuthState)
+  ref.listen<AuthState>(
+    authDataProvider.select((p) => p.state),
+    (prev, next) {
+      final wasIn = prev?.loggedIn ?? false;
+      final nowIn = next.loggedIn;
+      final Map<String, dynamic>? prevUser = prev?.user;
+      final Map<String, dynamic>? nextUser = next.user;
 
-    final Map<String, dynamic>? prevUser = prev?.state.user;
-    final Map<String, dynamic>? nextUser = next.state.user;
+      bool identityChanged = false;
+      if (wasIn && nowIn) {
+        final prevId = prevUser?['id']?.toString();
+        final nextId = nextUser?['id']?.toString();
+        final prevEmail = prevUser?['email']?.toString();
+        final nextEmail = nextUser?['email']?.toString();
+        final prevUsername = prevUser?['username']?.toString();
+        final nextUsername = nextUser?['username']?.toString();
+        identityChanged = (prevId != nextId) || (prevEmail != nextEmail) || (prevUsername != nextUsername);
+      }
 
-    bool identityChanged = false;
-    if (wasIn && nowIn) {
-      final prevId = prevUser?['id']?.toString();
-      final nextId = nextUser?['id']?.toString();
-      final prevEmail = prevUser?['email']?.toString();
-      final nextEmail = nextUser?['email']?.toString();
-      final prevUsername = prevUser?['username']?.toString();
-      final nextUsername = nextUser?['username']?.toString();
-      identityChanged = (prevId != nextId) || (prevEmail != nextEmail) || (prevUsername != nextUsername);
-    }
-
-    if (!wasIn && nowIn) {
-      // login
-      // ignore: discarded_futures
-      p.load();
-    } else if (wasIn && !nowIn) {
-      // logout
-      p.clear();
-    } else if (identityChanged) {
-      // same loggedIn state but different user
-      p.clear();
-      // ignore: discarded_futures
-      p.load();
-    }
-  });
+      if (!wasIn && nowIn) {
+        // login
+        // ignore: discarded_futures
+        p.load();
+      } else if (wasIn && !nowIn) {
+        // logout
+        p.clear();
+      } else if (identityChanged) {
+        // same loggedIn state but different user
+        p.clear();
+        // ignore: discarded_futures
+        p.load();
+      }
+    },
+  );
   return p;
 });
