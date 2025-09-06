@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/shared/providers/shell_provider.dart';
 import 'package:sentralix_app/shared/widgets/app_shell/app_shell_trailing.dart';
+import 'package:sentralix_app/data/providers/context_data_provider.dart';
+import 'package:sentralix_app/shared/navigation/menu_registry.dart';
 
 class AppShell extends ConsumerWidget {
   final Widget child;
@@ -13,20 +15,27 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final expanded = ref.watch(shellRailExpandedProvider);
     final currentPath = GoRouterState.of(context).uri.path;
+    final ctxState = ref.watch(contextDataProvider).state;
     final minExpandedWidth = 200.0;
     final minCollapsedWidth = 80.0;
-    // featureIndex: index of current feature destination (0 => Dashboard)
+    // Build dynamic items from context menu using registry
+    final dynamicItems = <MenuDef>[
+      for (final item in ctxState.menu)
+        if (kMenuRegistry.containsKey(item['key'])) kMenuRegistry[item['key']]!
+    ];
+
+    // featureIndex: index in dynamicItems for current path
     int? featureIndex;
-    // Map known destinations to feature indices
-    if (currentPath == '/') {
-      featureIndex = 0; // Dashboard
+    final idx = dynamicItems.indexWhere((e) => e.route == currentPath);
+    if (idx >= 0) {
+      featureIndex = idx;
     } else {
-      featureIndex = null; // not a rail destination (e.g., /profile)
+      featureIndex = null; // not a rail destination (e.g., other routes)
     }
     // selectedIndex in rail: +1 because 0 is reserved for toggle/brand item
-    int selectedIndex = (featureIndex ?? 0) + 1; // keep in-bounds; will neutralize visuals when null
+    int? selectedIndex = dynamicItems.isEmpty ? null : ((featureIndex ?? 0) + 1);
     final baseNavTheme = Theme.of(context).navigationRailTheme;
-    final bool neutralizeSelection = featureIndex == null; // when on non-rail routes
+    final bool neutralizeSelection = featureIndex == null || dynamicItems.isEmpty; // when on non-rail routes or empty
     final NavigationRailThemeData overrideTheme = neutralizeSelection
         ? baseNavTheme.copyWith(
             indicatorColor: Colors.transparent,
@@ -45,10 +54,10 @@ class AppShell extends ConsumerWidget {
           ref.read(shellRailExpandedProvider.notifier).state = !expanded;
           return;
         }
-        switch (idx) {
-          case 1: // Dashboard
-            context.go('/');
-            break;
+        final menuIdx = idx - 1; // shift for toggle item
+        if (menuIdx >= 0 && menuIdx < dynamicItems.length) {
+          final def = dynamicItems[menuIdx];
+          context.go(def.route);
         }
       },
       labelType: expanded ? null : NavigationRailLabelType.none,
@@ -66,12 +75,13 @@ class AppShell extends ConsumerWidget {
           selectedIcon: Icon(Icons.menu),
           label: Text('Sentralix'),
         ),
-        // 1: Dashboard
-        const NavigationRailDestination(
-          icon: Icon(Icons.dashboard_outlined),
-          selectedIcon: Icon(Icons.dashboard),
-          label: Text('Dashboard'),
-        ),
+        // Dynamic items from context
+        for (final def in dynamicItems)
+          NavigationRailDestination(
+            icon: Icon(def.icon),
+            selectedIcon: Icon(def.selectedIcon),
+            label: Text(def.defaultLabel),
+          ),
       ],
     );
 

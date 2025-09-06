@@ -38,10 +38,14 @@ class AppTheme {
         indicatorShape: const StadiumBorder(),
         selectedIconTheme: const IconThemeData(color: Color(0xFF3F51B5)),
         unselectedIconTheme: const IconThemeData(color: Colors.grey),
-        selectedLabelTextStyle:
-            akrobatTextTheme.labelMedium?.copyWith(color: const Color(0xFF3F51B5)),
-        unselectedLabelTextStyle:
-            akrobatTextTheme.labelMedium?.copyWith(color: Colors.grey),
+        selectedLabelTextStyle: akrobatTextTheme.labelMedium?.copyWith(
+          color: const Color(0xFF3F51B5),
+          fontWeight: FontWeight.w600, // SemiBold for better readability
+        ),
+        unselectedLabelTextStyle: akrobatTextTheme.labelMedium?.copyWith(
+          color: Colors.grey,
+          fontWeight: FontWeight.w600, // SemiBold for consistency
+        ),
       ),
       cardTheme: CardThemeData(
         color: isLight ? Colors.grey[200] : Colors.grey[900],
