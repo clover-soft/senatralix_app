@@ -195,6 +195,6 @@ class ApiClient {
     if (data == null) return 'null';
     final s = data.toString();
     if (s.length <= 200) return s;
-    return s.substring(0, 197) + '...';
+    return '${s.substring(0, 197)}...';
   }
 }
