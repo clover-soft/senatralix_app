@@ -27,3 +27,24 @@
 
 - Отчёт: `docs/steps/step-1-research.md`.
 - Контекст: `docs/project_context.md`.
+
+## Последние изменения (UX/Theme, AppShell, NavigationRail)
+
+- Перевод темы на Material 3 и палитру `ColorScheme.fromSeed` в `lib/core/theme/app_theme.dart`.
+  - Включён `useMaterial3: true`.
+  - Цвета компонентов берутся из `Theme.of(context).colorScheme` (primary/secondary/surface и др.).
+  - Убраны жёсткие константы цветов для AppBar/NavigationRail/Card; теперь используются токены схемы.
+- AppBar: фон = `scheme.primary`, тексты/иконки = `scheme.onPrimary`.
+- NavigationRail тема: индикатор = `scheme.secondaryContainer`, активные/неактивные стили через `scheme.secondary`/`scheme.onSurfaceVariant`.
+- `AppShellLeading` (`lib/shared/widgets/app_shell/app_shell_leading.dart`):
+  - Фон синхронизирован с AppBar (`scheme.primary`).
+  - Текст/иконка — `scheme.onPrimary` (локальный `NavigationRailTheme`).
+  - Выравнивание по вертикали через `Transform.translate(0, -6)`.
+  - По нажатию — переключение `shellRailExpandedProvider` (expand/collapse NavigationRail).
+- `AppShellRailItem` (`lib/shared/widgets/app_shell/app_shell_rail_item.dart`):
+  - Переход на токены `ColorScheme` по умолчанию (без `Colors.*`).
+- `AppShell` (`lib/shared/widgets/app_shell/app_shell.dart`):
+  - Удалён «служебный» первый пункт в `destinations`; индексация пересчитана без смещений (+1) — исправлен падение `selectedIndex` assert.
+  - `leading` смещён вверх на 8px для компенсации внутреннего отступа `NavigationRail`.
+
+Примечание: смена `seedColor` теперь перекрашивает AppBar, NavigationRail и кнопки, кроме мест, где намеренно оставлены явные override‑ы в теме.

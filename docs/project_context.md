@@ -10,12 +10,17 @@
 - Навигация: `ShellRoute` с `AppShell`, страницы `'/'`, `'/profile'`, `'/auth/login'`, `'/registration'`, `'/splash'`; редиректы зависят от `AuthState`.
 - Состояние: Riverpod (`ChangeNotifierProvider`) — `authDataProvider`, `contextDataProvider`, `shellRailExpandedProvider`.
 - Тема/шрифт: `AppTheme` + Akrobat из `pubspec.yaml`.
+  - Включён Material 3 (`useMaterial3: true`).
+  - Палитра строится через `ColorScheme.fromSeed` (см. `lib/core/theme/app_theme.dart`).
 - Сеть: `ApiClient` (Dio) с cookie‑auth на Web.
 
 ## Последние изменения
-- Подготовлен отчет «Шаг 1: Исследование проекта» (`docs/steps/step-1-research.md`).
-- Выявлены первоочередные улучшения: конфигурация окружений, логирование/ошибки, валидация меню.
+- Подготовлен и завершён отчет «Шаг 1: Исследование проекта» (`docs/steps/step-1-research.md`).
+- Миграция темы на Material 3 и `ColorScheme.fromSeed`; замена жёстких цветов на токены схемы.
+- AppShell/NavigationRail: фиксация индексации `selectedIndex` после удаления служебного пункта, синхронизация цвета `leading` с AppBar, выравнивания через `Transform.translate`.
+- В `AppShellLeading` по нажатию реализован toggle расширения рейла через `shellRailExpandedProvider`.
 
 ## Текущий шаг разработки
-- Шаг 1: Исследование проекта — в процессе.
+- Шаг 1: Исследование проекта — выполнен.
+
 
