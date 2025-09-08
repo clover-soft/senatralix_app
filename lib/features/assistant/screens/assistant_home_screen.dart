@@ -68,7 +68,12 @@ class AssistantHomeScreen extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(it.title, style: Theme.of(context).textTheme.titleMedium),
+                                Text(
+                                  it.title,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                 const SizedBox(height: 4),
                                 Text(
                                   it.subtitle,
@@ -76,6 +81,8 @@ class AssistantHomeScreen extends ConsumerWidget {
                                       .textTheme
                                       .bodySmall
                                       ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
