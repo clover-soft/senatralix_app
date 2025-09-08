@@ -15,32 +15,37 @@ List<RouteBase> assistantRoutes() => [
     path: '/assistant',
     pageBuilder: (context, state) => const MaterialPage(child: AssistantScreen()),
   ),
+  // По умолчанию показываем настройки выбранного ассистента
   GoRoute(
-    path: '/assistant/settings',
+    path: '/assistant/:assistantId',
     pageBuilder: (context, state) => const MaterialPage(child: AssistantSettingsScreen()),
   ),
   GoRoute(
-    path: '/assistant/tools',
+    path: '/assistant/:assistantId/settings',
+    pageBuilder: (context, state) => const MaterialPage(child: AssistantSettingsScreen()),
+  ),
+  GoRoute(
+    path: '/assistant/:assistantId/tools',
     pageBuilder: (context, state) => const MaterialPage(child: AssistantToolsScreen()),
   ),
   GoRoute(
-    path: '/assistant/knowledge',
+    path: '/assistant/:assistantId/knowledge',
     pageBuilder: (context, state) => const MaterialPage(child: AssistantKnowledgeScreen()),
   ),
   GoRoute(
-    path: '/assistant/connectors',
+    path: '/assistant/:assistantId/connectors',
     pageBuilder: (context, state) => const MaterialPage(child: AssistantConnectorsScreen()),
   ),
   GoRoute(
-    path: '/assistant/scripts',
+    path: '/assistant/:assistantId/scripts',
     pageBuilder: (context, state) => const MaterialPage(child: AssistantScriptsScreen()),
   ),
   GoRoute(
-    path: '/assistant/chat',
+    path: '/assistant/:assistantId/chat',
     pageBuilder: (context, state) => const MaterialPage(child: AssistantChatScreen()),
   ),
   GoRoute(
-    path: '/assistant/sessions',
+    path: '/assistant/:assistantId/sessions',
     pageBuilder: (context, state) => const MaterialPage(child: AssistantSessionsScreen()),
   ),
 ];
