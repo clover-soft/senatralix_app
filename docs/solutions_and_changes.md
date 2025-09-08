@@ -1,4 +1,10 @@
 # Решения и изменения
+## Последние изменения (Шаг 3 — Assistant)
+
+- Маршруты фичи assistant переведены на параметризованные пути `/assistant/:assistantId/*`.
+- Добавлен экран локального меню подфич: `lib/features/assistant/screens/assistant_home_screen.dart`.
+- Экран выбора ассистента (`assistant_screen.dart`) реализован на Riverpod c CRUD-заглушками; стартовый ассистент — «Екатерина».
+- Подфичи читают `assistantId` из `GoRouterState` и отображают его в UI.
 
 ## Архитектурные решения (текущее состояние)
 

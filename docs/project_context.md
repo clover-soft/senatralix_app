@@ -20,8 +20,9 @@
 - AppShell/NavigationRail: фиксация индексации `selectedIndex` после удаления служебного пункта, синхронизация цвета `leading` с AppBar, выравнивания через `Transform.translate`.
 - В `AppShellLeading` по нажатию реализован toggle расширения рейла через `shellRailExpandedProvider`.
 - Шаг 2: создан каркас фичи `assistant` с внутренним роутером (`assistant_routes.dart`), экраном (`assistant_screen.dart`), DI (`assistant/di.dart`) и подфичами-заглушками (`settings`, `tools`, `knowledge`, `connectors`, `scripts`, `chat`, `sessions`). Добавлен пункт меню `assistant`.
+- Шаг 3: реализован выбор ассистента на `/assistant`, локальное меню подфич (`assistant_home_screen.dart`), маршруты `/assistant/:assistantId/*`, стартовый ассистент «Екатерина», подфичи читают `assistantId` из маршрута.
 
 ## Текущий шаг разработки
-- Шаг 2: Assistant — выполнен.
+- Шаг 3: Assistant (выбор и локальное меню) — выполнен.
 
 
