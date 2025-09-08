@@ -1,0 +1,102 @@
+{
+    "id": "d83eefd6-a79c-4b85-8075-03d06bedfb1d",
+    "name": "Коннектор на номере +78125005176",
+    "is_active": true,
+    "domain_id": "1",
+    "settings": {
+      "tts": {
+        "voice_pool": [
+          {
+            "voice": "lera",
+            "language": "ru-RU",
+            "vendor": "yandex",
+            "role": "friendly",
+            "speed": 1.2,
+            "pitch": null,
+            "volume": null
+          }
+        ],
+        "voice_selection_strategy": "first",
+        "cache_enable": true,
+        "lexicon": [
+          {
+            "type": "regex",
+            "pattern": "(?i)[тt][аa][лl][аa][тt][уu]",
+            "replace": "Т+алату",
+            "enabled": true,
+            "flags": [
+              "ignore_case"
+            ]
+          }
+        ]
+      },
+      "asr": {
+        "language": "ru-RU",
+        "model": "general"
+      },
+      "dialog": {
+        "greeting_texts": [
+          "Алло"
+        ],
+        "greeting_selection_strategy": "first",
+        "reprompt_texts": [
+          "Алло",
+          "Алло-алло",
+          "Что-то вас не слышно"
+        ],
+        "reprompt_selection_strategy": "round_robin",
+        "allow_barge_in": true,
+        "max_turns": 20,
+        "noinput_retries": 10,
+        "hangup_on_noinput": false,
+        "max_call_duration_sec": 20,
+        "repeat_prompt_on_interrupt": true,
+        "interrupt_max_retries": 0,
+        "interrupt_final_text": "Вы меня постоянно перебиваете, я так разговаривать не могу, всего доброго",
+        "noinput_final_text": "Что то вас не слышно, лучше перезвонить",
+        "max_turns_final_text": "Спасибо за разговор, до свидания",
+        "max_call_duration_final_text": "Время разговора истекло, до свидания"
+      },
+      "callbridge": {
+        "answer": {
+          "beofre_timeout_ms": 3200
+        },
+        "dial": {
+          "timeout_sec": 60,
+          "callerid": null,
+          "moh_enable": true,
+          "moh_class": "default",
+          "allowlist": [],
+          "denylist": []
+        },
+        "musiconhold": {
+          "moh_class": "default",
+          "duration_sec": 15
+        },
+        "nothing": {
+          "timeout_ms": 300
+        },
+        "play": {
+          "can_interrupt": true,
+          "synth_cache_enable": false,
+          "gain_db": 0,
+          "normalize_dbfs": -14
+        },
+        "getspeech": {
+          "noise_duration_ms": 100,
+          "noise_timeout_ms": 5000,
+          "silense_duration_ms": 700,
+          "max_speech_duration_ms": 60000
+        }
+      },
+      "assistant": {
+        "filler_text_list": [
+          "Секундочку, пожалуйста",
+          "Пожалуйста, подождите",
+          "Сейчас уточню"
+        ],
+        "filler_selection_strategy": "round_robin",
+        "soft_timeout_ms": 2500
+      }
+    }
+  }

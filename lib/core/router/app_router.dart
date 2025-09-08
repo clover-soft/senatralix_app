@@ -34,11 +34,8 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
 
     print('redirect: raw=${state.uri} eff=$loc path=$path authRoute=$isAuthRoute splash=$isSplash reg=$isRegistration');
 
-    // Пока /me грузится — показываем splash и сохраняем исходный адрес в from
-    if (!auth.ready && !isSplash) {
-      final from = Uri.encodeComponent(loc);
-      return '/splash?from=$from';
-    }
+    // Важно: не дёргать URL на стадии инициализации auth (auth.ready == false)
+    // Разрешаем рендер страницы; protected-редирект выполняем только когда auth.ready == true.
 
     // Если не залогинен -> на логин (сохраняем from)
     if (auth.ready && !auth.loggedIn && !isAuthRoute && !isRegistration) {
@@ -52,18 +49,7 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
       return from ?? '/';
     }
 
-    // Если залогинен и на splash -> возвращаемся на исходный адрес (или домой)
-    if (auth.ready && auth.loggedIn && isSplash) {
-      final from = state.uri.queryParameters['from'];
-      return from ?? '/';
-    }
-
-    // Если не залогинен и на splash -> на логин c from
-    if (auth.ready && !auth.loggedIn && isSplash) {
-      final from = state.uri.queryParameters['from'];
-      final suffix = from != null ? '?from=$from' : '';
-      return '/auth/login$suffix';
-    }
+    // Splash не используем в redirect, чтобы избежать прыжков URL на deep-link
 
     return null;
   },

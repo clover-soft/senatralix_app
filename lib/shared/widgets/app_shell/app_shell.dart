@@ -25,13 +25,18 @@ class AppShell extends ConsumerWidget {
         if (kMenuRegistry.containsKey(item['key'])) kMenuRegistry[item['key']]!,
     ];
 
-    // featureIndex: index in dynamicItems for current path
+    // featureIndex: индекс текущего пункта меню по маршруту
     int? featureIndex;
-    final idx = dynamicItems.indexWhere((e) => e.route == currentPath);
-    if (idx >= 0) {
-      featureIndex = idx;
+    // 1) Точное совпадение
+    final exactIdx = dynamicItems.indexWhere((e) => e.route == currentPath);
+    if (exactIdx >= 0) {
+      featureIndex = exactIdx;
     } else {
-      featureIndex = null; // not a rail destination (e.g., other routes)
+      // 2) Вложенные маршруты: для пунктов, отличных от корневого '/'
+      final nestedIdx = dynamicItems.indexWhere(
+        (e) => e.route != '/' && currentPath.startsWith(e.route + '/'),
+      );
+      featureIndex = nestedIdx >= 0 ? nestedIdx : null;
     }
     // selectedIndex напрямую соответствует индексу в dynamicItems
     int? selectedIndex =
