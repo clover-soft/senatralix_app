@@ -21,8 +21,9 @@
 - В `AppShellLeading` по нажатию реализован toggle расширения рейла через `shellRailExpandedProvider`.
 - Шаг 2: создан каркас фичи `assistant` с внутренним роутером (`assistant_routes.dart`), экраном (`assistant_screen.dart`), DI (`assistant/di.dart`) и подфичами-заглушками (`settings`, `tools`, `knowledge`, `connectors`, `scripts`, `chat`, `sessions`). Добавлен пункт меню `assistant`.
 - Шаг 3: реализован выбор ассистента на `/assistant`, локальное меню подфич (`assistant_home_screen.dart`), маршруты `/assistant/:assistantId/*`, стартовый ассистент «Екатерина», подфичи читают `assistantId` из маршрута.
+- Шаг 4: UX‑улучшения ассистента — модель `Assistant.description`, FAB/кнопка создания, диалоги с валидацией, AppBar по имени, подзаголовки карточек, адаптивная сетка (1/2/3), обработка overflow и уменьшение высоты карточек.
 
 ## Текущий шаг разработки
-- Шаг 3: Assistant (выбор и локальное меню) — выполнен.
+- Шаг 4: Assistant (улучшения надфичи) — выполнен.
 
 

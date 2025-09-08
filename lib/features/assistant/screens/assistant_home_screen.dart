@@ -36,12 +36,27 @@ class AssistantHomeScreen extends ConsumerWidget {
                 : (w <= 900
                     ? 2
                     : 3);
+            final textScale = MediaQuery.textScaleFactorOf(context);
+            // Больше высоты для узких экранов и увеличенного масштаба текста
+            double childAspectRatio = 1.9; // ширина/высота
+            if (crossAxisCount == 2) childAspectRatio = 1.6; // выше, чтобы поместились 2 строки
+            if (crossAxisCount == 1) childAspectRatio = 1.2; // ещё выше в 1 колонку
+            if (textScale > 1.0) {
+              childAspectRatio -= 0.3; // делаем карточку выше при крупном шрифте
+              if (childAspectRatio < 1.05) childAspectRatio = 1.05;
+            }
+            // Пользователь просит уменьшить максимальную высоту карточки ~ в 1.5 раза =>
+            // увеличиваем aspectRatio на 1.5x (чем больше ratio, тем ниже карточка),
+            // но оставляем разумные ограничения.
+            childAspectRatio *= 1.5;
+            if (childAspectRatio > 3.2) childAspectRatio = 3.2; // верхняя граница (слишком плоские карточки не нужны)
+            if (childAspectRatio < 1.1) childAspectRatio = 1.1; // нижняя граница (не слишком высокие)
             return GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: 1.9,
+                childAspectRatio: childAspectRatio,
               ),
               itemCount: items.length,
               itemBuilder: (_, i) {
@@ -66,7 +81,7 @@ class AssistantHomeScreen extends ConsumerWidget {
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
                                   it.title,
@@ -74,7 +89,7 @@ class AssistantHomeScreen extends ConsumerWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 2),
                                 Text(
                                   it.subtitle,
                                   style: Theme.of(context)
