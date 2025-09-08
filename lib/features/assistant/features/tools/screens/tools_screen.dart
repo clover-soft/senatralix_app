@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 
 class AssistantToolsScreen extends StatelessWidget {
   const AssistantToolsScreen({super.key});
@@ -8,8 +9,8 @@ class AssistantToolsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final id = GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
     return Scaffold(
-      appBar: AppBar(title: Text('Assistant • Tools ($id)')),
-      body: Center(child: Text('Tools for assistantId=$id (user-defined assistant tools)')),
+      appBar: AssistantAppBar(assistantId: id, subfeatureTitle: 'Tools'),
+      body: const Center(child: Text('Tools (user-defined assistant tools)')),
     );
   }
 }

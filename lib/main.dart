@@ -4,9 +4,16 @@ import 'package:sentralix_app/core/theme/app_theme.dart';
 import 'package:sentralix_app/core/router/app_router.dart';
 import 'package:sentralix_app/data/providers/context_data_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Web: используем hash-стратегию URL, чтобы сервер не требовал SPA-конфигурации
+  if (kIsWeb) {
+    setUrlStrategy(const HashUrlStrategy());
+  }
 
   final container = ProviderContainer();
   final router = createAppRouter(container);

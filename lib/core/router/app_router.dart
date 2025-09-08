@@ -19,22 +19,28 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
   redirect: (context, state) {
     final auth = container.read(authDataProvider).state;
 
-    final loc = state.uri.toString();
-    final path = state.uri.path; // robust on web hash strategy
+    // Поддержка hash-стратегии: если во фрагменте есть путь — используем его как эффективный
+    final rawUri = state.uri;
+    final hasFragmentPath = (rawUri.fragment).isNotEmpty && rawUri.fragment.startsWith('/');
+    final fragmentUri = hasFragmentPath ? Uri.parse(rawUri.fragment) : null;
+    final effectivePath = hasFragmentPath ? fragmentUri!.path : rawUri.path;
+    final effectiveLoc = hasFragmentPath ? fragmentUri!.toString() : rawUri.toString();
+
+    final loc = effectiveLoc;
+    final path = effectivePath; // путь для логики роутера
     final isAuthRoute = path.startsWith('/auth');
     final isSplash = path == '/splash';
     final isRegistration = path == '/registration';
 
-    print(
-      'redirect: ${state.uri} path: $path isAuthRoute: $isAuthRoute isSplash: $isSplash isRegistration: $isRegistration',
-    );
+    print('redirect: raw=${state.uri} eff=$loc path=$path authRoute=$isAuthRoute splash=$isSplash reg=$isRegistration');
 
-    // While /me is loading, show splash to avoid flicker/loops
+    // Пока /me грузится — показываем splash и сохраняем исходный адрес в from
     if (!auth.ready && !isSplash) {
-      return '/splash';
+      final from = Uri.encodeComponent(loc);
+      return '/splash?from=$from';
     }
 
-    // If not logged in -> go to login (even from splash)
+    // Если не залогинен -> на логин (сохраняем from)
     if (auth.ready && !auth.loggedIn && !isAuthRoute && !isRegistration) {
       final from = Uri.encodeComponent(loc);
       return '/auth/login?from=$from';
@@ -46,14 +52,17 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
       return from ?? '/';
     }
 
-    // If logged in and on splash -> go home
+    // Если залогинен и на splash -> возвращаемся на исходный адрес (или домой)
     if (auth.ready && auth.loggedIn && isSplash) {
-      return '/';
+      final from = state.uri.queryParameters['from'];
+      return from ?? '/';
     }
 
-    // If not logged in and on splash -> go to login
+    // Если не залогинен и на splash -> на логин c from
     if (auth.ready && !auth.loggedIn && isSplash) {
-      return '/auth/login';
+      final from = state.uri.queryParameters['from'];
+      final suffix = from != null ? '?from=$from' : '';
+      return '/auth/login$suffix';
     }
 
     return null;

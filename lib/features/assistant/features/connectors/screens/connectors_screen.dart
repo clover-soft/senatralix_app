@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 
 class AssistantConnectorsScreen extends StatelessWidget {
   const AssistantConnectorsScreen({super.key});
@@ -8,8 +9,10 @@ class AssistantConnectorsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final id = GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
     return Scaffold(
-      appBar: AppBar(title: Text('Assistant • Connectors ($id)')),
-      body: Center(child: Text('Connectors for assistantId=$id (VOIP, Telegram, Avito, WhatsApp — future)')),
+      appBar: AssistantAppBar(assistantId: id, subfeatureTitle: 'Connectors'),
+      body: const Center(
+        child: Text('Connectors (VOIP, Telegram, Avito, WhatsApp — future)'),
+      ),
     );
   }
 }

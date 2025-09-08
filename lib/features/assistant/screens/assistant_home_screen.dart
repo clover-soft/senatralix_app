@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sentralix_app/features/assistant/providers/assistant_list_provider.dart';
+import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 
 /// Локальное меню подфич ассистента
 class AssistantHomeScreen extends ConsumerWidget {
@@ -11,8 +11,6 @@ class AssistantHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final id = GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
-    final listState = ref.watch(assistantListProvider);
-    final name = listState.byId(id)?.name ?? 'Unknown';
 
     final items = <_SubItem>[
       _SubItem('Settings', 'Модель, температура, токены, промпт…', Icons.tune, '/assistant/$id/settings'),
@@ -25,7 +23,7 @@ class AssistantHomeScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: Text('Assistant ($name)')),
+      appBar: AssistantAppBar(assistantId: id),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: LayoutBuilder(

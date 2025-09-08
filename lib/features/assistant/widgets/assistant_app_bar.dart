@@ -1,0 +1,54 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_list_provider.dart';
+
+/// Общий AppBar для экранов ассистента и его подфич
+/// - Для домашнего экрана ассистента (локальное меню) используйте [subfeatureTitle == null]
+///   • leading: назад к списку ассистентов
+///   • title: "Assistant (Имя)"
+/// - Для подфич (settings/tools/…): укажите [subfeatureTitle]
+///   • leading: назад к локальному меню ассистента
+///   • title: "Assistant • <Subfeature> (<Имя>)"
+///   • actions: кнопка "домой ассистента"
+class AssistantAppBar extends ConsumerWidget implements PreferredSizeWidget {
+  const AssistantAppBar({super.key, required this.assistantId, this.subfeatureTitle});
+
+  final String assistantId;
+  final String? subfeatureTitle;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final name = ref.watch(assistantListProvider).byId(assistantId)?.name ?? 'Unknown';
+    final title = subfeatureTitle == null
+        ? 'Assistant ($name)'
+        : 'Assistant • ${subfeatureTitle!} ($name)';
+
+    return AppBar(
+      leading: IconButton(
+        tooltip: subfeatureTitle == null ? 'К списку ассистентов' : 'К ассистенту',
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () {
+          if (subfeatureTitle == null) {
+            context.go('/assistant');
+          } else {
+            context.go('/assistant/$assistantId');
+          }
+        },
+      ),
+      actions: subfeatureTitle == null
+          ? null
+          : [
+              IconButton(
+                tooltip: 'Домой ассистента',
+                icon: const Icon(Icons.home_outlined),
+                onPressed: () => context.go('/assistant/$assistantId'),
+              ),
+            ],
+      title: Text(title),
+    );
+  }
+}
