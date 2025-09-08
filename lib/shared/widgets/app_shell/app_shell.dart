@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/shared/providers/shell_provider.dart';
+import 'package:sentralix_app/shared/widgets/app_shell/app_shell_leading.dart';
 import 'package:sentralix_app/shared/widgets/app_shell/app_shell_trailing.dart';
 import 'package:sentralix_app/data/providers/context_data_provider.dart';
 import 'package:sentralix_app/shared/navigation/menu_registry.dart';
@@ -21,7 +22,7 @@ class AppShell extends ConsumerWidget {
     // Build dynamic items from context menu using registry
     final dynamicItems = <MenuDef>[
       for (final item in ctxState.menu)
-        if (kMenuRegistry.containsKey(item['key'])) kMenuRegistry[item['key']]!
+        if (kMenuRegistry.containsKey(item['key'])) kMenuRegistry[item['key']]!,
     ];
 
     // featureIndex: index in dynamicItems for current path
@@ -32,10 +33,17 @@ class AppShell extends ConsumerWidget {
     } else {
       featureIndex = null; // not a rail destination (e.g., other routes)
     }
-    // selectedIndex in rail: +1 because 0 is reserved for toggle/brand item
-    int? selectedIndex = dynamicItems.isEmpty ? null : ((featureIndex ?? 0) + 1);
+    // selectedIndex напрямую соответствует индексу в dynamicItems
+    int? selectedIndex =
+        (featureIndex != null &&
+            featureIndex >= 0 &&
+            featureIndex < dynamicItems.length)
+        ? featureIndex
+        : null;
     final baseNavTheme = Theme.of(context).navigationRailTheme;
-    final bool neutralizeSelection = featureIndex == null || dynamicItems.isEmpty; // when on non-rail routes or empty
+    final bool neutralizeSelection =
+        featureIndex == null ||
+        dynamicItems.isEmpty; // when on non-rail routes or empty
     final NavigationRailThemeData overrideTheme = neutralizeSelection
         ? baseNavTheme.copyWith(
             indicatorColor: Colors.transparent,
@@ -49,14 +57,8 @@ class AppShell extends ConsumerWidget {
       minExtendedWidth: minExpandedWidth,
       selectedIndex: selectedIndex,
       onDestinationSelected: (idx) {
-        // idx 0 reserved for toggle item
-        if (idx == 0) {
-          ref.read(shellRailExpandedProvider.notifier).state = !expanded;
-          return;
-        }
-        final menuIdx = idx - 1; // shift for toggle item
-        if (menuIdx >= 0 && menuIdx < dynamicItems.length) {
-          final def = dynamicItems[menuIdx];
+        if (idx >= 0 && idx < dynamicItems.length) {
+          final def = dynamicItems[idx];
           context.go(def.route);
         }
       },
@@ -68,13 +70,15 @@ class AppShell extends ConsumerWidget {
         expandedWidth: minExpandedWidth,
         expanded: expanded,
       ),
-      destinations: [
-        // 0: Toggle/Brand item — looks like a normal destination
-        const NavigationRailDestination(
-          icon: Icon(Icons.menu),
-          selectedIcon: Icon(Icons.menu),
-          label: Text('Sentralix'),
+      leading: Transform.translate(
+        offset: const Offset(0, -8),
+        child: AppShellLeading(
+          width: minCollapsedWidth,
+          expandedWidth: minExpandedWidth,
+          expanded: expanded,
         ),
+      ),
+      destinations: [
         // Dynamic items from context
         for (final def in dynamicItems)
           NavigationRailDestination(
@@ -88,10 +92,7 @@ class AppShell extends ConsumerWidget {
     return Scaffold(
       body: Row(
         children: [
-          NavigationRailTheme(
-            data: overrideTheme,
-            child: rail,
-          ),
+          NavigationRailTheme(data: overrideTheme, child: rail),
           const VerticalDivider(width: 1),
           Expanded(child: child),
         ],

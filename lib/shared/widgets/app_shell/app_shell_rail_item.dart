@@ -22,14 +22,15 @@ class _AppShellRailItemState extends State<AppShellRailItem> {
 
   @override
   Widget build(BuildContext context) {
-    final navTheme = Theme.of(context).navigationRailTheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final navTheme = theme.navigationRailTheme;
     final Color indicatorColor =
-        navTheme.indicatorColor ?? const Color(0x143F51B5);
+        navTheme.indicatorColor ?? scheme.secondaryContainer;
     final Color unselectedIconColor =
-        navTheme.unselectedIconTheme?.color ?? Colors.grey;
+        navTheme.unselectedIconTheme?.color ?? scheme.onSurfaceVariant;
     final Color selectedIconColor =
-        navTheme.selectedIconTheme?.color ??
-        Theme.of(context).colorScheme.primary;
+        navTheme.selectedIconTheme?.color ?? scheme.secondary;
     final TextStyle? selectedLabelStyle = navTheme.selectedLabelTextStyle;
     final TextStyle? unselectedLabelStyle = navTheme.unselectedLabelTextStyle;
 
