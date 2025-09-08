@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/features/assistant/screens/assistant_screen.dart';
+import 'package:sentralix_app/features/assistant/screens/assistant_home_screen.dart';
 import 'package:sentralix_app/features/assistant/features/settings/screens/settings_screen.dart';
 import 'package:sentralix_app/features/assistant/features/tools/screens/tools_screen.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/screens/knowledge_screen.dart';
@@ -18,7 +19,7 @@ List<RouteBase> assistantRoutes() => [
   // По умолчанию показываем настройки выбранного ассистента
   GoRoute(
     path: '/assistant/:assistantId',
-    pageBuilder: (context, state) => const MaterialPage(child: AssistantSettingsScreen()),
+    pageBuilder: (context, state) => const MaterialPage(child: AssistantHomeScreen()),
   ),
   GoRoute(
     path: '/assistant/:assistantId/settings',

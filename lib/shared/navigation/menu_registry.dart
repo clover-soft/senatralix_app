@@ -26,12 +26,12 @@ const Map<String, MenuDef> kMenuRegistry = {
     selectedIcon: Icons.dashboard,
     defaultLabel: 'Dashboard',
   ),
-  'reports': MenuDef(
-    key: 'reports',
-    route: '/reports',
-    icon: Icons.insert_chart_outlined,
-    selectedIcon: Icons.insert_chart,
-    defaultLabel: 'Reports',
+  'assistant': MenuDef(
+    key: 'assistant',
+    route: '/assistant',
+    icon: Icons.smart_toy_outlined,
+    selectedIcon: Icons.smart_toy,
+    defaultLabel: 'Assistant',
   ),
   'profile': MenuDef(
     key: 'profile',
@@ -39,12 +39,5 @@ const Map<String, MenuDef> kMenuRegistry = {
     icon: Icons.person_outline,
     selectedIcon: Icons.person,
     defaultLabel: 'Profile',
-  ),
-  'assistant': MenuDef(
-    key: 'assistant',
-    route: '/assistant',
-    icon: Icons.smart_toy_outlined,
-    selectedIcon: Icons.smart_toy,
-    defaultLabel: 'Assistant',
   ),
 };
