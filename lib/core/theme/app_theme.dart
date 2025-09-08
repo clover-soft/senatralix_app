@@ -10,6 +10,7 @@ class AppTheme {
     // M3: согласованная схема из seed-цвета
     final colorScheme = ColorScheme.fromSeed(
       seedColor: const Color.fromARGB(255, 11, 78, 122),
+      // seedColor: const Color.fromARGB(255, 32, 161, 20),
       brightness: isLight ? Brightness.light : Brightness.dark,
     );
 

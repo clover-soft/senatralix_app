@@ -21,35 +21,7 @@ class AssistantScreen extends ConsumerWidget {
             tooltip: 'Добавить ассистента',
             icon: const Icon(Icons.add),
             onPressed: () async {
-              // Простая заглушка: просим имя, по умолчанию Екатерина N
-              final name = await showDialog<String>(
-                context: context,
-                builder: (ctx) {
-                  final ctrl = TextEditingController(text: 'Екатерина');
-                  return AlertDialog(
-                    title: const Text('Новый ассистент'),
-                    content: TextField(
-                      controller: ctrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Имя',
-                      ),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text('Отмена'),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
-                        child: const Text('Создать'),
-                      ),
-                    ],
-                  );
-                },
-              );
-              if (name != null && name.isNotEmpty) {
-                notifier.add(name);
-              }
+              await _showCreateDialog(context, notifier);
             },
           )
         ],
@@ -61,7 +33,12 @@ class AssistantScreen extends ConsumerWidget {
           return ListTile(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: Text(a.name),
-            subtitle: Text(a.id, style: Theme.of(context).textTheme.labelSmall),
+            subtitle: Text(
+              (a.description?.isNotEmpty ?? false)
+                  ? a.description!
+                  : a.id,
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
             leading: Icon(Icons.smart_toy, color: scheme.secondary),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
@@ -70,32 +47,7 @@ class AssistantScreen extends ConsumerWidget {
                   tooltip: 'Переименовать',
                   icon: const Icon(Icons.edit),
                   onPressed: () async {
-                    final newName = await showDialog<String>(
-                      context: context,
-                      builder: (ctx) {
-                        final ctrl = TextEditingController(text: a.name);
-                        return AlertDialog(
-                          title: const Text('Переименовать ассистента'),
-                          content: TextField(
-                            controller: ctrl,
-                            decoration: const InputDecoration(labelText: 'Имя'),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(),
-                              child: const Text('Отмена'),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
-                              child: const Text('Сохранить'),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                    if (newName != null && newName.isNotEmpty) {
-                      notifier.rename(a.id, newName);
-                    }
+                    await _showEditDialog(context, notifier, a.id, a.name, a.description);
                   },
                 ),
                 IconButton(
@@ -131,6 +83,133 @@ class AssistantScreen extends ConsumerWidget {
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemCount: listState.items.length,
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async => _showCreateDialog(context, notifier),
+        tooltip: 'Добавить ассистента',
+        child: const Icon(Icons.add),
+      ),
     );
   }
+}
+
+Future<void> _showCreateDialog(BuildContext context, AssistantListNotifier notifier) async {
+  final nameCtrl = TextEditingController(text: 'Екатерина');
+  final descCtrl = TextEditingController(text: 'Персональный ассистент для тестов');
+  String? nameError;
+  String? descError;
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) {
+      return StatefulBuilder(builder: (ctx, setState) {
+        void validate() {
+          final n = nameCtrl.text.trim();
+          final d = descCtrl.text.trim();
+          nameError = (n.isEmpty || n.length < 2 || n.length > 40) ? 'Имя: 2–40 символов' : null;
+          descError = (d.isNotEmpty && d.length > 280) ? 'Описание: до 280 символов' : null;
+          setState(() {});
+        }
+
+        return AlertDialog(
+          title: const Text('Новый ассистент'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(labelText: 'Имя', errorText: nameError),
+                onChanged: (_) => validate(),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descCtrl,
+                maxLines: 3,
+                decoration: InputDecoration(labelText: 'Описание', helperText: 'До 280 символов', errorText: descError),
+                onChanged: (_) => validate(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Отмена'),
+            ),
+            FilledButton(
+              onPressed: () {
+                validate();
+                if (nameError == null && descError == null) {
+                  notifier.add(nameCtrl.text.trim(), description: descCtrl.text.trim());
+                  Navigator.of(ctx).pop();
+                }
+              },
+              child: const Text('Создать'),
+            ),
+          ],
+        );
+      });
+    },
+  );
+}
+
+Future<void> _showEditDialog(
+  BuildContext context,
+  AssistantListNotifier notifier,
+  String id,
+  String currentName,
+  String? currentDesc,
+) async {
+  final nameCtrl = TextEditingController(text: currentName);
+  final descCtrl = TextEditingController(text: currentDesc ?? '');
+  String? nameError;
+  String? descError;
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) {
+      return StatefulBuilder(builder: (ctx, setState) {
+        void validate() {
+          final n = nameCtrl.text.trim();
+          final d = descCtrl.text.trim();
+          nameError = (n.isEmpty || n.length < 2 || n.length > 40) ? 'Имя: 2–40 символов' : null;
+          descError = (d.isNotEmpty && d.length > 280) ? 'Описание: до 280 символов' : null;
+          setState(() {});
+        }
+
+        return AlertDialog(
+          title: const Text('Редактировать ассистента'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(labelText: 'Имя', errorText: nameError),
+                onChanged: (_) => validate(),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descCtrl,
+                maxLines: 3,
+                decoration: InputDecoration(labelText: 'Описание', helperText: 'До 280 символов', errorText: descError),
+                onChanged: (_) => validate(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Отмена'),
+            ),
+            FilledButton(
+              onPressed: () {
+                validate();
+                if (nameError == null && descError == null) {
+                  notifier.rename(id, nameCtrl.text.trim(), description: descCtrl.text.trim());
+                  Navigator.of(ctx).pop();
+                }
+              },
+              child: const Text('Сохранить'),
+            ),
+          ],
+        );
+      });
+    },
+  );
 }

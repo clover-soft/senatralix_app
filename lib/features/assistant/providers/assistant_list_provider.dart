@@ -9,26 +9,53 @@ class AssistantListState {
 
   AssistantListState copyWith({List<Assistant>? items}) =>
       AssistantListState(items: items ?? this.items);
+
+  /// Найти ассистента по id
+  Assistant? byId(String id) => items.firstWhere(
+        (e) => e.id == id,
+        orElse: () => const Assistant(id: '', name: ''),
+      ).id.isEmpty
+      ? null
+      : items.firstWhere((e) => e.id == id);
 }
 
 /// Нотифаер со CRUD-заглушками
 class AssistantListNotifier extends StateNotifier<AssistantListState> {
   AssistantListNotifier()
-    : super(
-        const AssistantListState(
-          items: [
-            Assistant(id: 'stub-1', name: 'Екатерина'),
-            Assistant(id: 'stub-2', name: 'Анна'),
-          ],
-        ),
-      );
+      : super(const AssistantListState(items: [
+          Assistant(
+            id: 'stub-1',
+            name: 'Екатерина',
+            description: 'Персональный ассистент для тестов',
+          ),
+          Assistant(
+            id: 'stub-2',
+            name: 'Алексей',
+            description: 'Ассистент техподдержки: быстрые ответы клиентам',
+          ),
+          Assistant(
+            id: 'stub-3',
+            name: 'Мария',
+            description: 'HR-ассистент: рекрутинг и коммуникация с кандидатами',
+          ),
+          Assistant(
+            id: 'stub-4',
+            name: 'Олег',
+            description: 'Аналитик: сводки и инсайты по данным',
+          ),
+          Assistant(
+            id: 'stub-5',
+            name: 'София',
+            description: 'Маркетинг: работа с контентом и промо-активностями',
+          ),
+        ]));
 
-  void add(String name) {
+  void add(String name, {String? description}) {
     final id = 'id-${DateTime.now().microsecondsSinceEpoch}';
     state = state.copyWith(
       items: [
         ...state.items,
-        Assistant(id: id, name: name),
+        Assistant(id: id, name: name, description: _normalizeDescription(description)),
       ],
     );
   }
@@ -39,12 +66,19 @@ class AssistantListNotifier extends StateNotifier<AssistantListState> {
     );
   }
 
-  void rename(String id, String name) {
+  void rename(String id, String name, {String? description}) {
     state = state.copyWith(
       items: state.items
-          .map((e) => e.id == id ? e.copyWith(name: name) : e)
+          .map((e) => e.id == id
+              ? e.copyWith(name: name, description: _normalizeDescription(description))
+              : e)
           .toList(),
     );
+  }
+
+  String? _normalizeDescription(String? value) {
+    final t = value?.trim() ?? '';
+    return t.isEmpty ? null : (t.length > 280 ? t.substring(0, 280) : t);
   }
 }
 
