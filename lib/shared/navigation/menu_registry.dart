@@ -40,4 +40,11 @@ const Map<String, MenuDef> kMenuRegistry = {
     selectedIcon: Icons.person,
     defaultLabel: 'Profile',
   ),
+  'assistant': MenuDef(
+    key: 'assistant',
+    route: '/assistant',
+    icon: Icons.smart_toy_outlined,
+    selectedIcon: Icons.smart_toy,
+    defaultLabel: 'Assistant',
+  ),
 };

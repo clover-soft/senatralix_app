@@ -8,6 +8,7 @@ import 'package:sentralix_app/data/providers/auth_data_provider.dart';
 import 'package:sentralix_app/features/dashboard/screens/dashboard_screen.dart';
 import 'package:sentralix_app/shared/widgets/app_shell/app_shell.dart';
 import 'package:sentralix_app/features/profile/screens/profile_screen.dart';
+import 'package:sentralix_app/features/assistant/assistant_routes.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -81,6 +82,8 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
             return const MaterialPage(child: ProfileScreen());
           },
         ),
+        // Assistant feature routes
+        ...assistantRoutes(),
       ],
     ),
     GoRoute(
