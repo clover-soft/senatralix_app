@@ -48,3 +48,15 @@
   - `leading` смещён вверх на 8px для компенсации внутреннего отступа `NavigationRail`.
 
 Примечание: смена `seedColor` теперь перекрашивает AppBar, NavigationRail и кнопки, кроме мест, где намеренно оставлены явные override‑ы в теме.
+
+## Последние изменения (Шаг 2 — Assistant)
+
+- Создан каркас надфичи `assistant`:
+  - `lib/features/assistant/assistant_routes.dart` — внутренний роутер `/assistant/*`.
+  - `lib/features/assistant/assistant_feature.dart` — barrel.
+  - `lib/features/assistant/di.dart` — провайдеры надфичи (заглушки) с доступом к `apiClientProvider`.
+  - Экран надфичи: `lib/features/assistant/screens/assistant_screen.dart` (список переходов на подфичи).
+- Подфичи (заглушечные экраны): `settings`, `tools`, `knowledge`, `connectors`, `scripts`, `chat`, `sessions`.
+- Интеграция в приложение:
+  - Роутер: `lib/core/router/app_router.dart` добавлены `...assistantRoutes()` внутри `ShellRoute`.
+  - Меню: `lib/shared/navigation/menu_registry.dart` добавлен пункт `assistant`.
