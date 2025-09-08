@@ -1,3 +1,22 @@
+## Последние изменения (Шаг 6 — Assistant Settings)
+
+- Реализована форма настроек ассистента с локальным состоянием и валидацией.
+- Ключевые файлы:
+  - `lib/features/assistant/models/assistant_settings.dart` — модель настроек.
+  - `lib/features/assistant/providers/assistant_settings_provider.dart` — провайдер состояний (моки).
+  - `lib/features/assistant/features/settings/screens/settings_screen.dart` — экран с формой, dirty/save, snackbar.
+
+## Последние изменения (Шаг 7 — Assistant Tools)
+
+- Реализован CRUD Function‑tools (вкл/выкл, пресеты, редактор JSON Schema параметров).
+- Ключевые файлы:
+  - `lib/features/assistant/models/assistant_tool.dart` — модели Function Tool и JSON Schema.
+  - `lib/features/assistant/providers/assistant_tools_provider.dart` — провайдер инструментов.
+  - `lib/features/assistant/features/tools/screens/tools_screen.dart` — список, FAB, диалог редактора.
+- Исправления:
+  - Обработка hash‑URL на Web и корректный redirect без дерганья (см. `lib/core/router/app_router.dart`, `lib/main.dart`).
+  - Вынесен общий `AssistantAppBar` и подключен на всех подфичах.
+
 # Решения и изменения
 ## Последние изменения (Шаг 4 — Assistant)
 
