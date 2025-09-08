@@ -5,6 +5,10 @@
   - Сохранять изменения в модель риверпода (провайдер состояния по assistantId).
 
 - Действия:
+  0) Структура кода (обязательно)
+  - Соблюдать модульную структуру подфичи: `features/assistant/features/connectors/{models,providers,widgets,screens}/`.
+  - Экран(ы) — только композиция; редакторы/диалоги/карточки — в `widgets/`; модели — в `models/`; провайдеры — в `providers/`.
+
   1) Модель и провайдеры
   - По `docs/connector.json` описать тип `Connector`:
     - id: string (UUID)

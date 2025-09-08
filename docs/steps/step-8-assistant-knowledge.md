@@ -5,6 +5,10 @@
   - Сохранять изменения в модель риверпода (провайдер состояния по assistantId).
 
 - Действия:
+  0) Структура кода (обязательно)
+  - Соблюдать модульную структуру подфичи: `features/assistant/features/knowledge/{models,providers,widgets,screens}/`.
+  - Экран(ы) — только композиция, логика форм/диалогов — в `widgets/`, модели — в `models/`, провайдеры — в `providers/`.
+
   1) Модель и провайдеры
   - По `docs/knowledge_base.json` описать тип `KnowledgeBaseItem`:
     - id: number
