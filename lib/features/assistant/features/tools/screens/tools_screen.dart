@@ -11,7 +11,8 @@ class AssistantToolsScreen extends ConsumerStatefulWidget {
   const AssistantToolsScreen({super.key});
 
   @override
-  ConsumerState<AssistantToolsScreen> createState() => _AssistantToolsScreenState();
+  ConsumerState<AssistantToolsScreen> createState() =>
+      _AssistantToolsScreenState();
 }
 
 class _AssistantToolsScreenState extends ConsumerState<AssistantToolsScreen> {
@@ -20,7 +21,8 @@ class _AssistantToolsScreenState extends ConsumerState<AssistantToolsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _assistantId = GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
+    _assistantId =
+        GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
   }
 
   void _addPreset(String preset) {
@@ -51,8 +53,14 @@ class _AssistantToolsScreenState extends ConsumerState<AssistantToolsScreen> {
         title: const Text('Удалить инструмент?'),
         content: const Text('Действие необратимо'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Удалить')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Удалить'),
+          ),
         ],
       ),
     );
@@ -63,9 +71,16 @@ class _AssistantToolsScreenState extends ConsumerState<AssistantToolsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final tools = ref.watch(assistantToolsProvider.select((s) => s.byAssistantId[_assistantId] ?? const []));
+    final tools = ref.watch(
+      assistantToolsProvider.select(
+        (s) => s.byAssistantId[_assistantId] ?? const [],
+      ),
+    );
     return Scaffold(
-      appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Tools'),
+      appBar: AssistantAppBar(
+        assistantId: _assistantId,
+        subfeatureTitle: 'Инструменты',
+      ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Добавить инструмент',
         child: const Icon(Icons.add),
@@ -108,10 +123,16 @@ class _AssistantToolsScreenState extends ConsumerState<AssistantToolsScreen> {
             child: ListTile(
               leading: Switch(
                 value: t.enabled,
-                onChanged: (v) => ref.read(assistantToolsProvider.notifier).toggleEnabled(_assistantId, t.id, v),
+                onChanged: (v) => ref
+                    .read(assistantToolsProvider.notifier)
+                    .toggleEnabled(_assistantId, t.id, v),
               ),
               title: Text(t.def.name),
-              subtitle: Text(t.def.description, maxLines: 2, overflow: TextOverflow.ellipsis),
+              subtitle: Text(
+                t.def.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
               trailing: Wrap(
                 spacing: 8,
                 children: [

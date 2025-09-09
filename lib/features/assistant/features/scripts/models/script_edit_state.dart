@@ -13,14 +13,14 @@ class ScriptEditState {
   final String name;
   final bool enabled;
   final ScriptTrigger trigger;
-  final List<MapEntry<String, String>> params;
+  final List<String> params; // только ключи параметров
   final List<ScriptStep> steps;
 
   ScriptEditState copy({
     String? name,
     bool? enabled,
     ScriptTrigger? trigger,
-    List<MapEntry<String, String>>? params,
+    List<String>? params,
     List<ScriptStep>? steps,
   }) => ScriptEditState(
         name: name ?? this.name,

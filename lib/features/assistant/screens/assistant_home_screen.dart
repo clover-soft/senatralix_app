@@ -10,16 +10,52 @@ class AssistantHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
-    final id = GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
+    final id =
+        GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
 
     final items = <_SubItem>[
-      _SubItem('Settings', 'Модель, температура, токены, промпт…', Icons.tune, '/assistant/$id/settings'),
-      _SubItem('Tools', 'Инструменты, которые ассистент может вызывать', Icons.extension, '/assistant/$id/tools'),
-      _SubItem('Knowledge', 'База знаний: загрузка и управление', Icons.storage, '/assistant/$id/knowledge'),
-      _SubItem('Connectors', 'VOIP, Telegram, Avito, WhatsApp…', Icons.link, '/assistant/$id/connectors'),
-      _SubItem('Scripts', 'События и действия: вход/выход, триггеры', Icons.schedule, '/assistant/$id/scripts'),
-      _SubItem('Chat', 'Тестовый диалог с ассистентом', Icons.smart_toy, '/assistant/$id/chat'),
-      _SubItem('Sessions', 'Сессии/треды, история', Icons.history, '/assistant/$id/sessions'),
+      _SubItem(
+        'Настройки',
+        'Модель, температура, токены, промпт…',
+        Icons.tune,
+        '/assistant/$id/settings',
+      ),
+      _SubItem(
+        'Навыки',
+        'Инструменты, которые ассистент может вызывать',
+        Icons.extension,
+        '/assistant/$id/tools',
+      ),
+      _SubItem(
+        'Базы знаний',
+        'База знаний: загрузка и управление',
+        Icons.storage,
+        '/assistant/$id/knowledge',
+      ),
+      _SubItem(
+        'Коннекторы',
+        'VOIP, Telegram, Avito, WhatsApp…',
+        Icons.link,
+        '/assistant/$id/connectors',
+      ),
+      _SubItem(
+        'Скрипты',
+        'События и действия: вход/выход, триггеры',
+        Icons.schedule,
+        '/assistant/$id/scripts',
+      ),
+      _SubItem(
+        'Чат',
+        'Тестовый диалог с ассистентом',
+        Icons.smart_toy,
+        '/assistant/$id/chat',
+      ),
+      _SubItem(
+        'История чатов',
+        'Посмотреть историю чатов',
+        Icons.history,
+        '/assistant/$id/sessions',
+      ),
     ];
 
     return Scaffold(
@@ -29,26 +65,28 @@ class AssistantHomeScreen extends ConsumerWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final w = constraints.maxWidth;
-            final crossAxisCount = w <= 480
-                ? 1
-                : (w <= 900
-                    ? 2
-                    : 3);
+            final crossAxisCount = w <= 480 ? 1 : (w <= 900 ? 2 : 3);
             final textScale = MediaQuery.textScaleFactorOf(context);
             // Больше высоты для узких экранов и увеличенного масштаба текста
             double childAspectRatio = 1.9; // ширина/высота
-            if (crossAxisCount == 2) childAspectRatio = 1.6; // выше, чтобы поместились 2 строки
-            if (crossAxisCount == 1) childAspectRatio = 1.2; // ещё выше в 1 колонку
+            if (crossAxisCount == 2)
+              childAspectRatio = 1.6; // выше, чтобы поместились 2 строки
+            if (crossAxisCount == 1)
+              childAspectRatio = 1.2; // ещё выше в 1 колонку
             if (textScale > 1.0) {
-              childAspectRatio -= 0.3; // делаем карточку выше при крупном шрифте
+              childAspectRatio -=
+                  0.3; // делаем карточку выше при крупном шрифте
               if (childAspectRatio < 1.05) childAspectRatio = 1.05;
             }
             // Пользователь просит уменьшить максимальную высоту карточки ~ в 1.5 раза =>
             // увеличиваем aspectRatio на 1.5x (чем больше ratio, тем ниже карточка),
             // но оставляем разумные ограничения.
             childAspectRatio *= 1.5;
-            if (childAspectRatio > 3.2) childAspectRatio = 3.2; // верхняя граница (слишком плоские карточки не нужны)
-            if (childAspectRatio < 1.1) childAspectRatio = 1.1; // нижняя граница (не слишком высокие)
+            if (childAspectRatio > 3.2)
+              childAspectRatio =
+                  3.2; // верхняя граница (слишком плоские карточки не нужны)
+            if (childAspectRatio < 1.1)
+              childAspectRatio = 1.1; // нижняя граница (не слишком высокие)
             return GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
@@ -83,17 +121,21 @@ class AssistantHomeScreen extends ConsumerWidget {
                               children: [
                                 Text(
                                   it.title,
-                                  style: Theme.of(context).textTheme.titleMedium,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   it.subtitle,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),

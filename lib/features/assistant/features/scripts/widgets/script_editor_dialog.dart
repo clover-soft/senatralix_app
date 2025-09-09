@@ -28,7 +28,7 @@ class ScriptEditorDialog extends ConsumerWidget {
       return;
     }
     for (final p in state.params) {
-      if (p.key.trim().isEmpty || p.key.trim().length > 40) {
+      if (p.trim().isEmpty || p.trim().length > 40) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ключ параметра должен быть 1–40 символов')),
         );
@@ -140,17 +140,9 @@ class ScriptEditorDialog extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: TextFormField(
-                          initialValue: p.key,
+                          initialValue: p,
                           decoration: const InputDecoration(labelText: 'key'),
                           onChanged: (v) => ctrl.setParamKey(index, v),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextFormField(
-                          initialValue: p.value,
-                          decoration: const InputDecoration(labelText: 'value'),
-                          onChanged: (v) => ctrl.setParamValue(index, v),
                         ),
                       ),
                       IconButton(

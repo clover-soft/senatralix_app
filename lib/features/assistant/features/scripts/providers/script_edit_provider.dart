@@ -9,23 +9,17 @@ class ScriptEditController extends StateNotifier<ScriptEditState> {
           name: initial.name,
           enabled: initial.enabled,
           trigger: initial.trigger,
-          params: initial.params.entries.map((e) => MapEntry(e.key, e.value)).toList(),
+          params: initial.params.keys.toList(),
           steps: List<ScriptStep>.from(initial.steps),
         ));
 
   void setName(String v) => state = state.copy(name: v);
   void setEnabled(bool v) => state = state.copy(enabled: v);
   void setTrigger(ScriptTrigger v) => state = state.copy(trigger: v);
-  void addParam() => state = state.copy(params: [...state.params, const MapEntry('', '')]);
+  void addParam() => state = state.copy(params: [...state.params, '']);
   void setParamKey(int i, String key) {
     final p = [...state.params];
-    p[i] = MapEntry(key, p[i].value);
-    state = state.copy(params: p);
-  }
-
-  void setParamValue(int i, String value) {
-    final p = [...state.params];
-    p[i] = MapEntry(p[i].key, value);
+    p[i] = key;
     state = state.copy(params: p);
   }
 
@@ -46,11 +40,23 @@ class ScriptEditController extends StateNotifier<ScriptEditState> {
     state = state.copy(steps: s);
   }
 
+  void moveStep(int oldIndex, int newIndex) {
+    final s = [...state.steps];
+    if (oldIndex < 0 || oldIndex >= s.length) return;
+    if (newIndex < 0 || newIndex > s.length) return;
+    // Flutter ReorderableListView uses semantics where newIndex already accounts
+    // for removal; adjust when dragging down
+    if (newIndex > oldIndex) newIndex -= 1;
+    final item = s.removeAt(oldIndex);
+    s.insert(newIndex, item);
+    state = state.copy(steps: s);
+  }
+
   Script buildResult(Script initial) => initial.copyWith(
         name: state.name.trim(),
         enabled: state.enabled,
         trigger: state.trigger,
-        params: {for (final e in state.params) e.key.trim(): e.value},
+        params: {for (final k in state.params) k.trim(): ''},
         steps: state.steps,
       );
 }

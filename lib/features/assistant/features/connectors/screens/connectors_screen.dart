@@ -11,20 +11,24 @@ class AssistantConnectorsScreen extends ConsumerStatefulWidget {
   const AssistantConnectorsScreen({super.key});
 
   @override
-  ConsumerState<AssistantConnectorsScreen> createState() => _AssistantConnectorsScreenState();
+  ConsumerState<AssistantConnectorsScreen> createState() =>
+      _AssistantConnectorsScreenState();
 }
 
-class _AssistantConnectorsScreenState extends ConsumerState<AssistantConnectorsScreen> {
+class _AssistantConnectorsScreenState
+    extends ConsumerState<AssistantConnectorsScreen> {
   late String _assistantId;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _assistantId = GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
+    _assistantId =
+        GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
   }
 
   void _addByPreset(String presetKey) async {
-    final json = getConnectorPreset(presetKey) ?? getConnectorPreset('telephony')!;
+    final json =
+        getConnectorPreset(presetKey) ?? getConnectorPreset('telephony')!;
     final draft = Connector.fromJson({
       ...json,
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
@@ -56,8 +60,14 @@ class _AssistantConnectorsScreenState extends ConsumerState<AssistantConnectorsS
         title: const Text('Удалить коннектор?'),
         content: const Text('Действие необратимо'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Удалить')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Удалить'),
+          ),
         ],
       ),
     );
@@ -68,9 +78,16 @@ class _AssistantConnectorsScreenState extends ConsumerState<AssistantConnectorsS
 
   @override
   Widget build(BuildContext context) {
-    final items = ref.watch(connectorsProvider.select((s) => s.byAssistantId[_assistantId] ?? const []));
+    final items = ref.watch(
+      connectorsProvider.select(
+        (s) => s.byAssistantId[_assistantId] ?? const [],
+      ),
+    );
     return Scaffold(
-      appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Connectors'),
+      appBar: AssistantAppBar(
+        assistantId: _assistantId,
+        subfeatureTitle: 'Коннекторы',
+      ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Добавить коннектор',
         onPressed: () async {
@@ -83,7 +100,7 @@ class _AssistantConnectorsScreenState extends ConsumerState<AssistantConnectorsS
                   ListTile(
                     leading: const Icon(Icons.call_outlined),
                     title: const Text('Telephony'),
-                    subtitle: const Text('Телефония (единственный доступный тип на этом шаге)'),
+                    subtitle: const Text('Подключение к телефонии'),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                     onTap: () => Navigator.pop(ctx, 'telephony'),
                   ),
@@ -105,7 +122,9 @@ class _AssistantConnectorsScreenState extends ConsumerState<AssistantConnectorsS
             child: ListTile(
               leading: Switch(
                 value: it.isActive,
-                onChanged: (v) => ref.read(connectorsProvider.notifier).toggleActive(_assistantId, it.id, v),
+                onChanged: (v) => ref
+                    .read(connectorsProvider.notifier)
+                    .toggleActive(_assistantId, it.id, v),
               ),
               title: Text(it.name.isEmpty ? 'Без имени' : it.name),
               subtitle: Text(it.type),

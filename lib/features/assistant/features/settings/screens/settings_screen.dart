@@ -8,9 +8,10 @@ class AssistantSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final id = GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
+    final id =
+        GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
     return Scaffold(
-      appBar: AssistantAppBar(assistantId: id, subfeatureTitle: 'Settings'),
+      appBar: AssistantAppBar(assistantId: id, subfeatureTitle: 'Настройки'),
       body: AssistantSettingsForm(assistantId: id),
     );
   }

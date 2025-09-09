@@ -7,12 +7,14 @@ class AssistantSessionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final id = GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
+    final id =
+        GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
     return Scaffold(
-      appBar: AssistantAppBar(assistantId: id, subfeatureTitle: 'Sessions'),
-      body: const Center(
-        child: Text('Sessions (threads, stub)'),
+      appBar: AssistantAppBar(
+        assistantId: id,
+        subfeatureTitle: 'История чатов',
       ),
+      body: const Center(child: Text('История чатов в разработке')),
     );
   }
 }

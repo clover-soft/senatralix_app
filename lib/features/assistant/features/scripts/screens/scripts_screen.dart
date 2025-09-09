@@ -4,23 +4,26 @@ import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/data/script_presets.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/models/script.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/providers/scripts_provider.dart';
-import 'package:sentralix_app/features/assistant/features/scripts/widgets/script_editor_dialog.dart';
+// Встроенный редактор не используется на этом экране — редактирование на отдельном экране
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 
 class AssistantScriptsScreen extends ConsumerStatefulWidget {
   const AssistantScriptsScreen({super.key});
 
   @override
-  ConsumerState<AssistantScriptsScreen> createState() => _AssistantScriptsScreenState();
+  ConsumerState<AssistantScriptsScreen> createState() =>
+      _AssistantScriptsScreenState();
 }
 
-class _AssistantScriptsScreenState extends ConsumerState<AssistantScriptsScreen> {
+class _AssistantScriptsScreenState
+    extends ConsumerState<AssistantScriptsScreen> {
   late String _assistantId;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _assistantId = GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
+    _assistantId =
+        GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
   }
 
   void _addByPreset(String key) async {
@@ -29,19 +32,12 @@ class _AssistantScriptsScreenState extends ConsumerState<AssistantScriptsScreen>
       ...json,
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
     });
-    final res = await showDialog<Script>(
-      context: context,
-      builder: (_) => ScriptEditorDialog(initial: script),
-    );
-    if (res != null) ref.read(scriptsProvider.notifier).add(_assistantId, res);
+    ref.read(scriptsProvider.notifier).add(_assistantId, script);
+    if (mounted) context.go('/assistant/$_assistantId/scripts/${script.id}');
   }
 
-  void _edit(Script script) async {
-    final res = await showDialog<Script>(
-      context: context,
-      builder: (_) => ScriptEditorDialog(initial: script),
-    );
-    if (res != null) ref.read(scriptsProvider.notifier).update(_assistantId, res);
+  void _edit(Script script) {
+    context.go('/assistant/$_assistantId/scripts/${script.id}');
   }
 
   void _remove(String id) async {
@@ -51,8 +47,14 @@ class _AssistantScriptsScreenState extends ConsumerState<AssistantScriptsScreen>
         title: const Text('Удалить скрипт?'),
         content: const Text('Действие необратимо'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Удалить')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Удалить'),
+          ),
         ],
       ),
     );
@@ -64,9 +66,14 @@ class _AssistantScriptsScreenState extends ConsumerState<AssistantScriptsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final items = ref.watch(scriptsProvider.select((s) => s.byAssistantId[_assistantId] ?? const []));
+    final items = ref.watch(
+      scriptsProvider.select((s) => s.byAssistantId[_assistantId] ?? const []),
+    );
     return Scaffold(
-      appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Scripts'),
+      appBar: AssistantAppBar(
+        assistantId: _assistantId,
+        subfeatureTitle: 'Скрипты',
+      ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Добавить скрипт',
         onPressed: () async {
@@ -113,27 +120,21 @@ class _AssistantScriptsScreenState extends ConsumerState<AssistantScriptsScreen>
           final it = items[index];
           return Card(
             child: ListTile(
+              onTap: () => _edit(it),
               leading: Switch(
                 value: it.enabled,
-                onChanged: (v) =>
-                    ref.read(scriptsProvider.notifier).toggleEnabled(_assistantId, it.id, v),
+                onChanged: (v) => ref
+                    .read(scriptsProvider.notifier)
+                    .toggleEnabled(_assistantId, it.id, v),
               ),
               title: Text(it.name.isEmpty ? 'Без имени' : it.name),
-              subtitle: Text('${_triggerLabel(it.trigger)} • шагов: ${it.steps.length}'),
-              trailing: Wrap(
-                spacing: 8,
-                children: [
-                  IconButton(
-                    tooltip: 'Редактировать',
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: () => _edit(it),
-                  ),
-                  IconButton(
-                    tooltip: 'Удалить',
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () => _remove(it.id),
-                  ),
-                ],
+              subtitle: Text(
+                '${_triggerLabel(it.trigger)} • шагов: ${it.steps.length}',
+              ),
+              trailing: IconButton(
+                tooltip: 'Удалить',
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () => _remove(it.id),
               ),
             ),
           );

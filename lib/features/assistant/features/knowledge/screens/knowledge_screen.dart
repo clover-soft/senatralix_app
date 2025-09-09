@@ -10,16 +10,19 @@ class AssistantKnowledgeScreen extends ConsumerStatefulWidget {
   const AssistantKnowledgeScreen({super.key});
 
   @override
-  ConsumerState<AssistantKnowledgeScreen> createState() => _AssistantKnowledgeScreenState();
+  ConsumerState<AssistantKnowledgeScreen> createState() =>
+      _AssistantKnowledgeScreenState();
 }
 
-class _AssistantKnowledgeScreenState extends ConsumerState<AssistantKnowledgeScreen> {
+class _AssistantKnowledgeScreenState
+    extends ConsumerState<AssistantKnowledgeScreen> {
   late String _assistantId;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _assistantId = GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
+    _assistantId =
+        GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
   }
 
   void _addItem() async {
@@ -63,8 +66,14 @@ class _AssistantKnowledgeScreenState extends ConsumerState<AssistantKnowledgeScr
         title: const Text('Удалить источник?'),
         content: const Text('Действие необратимо'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Удалить')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Удалить'),
+          ),
         ],
       ),
     );
@@ -87,9 +96,16 @@ class _AssistantKnowledgeScreenState extends ConsumerState<AssistantKnowledgeScr
 
   @override
   Widget build(BuildContext context) {
-    final items = ref.watch(knowledgeProvider.select((s) => s.byAssistantId[_assistantId] ?? const []));
+    final items = ref.watch(
+      knowledgeProvider.select(
+        (s) => s.byAssistantId[_assistantId] ?? const [],
+      ),
+    );
     return Scaffold(
-      appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Knowledge'),
+      appBar: AssistantAppBar(
+        assistantId: _assistantId,
+        subfeatureTitle: 'Источники знаний',
+      ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Добавить источник',
         onPressed: _addItem,
@@ -105,7 +121,9 @@ class _AssistantKnowledgeScreenState extends ConsumerState<AssistantKnowledgeScr
             child: ListTile(
               leading: Switch(
                 value: it.active,
-                onChanged: (v) => ref.read(knowledgeProvider.notifier).toggleActive(_assistantId, it.id, v),
+                onChanged: (v) => ref
+                    .read(knowledgeProvider.notifier)
+                    .toggleActive(_assistantId, it.id, v),
               ),
               title: Text(_titleFromMarkdown(it.markdown)),
               subtitle: Text('${it.externalId} • ${it.createdAt.toLocal()}'),
