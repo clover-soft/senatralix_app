@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 
 // lib/utils/theme.dart
-enum AppThemeMode { light, dark }
+enum AppThemeMode { system, light, dark }
 
 class AppTheme {
-  ThemeData themeData(AppThemeMode mode) {
+  ThemeData themeData(AppThemeMode mode, {Color? seedColor}) {
     final isLight = mode == AppThemeMode.light;
 
     // M3: согласованная схема из seed-цвета
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: const Color.fromARGB(255, 11, 78, 122),
-      // seedColor: const Color.fromARGB(255, 32, 161, 20),
+      seedColor: seedColor ?? const Color.fromARGB(255, 5, 53, 108),
       brightness: isLight ? Brightness.light : Brightness.dark,
     );
 

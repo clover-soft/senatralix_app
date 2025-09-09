@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/data/providers/profile_data_provider.dart';
 import 'package:sentralix_app/data/providers/auth_data_provider.dart';
+import 'package:sentralix_app/features/profile/widgets/theme_section.dart';
 
 // comment: Profile feature screen with form
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -136,6 +137,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ],
                   ),
                 ),
+
+                const SizedBox(height: 28),
+
+                // Переключатель темы приложения
+                const ThemeSection(),
 
                 const SizedBox(height: 28),
 
