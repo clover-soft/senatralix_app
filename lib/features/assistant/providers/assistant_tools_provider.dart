@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/features/assistant/models/assistant_tool.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_feature_settings_provider.dart';
 
 @immutable
 class AssistantToolsState {
@@ -12,7 +13,8 @@ class AssistantToolsState {
 }
 
 class AssistantToolsNotifier extends StateNotifier<AssistantToolsState> {
-  AssistantToolsNotifier() : super(const AssistantToolsState(byAssistantId: {})) {
+  final Ref _ref;
+  AssistantToolsNotifier(this._ref) : super(const AssistantToolsState(byAssistantId: {})) {
     // Моки по умолчанию можно инициализировать по требованию (лениво)
   }
 
@@ -28,6 +30,13 @@ class AssistantToolsNotifier extends StateNotifier<AssistantToolsState> {
 
   void add(String assistantId, AssistantFunctionTool tool) {
     final tools = list(assistantId);
+    final max = _ref.read(assistantFeatureSettingsProvider).settings.tools.maxToolsItems;
+    if (max > 0 && tools.length >= max) {
+      if (kDebugMode) {
+        print('Tools limit reached ($max) for assistant=$assistantId');
+      }
+      return;
+    }
     tools.add(tool);
     _put(assistantId, tools);
   }
@@ -66,5 +75,5 @@ class AssistantToolsNotifier extends StateNotifier<AssistantToolsState> {
 
 final assistantToolsProvider =
     StateNotifierProvider<AssistantToolsNotifier, AssistantToolsState>(
-  (ref) => AssistantToolsNotifier(),
+  (ref) => AssistantToolsNotifier(ref),
 );

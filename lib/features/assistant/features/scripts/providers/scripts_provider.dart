@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/models/script.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_feature_settings_provider.dart';
 
 @immutable
 class ScriptsState {
@@ -12,7 +13,8 @@ class ScriptsState {
 }
 
 class ScriptsNotifier extends StateNotifier<ScriptsState> {
-  ScriptsNotifier() : super(const ScriptsState(byAssistantId: {}));
+  final Ref _ref;
+  ScriptsNotifier(this._ref) : super(const ScriptsState(byAssistantId: {}));
 
   List<Script> list(String assistantId) =>
       List<Script>.from(state.byAssistantId[assistantId] ?? const []);
@@ -25,6 +27,13 @@ class ScriptsNotifier extends StateNotifier<ScriptsState> {
 
   void add(String assistantId, Script script) {
     final items = list(assistantId);
+    final max = _ref.read(assistantFeatureSettingsProvider).settings.scripts.maxScriptItems;
+    if (max > 0 && items.length >= max) {
+      if (kDebugMode) {
+        print('Scripts limit reached ($max) for assistant=$assistantId');
+      }
+      return;
+    }
     items.add(script);
     _put(assistantId, items);
   }
@@ -86,4 +95,4 @@ class ScriptsNotifier extends StateNotifier<ScriptsState> {
   }
 }
 
-final scriptsProvider = StateNotifierProvider<ScriptsNotifier, ScriptsState>((ref) => ScriptsNotifier());
+final scriptsProvider = StateNotifierProvider<ScriptsNotifier, ScriptsState>((ref) => ScriptsNotifier(ref));

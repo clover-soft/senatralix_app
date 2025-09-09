@@ -1,6 +1,8 @@
 // Провайдер списка ассистентов (заглушка, хранение в памяти)
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/features/assistant/models/assistant.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_feature_settings_provider.dart';
 
 /// Состояние: список ассистентов
 class AssistantListState {
@@ -21,7 +23,8 @@ class AssistantListState {
 
 /// Нотифаер со CRUD-заглушками
 class AssistantListNotifier extends StateNotifier<AssistantListState> {
-  AssistantListNotifier()
+  final Ref _ref;
+  AssistantListNotifier(this._ref)
       : super(const AssistantListState(items: [
           Assistant(
             id: 'stub-1',
@@ -51,6 +54,13 @@ class AssistantListNotifier extends StateNotifier<AssistantListState> {
         ]));
 
   void add(String name, {String? description}) {
+    final max = _ref.read(assistantFeatureSettingsProvider).settings.maxAssistantItems;
+    if (max > 0 && state.items.length >= max) {
+      if (kDebugMode) {
+        print('Assistant limit reached ($max)');
+      }
+      return;
+    }
     final id = 'id-${DateTime.now().microsecondsSinceEpoch}';
     state = state.copyWith(
       items: [
@@ -85,5 +95,5 @@ class AssistantListNotifier extends StateNotifier<AssistantListState> {
 /// Глобальный провайдер списка ассистентов
 final assistantListProvider =
     StateNotifierProvider<AssistantListNotifier, AssistantListState>(
-      (ref) => AssistantListNotifier(),
+      (ref) => AssistantListNotifier(ref),
     );
