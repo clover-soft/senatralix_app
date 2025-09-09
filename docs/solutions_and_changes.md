@@ -17,6 +17,24 @@
   - Обработка hash‑URL на Web и корректный redirect без дерганья (см. `lib/core/router/app_router.dart`, `lib/main.dart`).
   - Вынесен общий `AssistantAppBar` и подключен на всех подфичах.
 
+## Последние изменения (Шаг 8 — Assistant Knowledge)
+
+- Реализован экран базы знаний: CRUD источников, валидация, локальный провайдер с хранением по `assistantId`.
+- Ключевые файлы:
+  - `lib/features/assistant/features/knowledge/models/knowledge.dart` — модель источника.
+  - `lib/features/assistant/features/knowledge/providers/knowledge_provider.dart` — провайдер списка источников.
+  - `lib/features/assistant/features/knowledge/screens/knowledge_screen.dart` — список, FAB, диалог редактора.
+- В UI: переключение активности, удаление с подтверждением, корректные подписи и локализация заголовков.
+
+## Последние изменения (Шаг 9 — Assistant Connectors)
+
+- Реализован экран коннекторов (тип `telephony`): CRUD/включение, добавление по пресету, структура настроек на будущее.
+- Ключевые файлы:
+  - `lib/features/assistant/features/connectors/models/connector.dart` — модель коннектора.
+  - `lib/features/assistant/features/connectors/providers/connectors_provider.dart` — провайдер коннекторов.
+  - `lib/features/assistant/features/connectors/screens/connectors_screen.dart` — список, FAB, удаление, переключатели.
+- AppBar и тексты локализованы под русский интерфейс.
+
 # Решения и изменения
 ## Последние изменения (Шаг 4 — Assistant)
 

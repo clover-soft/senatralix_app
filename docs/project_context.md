@@ -22,11 +22,11 @@
 - Шаг 2: создан каркас фичи `assistant` с внутренним роутером (`assistant_routes.dart`), экраном (`assistant_screen.dart`), DI (`assistant/di.dart`) и подфичами-заглушками (`settings`, `tools`, `knowledge`, `connectors`, `scripts`, `chat`, `sessions`). Добавлен пункт меню `assistant`.
 - Шаг 3: реализован выбор ассистента на `/assistant`, локальное меню подфич (`assistant_home_screen.dart`), маршруты `/assistant/:assistantId/*`, стартовый ассистент «Екатерина», подфичи читают `assistantId` из маршрута.
 - Шаг 4: UX‑улучшения ассистента — модель `Assistant.description`, FAB/кнопка создания, диалоги с валидацией, AppBar по имени, подзаголовки карточек, адаптивная сетка (1/2/3), обработка overflow и уменьшение высоты карточек.
- - Шаг 6: Реализована подфича Settings с формой, валидацией и локальным провайдером (`assistant_settings_provider`).
- - Шаг 7: Реализована подфича Tools (Function‑tools): CRUD, пресеты, редактор параметров (JSON Schema); провайдер `assistant_tools_provider`.
+- Шаг 6: Реализована подфича Settings с формой, валидацией и локальным провайдером (`assistant_settings_provider`).
+- Шаг 7: Реализована подфича Tools (Function‑tools): CRUD, пресеты, редактор параметров (JSON Schema); провайдер `assistant_tools_provider`.
+- Шаг 8: Реализована подфича Knowledge (источники знаний): CRUD, валидация, переключение активности; провайдер `knowledge_provider`.
+- Шаг 9: Реализована подфича Connectors (тип telephony): CRUD, пресеты, переключение активности; провайдер `connectors_provider`.
 
 ## Текущий шаг разработки
-- Шаг 6–7: выполнены.
-- Следующий: Шаг 8 — Knowledge (CRUD источников, активация, валидация; локальный провайдер).
-
-
+- Шаги 6–9: выполнены.
+- Текущий: Шаг 10 — Scripts (список и экран деталей, редактирование шагов, drag&drop, пресеты).
