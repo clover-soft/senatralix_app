@@ -1,41 +1,72 @@
 ### Шаг 10: Assistant — Scripts (моки, формы, валидация, локальное состояние)
 
 - Цель:
-  - Реализовать экран скриптов (правила событий и действий) с локальными мок‑данными и валидацией.
-  - Сохранять изменения в модель риверпода (провайдер состояния по assistantId).
+  - Реализовать CRUD скриптов ассистента с локальными мок‑данными и валидацией.
+  - Поддержать запуск скриптов по двум событиям: `on_dialog_start`, `on_dialog_end`.
+  - Поддержать параметры скрипта (редактирование через UI список ключ/значение).
+  - Скрипт представляет собой последовательность шагов: каждый шаг имеет JSONPath‑паттерн (условие) и действие (минимум HTTP GET/POST).
 
 - Действия:
   0) Структура кода (обязательно)
   - Соблюдать модульную структуру подфичи: `features/assistant/features/scripts/{models,providers,widgets,screens}/`.
-  - Экран(ы) — только композиция; редакторы/диалоги/конструктор правил — в `widgets/`; модели — в `models/`; провайдеры — в `providers/`.
+  - Экран(ы) — только композиция; редакторы/диалоги/конструктор шагов — в `widgets/`; модели — в `models/`; провайдеры — в `providers/`.
 
   1) Модель и провайдеры
-  - Тип `ScriptRule` (ограниченно, без сложной оркестрации):
+  - Тип `Script`:
     - id: string (UUID)
+    - name: string
     - enabled: boolean
-    - event: enum("on_enter_dialog", "on_leave_dialog", "on_trigger")
-    - trigger?: { name: string, params: map<string, any> } (для on_trigger)
-    - actions: Action[] (последовательность)
-  - Тип `Action` (упрощённый перечень):
-    - type: enum("say", "transfer_call", "hangup", "set_variable")
-    - params: map<string, any>
-      - say: { text: string }
-      - transfer_call: { employee_extension: string, farewell_phrase?: string }
-      - hangup: { farewell_phrase?: string }
-      - set_variable: { key: string, value: string }
-  - Провайдер: список правил по assistantId, CRUD: add/update/remove, toggle.
+    - trigger: enum("on_dialog_start", "on_dialog_end")
+    - params: map<string, string> — пользовательские параметры, редактируемые через UI
+    - steps: ScriptStep[]
+  - Тип `ScriptStep`:
+    - id: string (UUID)
+    - when.jsonpath: string — JSONPath выражение (минимум — проверка на существование пути)
+    - action: Action
+  - Тип `Action`:
+    - type: enum("http_get", "http_post")
+    - http:
+      - url: string
+      - headers?: map<string, string>
+      - query?: map<string, string> (для GET)
+      - body_template?: string (для POST; шаблон JSON/текста)
+  - Провайдер:
+    - хранит список `Script` по assistantId
+    - методы: list/add/update/remove, toggleEnabled(scriptId, enabled)
+    - методы для шагов: addStep(scriptId, step), updateStep(scriptId, step), removeStep(scriptId, stepId)
 
   2) Экран UI (Scripts)
-  - Список правил: теги события, краткое описание действий, переключатель enabled.
-  - Редактор правила:
-    - Поля: event (select), trigger (если event == on_trigger), конструктор списка actions (добавить/удалить/редактировать).
-    - Для действий использовать формы по типу, валидация обязательных полей.
-  - UX: редактор в диалоге/отдельной странице; предпросмотр человека‑читаемого описания правила.
+  - Список скриптов:
+    - Показывать `name`, `trigger`, количество `steps`, переключатель `enabled`, кнопки Редактировать/Удалить.
+  - Редактор скрипта (диалог или отдельный экран):
+    - Поля: `name`, `trigger` (select: on_dialog_start|on_dialog_end), `params` (редактируемый список key/value)
+    - Конструктор шагов:
+      - Редактор `ScriptStep`: поля JSONPath и Action
+      - Кнопки: Добавить шаг, Редактировать шаг, Удалить шаг
+      - Редактор Action по типу:
+        - http_get: url, headers (map), query (map)
+        - http_post: url, headers (map), body_template (multiline)
+    - Превью: краткое человеко‑читаемое описание (например: `on_dialog_start: 2 шага (GET /warmup, POST /summary)`).
 
   3) Валидация
-  - event: обязателен.
-  - on_trigger: name 2–40, params — плоский словарь строковых значений (минимум для шага).
-  - actions: ≥ 1; валидация параметров по типу действия.
+  - name: 2–60 символов
+  - trigger: обязателен (только on_dialog_start|on_dialog_end)
+  - params: ключ 1–40, значение — строка
+  - steps: ≥ 1
+  - when.jsonpath: обязателен (строка)
+  - action:
+    - http_get: url обязателен; headers/query — словари строк
+    - http_post: url обязателен; body_template — строка; headers — словарь строк
+
+  4) Пресеты (опционально)
+  - Для ускорения UX добавить пресеты в `features/assistant/features/scripts/data/script_presets.dart`, например:
+    - «Старт: GET /warmup» (trigger = on_dialog_start, 1 шаг: http_get)
+    - «Завершение: POST /summary» (trigger = on_dialog_end, 1 шаг: http_post)
+
+- Ожидаемый результат:
+  - Подфича Scripts с CRUD и редактором последовательностей шагов, локальное хранение (моки).
+  - Модульная структура, диалоги/редакторы вынесены в `widgets/`.
+  - Без интеграции с backend — только локальное состояние в провайдере.
 
   4) Сохранение
   - Сохранять правило в провайдер; показывать snackbar об успехе.

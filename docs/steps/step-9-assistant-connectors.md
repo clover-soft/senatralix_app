@@ -10,14 +10,16 @@
   - Экран(ы) — только композиция; редакторы/диалоги/карточки — в `widgets/`; модели — в `models/`; провайдеры — в `providers/`.
 
   1) Модель и провайдеры
+  - Тип коннектора: пока используем ТОЛЬКО `telephony`, но архитектурно поддерживаем поле `type` и добавление через пресеты (как в Tools). Позже возможно расширение: `telegram`, `whatsapp`, `avito` — в этом шаге не реализуем и не описываем UI/настройки для них.
   - По `docs/connector.json` описать тип `Connector`:
     - id: string (UUID)
+    - type: string (например: "telephony")
     - name: string
     - is_active: boolean
     - domain_id: string
-    - settings:
+    - settings (для type = telephony):
       - tts:
-        - voice_pool: массив голосов { voice, language, vendor, role, speed, pitch?, volume? }
+        - voice_pool: массив голосов { voice, language, vendor, role, speed }
         - voice_selection_strategy: enum("first", "round_robin")
         - cache_enable: boolean
         - lexicon: массив правил { type: "regex", pattern, replace, enabled, flags[] }

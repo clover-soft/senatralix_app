@@ -1,62 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sentralix_app/features/assistant/models/assistant_settings.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_settings_provider.dart';
+import 'package:sentralix_app/features/assistant/features/settings/providers/settings_edit_provider.dart';
 
-/// Форма настроек ассистента (инкапсулирует состояние и работу с провайдерами)
-class AssistantSettingsForm extends ConsumerStatefulWidget {
+/// Форма настроек ассистента (ConsumerWidget + локальный провайдер состояния)
+class AssistantSettingsForm extends ConsumerWidget {
   const AssistantSettingsForm({super.key, required this.assistantId});
 
   final String assistantId;
-
-  @override
-  ConsumerState<AssistantSettingsForm> createState() => _AssistantSettingsFormState();
-}
-
-class _AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
-  final _formKey = GlobalKey<FormState>();
-
-  late AssistantSettings _initial;
-
-  // Контроллеры формы
-  late TextEditingController _modelCtrl;
-  late TextEditingController _modelVersionCtrl;
-  late TextEditingController _instructionCtrl;
-  double _temperature = 0.7;
-  int _maxTokens = 512;
-
-  bool _isSaving = false;
-
-  // Пресеты моделей (моки)
-  final List<String> _models = const ['yandexgpt', 'gpt-4o-mini', 'llama3'];
-
-  @override
-  void initState() {
-    super.initState();
-    final settings = ref.read(assistantSettingsProvider.notifier).getFor(widget.assistantId);
-    _initial = settings;
-    _modelCtrl = TextEditingController(text: settings.model);
-    _modelVersionCtrl = TextEditingController(text: settings.modelVersion);
-    _instructionCtrl = TextEditingController(text: settings.instruction);
-    _temperature = settings.temperature;
-    _maxTokens = settings.maxTokens;
-  }
-
-  @override
-  void dispose() {
-    _modelCtrl.dispose();
-    _modelVersionCtrl.dispose();
-    _instructionCtrl.dispose();
-    super.dispose();
-  }
-
-  bool get _isDirty {
-    return _modelCtrl.text != _initial.model ||
-        _modelVersionCtrl.text != _initial.modelVersion ||
-        _instructionCtrl.text != _initial.instruction ||
-        _temperature != _initial.temperature ||
-        _maxTokens != _initial.maxTokens;
-  }
 
   String? _validateMaxTokens(String? v) {
     if (v == null || v.trim().isEmpty) return 'Укажите maxTokens';
@@ -65,53 +16,46 @@ class _AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
     return null;
   }
 
-  void _onSave() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _isSaving = true);
-    final data = AssistantSettings(
-      model: _modelCtrl.text.trim(),
-      modelVersion: _modelVersionCtrl.text.trim(),
-      instruction: _instructionCtrl.text,
-      temperature: _temperature,
-      maxTokens: _maxTokens,
-    );
-    ref.read(assistantSettingsProvider.notifier).save(widget.assistantId, data);
-    setState(() {
-      _initial = data;
-      _isSaving = false;
-    });
-    if (mounted) {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final initial = ref.read(assistantSettingsProvider.notifier).getFor(assistantId);
+    final state = ref.watch(settingsEditProvider(initial));
+    final ctrl = ref.read(settingsEditProvider(initial).notifier);
+
+    final models = ['yandexgpt', 'gpt-4o-mini', 'llama3'];
+    final isDirty = state.model != initial.model ||
+        state.modelVersion != initial.modelVersion ||
+        state.instruction != initial.instruction ||
+        state.temperature != initial.temperature ||
+        state.maxTokens != initial.maxTokens;
+
+    final formKey = GlobalKey<FormState>();
+
+    void onSave() {
+      if (!formKey.currentState!.validate()) return;
+      final data = ctrl.buildResult();
+      ref.read(assistantSettingsProvider.notifier).save(assistantId, data);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Настройки сохранены')),
       );
     }
-  }
 
-  void _onCancel() {
-    _modelCtrl.text = _initial.model;
-    _modelVersionCtrl.text = _initial.modelVersion;
-    _instructionCtrl.text = _initial.instruction;
-    setState(() {
-      _temperature = _initial.temperature;
-      _maxTokens = _initial.maxTokens;
-    });
-  }
+    void onCancel() {
+      // Сбросить провайдер к initial
+      ref.invalidate(settingsEditProvider(initial));
+    }
 
-  @override
-  Widget build(BuildContext context) {
     return Form(
-      key: _formKey,
+      key: formKey,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           // Модель
           DropdownButtonFormField<String>(
-            value: _models.contains(_modelCtrl.text) ? _modelCtrl.text : _models.first,
-            items: _models
-                .map((m) => DropdownMenuItem(value: m, child: Text(m)))
-                .toList(),
+            value: models.contains(state.model) ? state.model : models.first,
+            items: models.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
             onChanged: (val) {
-              if (val != null) setState(() => _modelCtrl.text = val);
+              if (val != null) ctrl.setModel(val);
             },
             decoration: const InputDecoration(labelText: 'Модель', helperText: 'Например: yandexgpt'),
           ),
@@ -120,22 +64,24 @@ class _AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
 
           // Версия модели
           TextFormField(
-            controller: _modelVersionCtrl,
+            initialValue: state.modelVersion,
             decoration: const InputDecoration(labelText: 'Версия модели', helperText: 'Например: latest'),
+            onChanged: ctrl.setModelVersion,
           ),
 
           const SizedBox(height: 12),
 
           // Инструкция (системный промпт)
           TextFormField(
-            controller: _instructionCtrl,
+            initialValue: state.instruction,
             decoration: const InputDecoration(
               labelText: 'Инструкция (system prompt)',
               helperText: 'Рекомендуется краткость; предупреждение при > 5000 символов',
             ),
             maxLines: 8,
+            onChanged: ctrl.setInstruction,
           ),
-          if (_instructionCtrl.text.length > 5000)
+          if (state.instruction.length > 5000)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
@@ -147,27 +93,27 @@ class _AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
           const SizedBox(height: 16),
 
           // Температура
-          Text('Температура: ${_temperature.toStringAsFixed(1)}', style: Theme.of(context).textTheme.labelLarge),
+          Text('Температура: ${state.temperature.toStringAsFixed(1)}', style: Theme.of(context).textTheme.labelLarge),
           Slider(
-            value: _temperature,
+            value: state.temperature,
             min: 0.0,
             max: 2.0,
             divisions: 20,
-            label: _temperature.toStringAsFixed(1),
-            onChanged: (v) => setState(() => _temperature = double.parse(v.toStringAsFixed(1))),
+            label: state.temperature.toStringAsFixed(1),
+            onChanged: (v) => ctrl.setTemperature(double.parse(v.toStringAsFixed(1))),
           ),
 
           const SizedBox(height: 8),
 
           // Max tokens
           TextFormField(
-            initialValue: _maxTokens.toString(),
+            initialValue: state.maxTokens.toString(),
             decoration: const InputDecoration(labelText: 'Max tokens'),
             keyboardType: TextInputType.number,
             validator: _validateMaxTokens,
             onChanged: (v) {
               final n = int.tryParse(v.trim());
-              if (n != null) setState(() => _maxTokens = n);
+              if (n != null) ctrl.setMaxTokens(n);
             },
           ),
 
@@ -176,15 +122,13 @@ class _AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
           Row(
             children: [
               FilledButton.icon(
-                onPressed: _isSaving || !_isDirty ? null : _onSave,
-                icon: _isSaving
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.save),
+                onPressed: !isDirty ? null : onSave,
+                icon: const Icon(Icons.save),
                 label: const Text('Сохранить'),
               ),
               const SizedBox(width: 12),
               TextButton.icon(
-                onPressed: _isDirty ? _onCancel : null,
+                onPressed: isDirty ? onCancel : null,
                 icon: const Icon(Icons.undo),
                 label: const Text('Отмена'),
               ),
