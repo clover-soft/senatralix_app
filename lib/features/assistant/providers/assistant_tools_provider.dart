@@ -50,6 +50,11 @@ class AssistantToolsNotifier extends StateNotifier<AssistantToolsState> {
     }
   }
 
+  /// Полная замена списка инструментов для ассистента
+  void replaceAll(String assistantId, List<AssistantFunctionTool> tools) {
+    _put(assistantId, List<AssistantFunctionTool>.from(tools));
+  }
+
   void remove(String assistantId, String toolId) {
     final tools = list(assistantId);
     tools.removeWhere((t) => t.id == toolId);

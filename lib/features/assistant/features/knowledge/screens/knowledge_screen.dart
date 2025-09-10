@@ -5,6 +5,7 @@ import 'package:sentralix_app/features/assistant/features/knowledge/models/knowl
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/widgets/knowledge_editor_dialog.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 
 class AssistantKnowledgeScreen extends ConsumerStatefulWidget {
   const AssistantKnowledgeScreen({super.key});
@@ -96,11 +97,36 @@ class _AssistantKnowledgeScreenState
 
   @override
   Widget build(BuildContext context) {
+    final boot = ref.watch(assistantBootstrapProvider);
     final items = ref.watch(
       knowledgeProvider.select(
         (s) => s.byAssistantId[_assistantId] ?? const [],
       ),
     );
+    if (boot.isLoading) {
+      return Scaffold(
+        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Источники знаний'),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (boot.hasError) {
+      return Scaffold(
+        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Источники знаний'),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Ошибка загрузки данных'),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => ref.refresh(assistantBootstrapProvider),
+                child: const Text('Повторить'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AssistantAppBar(
         assistantId: _assistantId,

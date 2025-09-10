@@ -6,6 +6,7 @@ import 'package:sentralix_app/features/assistant/providers/assistant_tools_provi
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 import 'package:sentralix_app/features/assistant/features/tools/widgets/function_tool_dialog.dart';
 import 'package:sentralix_app/features/assistant/features/tools/data/tool_presets.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 
 class AssistantToolsScreen extends ConsumerStatefulWidget {
   const AssistantToolsScreen({super.key});
@@ -71,11 +72,36 @@ class _AssistantToolsScreenState extends ConsumerState<AssistantToolsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final boot = ref.watch(assistantBootstrapProvider);
     final tools = ref.watch(
       assistantToolsProvider.select(
         (s) => s.byAssistantId[_assistantId] ?? const [],
       ),
     );
+    if (boot.isLoading) {
+      return Scaffold(
+        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Инструменты'),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (boot.hasError) {
+      return Scaffold(
+        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Инструменты'),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Ошибка загрузки данных'),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => ref.refresh(assistantBootstrapProvider),
+                child: const Text('Повторить'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AssistantAppBar(
         assistantId: _assistantId,

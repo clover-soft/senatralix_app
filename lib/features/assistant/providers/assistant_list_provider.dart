@@ -13,10 +13,14 @@ class AssistantListState {
       AssistantListState(items: items ?? this.items);
 
   /// Найти ассистента по id
-  Assistant? byId(String id) => items.firstWhere(
-        (e) => e.id == id,
-        orElse: () => const Assistant(id: '', name: ''),
-      ).id.isEmpty
+  Assistant? byId(String id) =>
+      items
+          .firstWhere(
+            (e) => e.id == id,
+            orElse: () => const Assistant(id: '', name: ''),
+          )
+          .id
+          .isEmpty
       ? null
       : items.firstWhere((e) => e.id == id);
 }
@@ -25,36 +29,44 @@ class AssistantListState {
 class AssistantListNotifier extends StateNotifier<AssistantListState> {
   final Ref _ref;
   AssistantListNotifier(this._ref)
-      : super(const AssistantListState(items: [
-          Assistant(
-            id: 'stub-1',
-            name: 'Екатерина',
-            description: 'Персональный ассистент для тестов',
-          ),
-          Assistant(
-            id: 'stub-2',
-            name: 'Алексей',
-            description: 'Ассистент техподдержки: быстрые ответы клиентам',
-          ),
-          Assistant(
-            id: 'stub-3',
-            name: 'Мария',
-            description: 'HR-ассистент: рекрутинг и коммуникация с кандидатами',
-          ),
-          Assistant(
-            id: 'stub-4',
-            name: 'Олег',
-            description: 'Аналитик: сводки и инсайты по данным',
-          ),
-          Assistant(
-            id: 'stub-5',
-            name: 'София',
-            description: 'Маркетинг: работа с контентом и промо-активностями',
-          ),
-        ]));
+    : super(
+        const AssistantListState(
+          items: [
+            Assistant(
+              id: 'stub-1',
+              name: 'Екатерина',
+              description: 'Персональный ассистент для тестов',
+            ),
+            Assistant(
+              id: 'stub-2',
+              name: 'Алексей',
+              description: 'Ассистент техподдержки: быстрые ответы клиентам',
+            ),
+            Assistant(
+              id: 'stub-3',
+              name: 'Мария',
+              description:
+                  'HR-ассистент: рекрутинг и коммуникация с кандидатами',
+            ),
+            Assistant(
+              id: 'stub-4',
+              name: 'Олег',
+              description: 'Аналитик: сводки и инсайты по данным',
+            ),
+            Assistant(
+              id: 'stub-5',
+              name: 'София',
+              description: 'Маркетинг: работа с контентом и промо-активностями',
+            ),
+          ],
+        ),
+      );
 
   void add(String name, {String? description}) {
-    final max = _ref.read(assistantFeatureSettingsProvider).settings.maxAssistantItems;
+    final max = _ref
+        .read(assistantFeatureSettingsProvider)
+        .settings
+        .maxAssistantItems;
     if (max > 0 && state.items.length >= max) {
       if (kDebugMode) {
         print('Assistant limit reached ($max)');
@@ -65,7 +77,11 @@ class AssistantListNotifier extends StateNotifier<AssistantListState> {
     state = state.copyWith(
       items: [
         ...state.items,
-        Assistant(id: id, name: name, description: _normalizeDescription(description)),
+        Assistant(
+          id: id,
+          name: name,
+          description: _normalizeDescription(description),
+        ),
       ],
     );
   }
@@ -79,11 +95,21 @@ class AssistantListNotifier extends StateNotifier<AssistantListState> {
   void rename(String id, String name, {String? description}) {
     state = state.copyWith(
       items: state.items
-          .map((e) => e.id == id
-              ? e.copyWith(name: name, description: _normalizeDescription(description))
-              : e)
+          .map(
+            (e) => e.id == id
+                ? e.copyWith(
+                    name: name,
+                    description: _normalizeDescription(description),
+                  )
+                : e,
+          )
           .toList(),
     );
+  }
+
+  /// Полная замена списка ассистентов (после загрузки с бэкенда)
+  void replaceAll(List<Assistant> items) {
+    state = state.copyWith(items: List<Assistant>.from(items));
   }
 
   String? _normalizeDescription(String? value) {

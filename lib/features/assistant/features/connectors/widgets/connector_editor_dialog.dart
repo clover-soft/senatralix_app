@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/models/connector.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/providers/connector_edit_provider.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_feature_settings_provider.dart';
 
 /// Диалог редактирования коннектора (telephony)
 class ConnectorEditorDialog extends ConsumerWidget {
@@ -19,6 +20,7 @@ class ConnectorEditorDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final st = ref.watch(connectorEditProvider(initial));
     final ctrl = ref.read(connectorEditProvider(initial).notifier);
+    final dictors = ref.watch(assistantFeatureSettingsProvider).settings.connectors.dictors;
     return AlertDialog(
       title: const Text('Коннектор (telephony)'),
       content: SizedBox(
@@ -45,11 +47,18 @@ class ConnectorEditorDialog extends ConsumerWidget {
                 child: Text('TTS', style: Theme.of(context).textTheme.titleMedium),
               ),
               const SizedBox(height: 8),
-              TextFormField(
-                initialValue: st.voice,
-                decoration: const InputDecoration(labelText: 'voice'),
-                validator: _req,
-                onChanged: ctrl.setVoice,
+              DropdownButtonFormField<String>(
+                value: (dictors.isNotEmpty && dictors.contains(st.voice))
+                    ? st.voice
+                    : (dictors.isNotEmpty ? dictors.first : st.voice.isNotEmpty ? st.voice : null),
+                items: (dictors.isNotEmpty ? dictors : [st.voice])
+                    .where((e) => e.isNotEmpty)
+                    .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) ctrl.setVoice(val);
+                },
+                decoration: const InputDecoration(labelText: 'voice', helperText: 'Выберите голос из списка dictors'),
               ),
               const SizedBox(height: 8),
               Row(

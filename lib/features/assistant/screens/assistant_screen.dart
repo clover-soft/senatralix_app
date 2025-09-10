@@ -3,15 +3,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_list_provider.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 
 class AssistantScreen extends ConsumerWidget {
   const AssistantScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final boot = ref.watch(assistantBootstrapProvider);
     final scheme = Theme.of(context).colorScheme;
     final listState = ref.watch(assistantListProvider);
     final notifier = ref.read(assistantListProvider.notifier);
+
+    if (boot.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Assistant — выбор ассистента')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (boot.hasError) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Assistant — выбор ассистента')),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Ошибка загрузки данных'),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => ref.refresh(assistantBootstrapProvider),
+                child: const Text('Повторить'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -33,11 +61,23 @@ class AssistantScreen extends ConsumerWidget {
           return ListTile(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: Text(a.name),
-            subtitle: Text(
-              (a.description?.isNotEmpty ?? false)
-                  ? a.description!
-                  : a.id,
-              style: Theme.of(context).textTheme.labelSmall,
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  (a.description?.isNotEmpty ?? false) ? a.description! : a.id,
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+                if (a.settings != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      'Модель: ${a.settings!.model}  •  Темп: ${a.settings!.temperature.toStringAsFixed(1)}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+              ],
             ),
             leading: Icon(Icons.smart_toy, color: scheme.secondary),
             trailing: Row(

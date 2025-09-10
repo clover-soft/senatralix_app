@@ -6,6 +6,7 @@ import 'package:sentralix_app/features/assistant/features/connectors/models/conn
 import 'package:sentralix_app/features/assistant/features/connectors/providers/connector_provider.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/widgets/connector_editor_dialog.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 
 class AssistantConnectorsScreen extends ConsumerStatefulWidget {
   const AssistantConnectorsScreen({super.key});
@@ -78,11 +79,36 @@ class _AssistantConnectorsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final boot = ref.watch(assistantBootstrapProvider);
     final items = ref.watch(
       connectorsProvider.select(
         (s) => s.byAssistantId[_assistantId] ?? const [],
       ),
     );
+    if (boot.isLoading) {
+      return Scaffold(
+        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Коннекторы'),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (boot.hasError) {
+      return Scaffold(
+        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Коннекторы'),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Ошибка загрузки данных'),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => ref.refresh(assistantBootstrapProvider),
+                child: const Text('Повторить'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AssistantAppBar(
         assistantId: _assistantId,
