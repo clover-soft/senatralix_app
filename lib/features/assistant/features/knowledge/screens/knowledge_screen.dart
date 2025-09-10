@@ -30,14 +30,14 @@ class _AssistantKnowledgeScreenState
     final now = DateTime.now();
     final draft = KnowledgeBaseItem(
       id: now.millisecondsSinceEpoch,
+      name: 'Новый источник',
+      description: '',
       externalId: 'kb_${now.millisecondsSinceEpoch}',
       markdown: '',
       status: KnowledgeStatus.ready,
       active: true,
       maxChunkSizeTokens: 700,
       chunkOverlapTokens: 300,
-      ttlDays: 30,
-      expirationPolicy: 'since_last_active',
       createdAt: now,
       updatedAt: now,
     );
@@ -151,8 +151,25 @@ class _AssistantKnowledgeScreenState
                     .read(knowledgeProvider.notifier)
                     .toggleActive(_assistantId, it.id, v),
               ),
-              title: Text(_titleFromMarkdown(it.markdown)),
-              subtitle: Text('${it.externalId} • ${it.createdAt.toLocal()}'),
+              title: Text(
+                (it.name.trim().isNotEmpty) ? it.name : _titleFromMarkdown(it.markdown),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (it.description.trim().isNotEmpty)
+                    Text(
+                      it.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  Text(
+                    '${it.externalId} • ${it.createdAt.toLocal()}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
               trailing: Wrap(
                 spacing: 8,
                 children: [

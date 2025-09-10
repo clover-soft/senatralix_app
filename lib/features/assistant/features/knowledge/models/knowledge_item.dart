@@ -7,6 +7,8 @@ enum KnowledgeStatus { processing, ready, error }
 @immutable
 class KnowledgeBaseItem {
   final int id;
+  final String name;
+  final String description;
   final String externalId;
   final String markdown;
   final KnowledgeStatus status;
@@ -15,48 +17,46 @@ class KnowledgeBaseItem {
   // Настройки индексации
   final int maxChunkSizeTokens;
   final int chunkOverlapTokens;
-  final int ttlDays;
-  final String expirationPolicy; // e.g. "since_last_active"
 
   final DateTime createdAt;
   final DateTime updatedAt;
 
   const KnowledgeBaseItem({
     required this.id,
+    required this.name,
+    required this.description,
     required this.externalId,
     required this.markdown,
     required this.status,
     required this.active,
     required this.maxChunkSizeTokens,
     required this.chunkOverlapTokens,
-    required this.ttlDays,
-    required this.expirationPolicy,
     required this.createdAt,
     required this.updatedAt,
   });
 
   KnowledgeBaseItem copyWith({
     int? id,
+    String? name,
+    String? description,
     String? externalId,
     String? markdown,
     KnowledgeStatus? status,
     bool? active,
     int? maxChunkSizeTokens,
     int? chunkOverlapTokens,
-    int? ttlDays,
-    String? expirationPolicy,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => KnowledgeBaseItem(
         id: id ?? this.id,
+        name: name ?? this.name,
+        description: description ?? this.description,
         externalId: externalId ?? this.externalId,
         markdown: markdown ?? this.markdown,
         status: status ?? this.status,
         active: active ?? this.active,
         maxChunkSizeTokens: maxChunkSizeTokens ?? this.maxChunkSizeTokens,
         chunkOverlapTokens: chunkOverlapTokens ?? this.chunkOverlapTokens,
-        ttlDays: ttlDays ?? this.ttlDays,
-        expirationPolicy: expirationPolicy ?? this.expirationPolicy,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -87,20 +87,22 @@ class KnowledgeBaseItem {
 
   factory KnowledgeBaseItem.fromJson(Map<String, dynamic> json) => KnowledgeBaseItem(
         id: int.tryParse('${json['id']}') ?? 0,
+        name: json['name'] as String? ?? '',
+        description: json['description'] as String? ?? '',
         externalId: json['external_id'] as String? ?? '',
         markdown: json['markdown'] as String? ?? '',
         status: _statusFromString(json['status'] as String? ?? 'ready'),
         active: json['active'] as bool? ?? true,
         maxChunkSizeTokens: int.tryParse('${json['settings']?['max_chunk_size_tokens']}') ?? 700,
         chunkOverlapTokens: int.tryParse('${json['settings']?['chunk_overlap_tokens']}') ?? 300,
-        ttlDays: int.tryParse('${json['settings']?['ttl_days']}') ?? 30,
-        expirationPolicy: json['settings']?['expiration_policy'] as String? ?? 'since_last_active',
         createdAt: DateTime.tryParse('${json['created_at']}') ?? DateTime.now(),
         updatedAt: DateTime.tryParse('${json['updated_at']}') ?? DateTime.now(),
       );
 
   Map<String, dynamic> toJson() => {
         'id': id,
+        'name': name,
+        'description': description,
         'external_id': externalId,
         'markdown': markdown,
         'status': _statusToString(status),
@@ -108,8 +110,6 @@ class KnowledgeBaseItem {
         'settings': {
           'max_chunk_size_tokens': maxChunkSizeTokens,
           'chunk_overlap_tokens': chunkOverlapTokens,
-          'ttl_days': ttlDays,
-          'expiration_policy': expirationPolicy,
         },
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),

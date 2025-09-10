@@ -42,6 +42,25 @@ class KnowledgeEditorDialog extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Имя (обязательно)
+              TextFormField(
+                initialValue: st.name,
+                decoration: const InputDecoration(labelText: 'name'),
+                validator: _req,
+                onChanged: ctrl.setName,
+              ),
+              const SizedBox(height: 8),
+              // Описание (необязательно)
+              TextFormField(
+                initialValue: st.description,
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  labelText: 'description',
+                  helperText: 'Краткое описание источника (до 280 символов)',
+                ),
+                onChanged: ctrl.setDescription,
+              ),
+              const SizedBox(height: 8),
               TextFormField(
                 initialValue: st.externalId,
                 decoration: const InputDecoration(labelText: 'external_id'),
@@ -85,35 +104,6 @@ class KnowledgeEditorDialog extends ConsumerWidget {
                         final n = int.tryParse(v.trim());
                         if (n != null) ctrl.setOverlap(n);
                       },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      initialValue: st.ttlDays.toString(),
-                      decoration: const InputDecoration(labelText: 'ttl_days'),
-                      keyboardType: TextInputType.number,
-                      validator: (v) => _vInt(v, min: 1),
-                      onChanged: (v) {
-                        final n = int.tryParse(v.trim());
-                        if (n != null) ctrl.setTtl(n);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: st.expirationPolicy,
-                      items: const [
-                        DropdownMenuItem(value: 'since_last_active', child: Text('since_last_active')),
-                        DropdownMenuItem(value: 'fixed_date', child: Text('fixed_date')),
-                      ],
-                      onChanged: (v) => ctrl.setExpiration(v ?? 'since_last_active'),
-                      decoration: const InputDecoration(labelText: 'expiration_policy'),
                     ),
                   ),
                 ],
