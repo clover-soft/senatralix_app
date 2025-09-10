@@ -27,6 +27,38 @@ class AssistantSettingsNotifier extends StateNotifier<AssistantSettingsState> {
     map[assistantId] = settings;
     state = state.copyWith(byId: map);
   }
+
+  /// Проверить, подключён ли external_id базы знаний к ассистенту
+  bool isKnowledgeLinked(String assistantId, String externalId) {
+    final s = getFor(assistantId);
+    return s.knowledgeExternalIds.contains(externalId);
+  }
+
+  /// Подключить external_id базы знаний к ассистенту
+  void linkKnowledge(String assistantId, String externalId) {
+    final current = getFor(assistantId);
+    final next = current.copyWith(
+      knowledgeExternalIds: {...current.knowledgeExternalIds, externalId},
+    );
+    save(assistantId, next);
+  }
+
+  /// Отключить external_id базы знаний от ассистента
+  void unlinkKnowledge(String assistantId, String externalId) {
+    final current = getFor(assistantId);
+    final set = {...current.knowledgeExternalIds}..remove(externalId);
+    final next = current.copyWith(knowledgeExternalIds: set);
+    save(assistantId, next);
+  }
+
+  /// Переключить связь external_id базы знаний
+  void toggleKnowledge(String assistantId, String externalId, bool linked) {
+    if (linked) {
+      linkKnowledge(assistantId, externalId);
+    } else {
+      unlinkKnowledge(assistantId, externalId);
+    }
+  }
 }
 
 /// Провайдер настроек

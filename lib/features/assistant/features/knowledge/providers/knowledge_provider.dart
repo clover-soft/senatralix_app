@@ -39,6 +39,11 @@ class KnowledgeNotifier extends StateNotifier<KnowledgeState> {
     }
   }
 
+  /// Полная замена списка источников знаний для ассистента
+  void replaceAll(String assistantId, List<KnowledgeBaseItem> items) {
+    _put(assistantId, List<KnowledgeBaseItem>.from(items));
+  }
+
   void remove(String assistantId, int id) {
     final items = list(assistantId);
     items.removeWhere((e) => e.id == id);

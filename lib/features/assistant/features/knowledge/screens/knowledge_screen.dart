@@ -5,7 +5,9 @@ import 'package:sentralix_app/features/assistant/features/knowledge/models/knowl
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/widgets/knowledge_editor_dialog.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
+import 'package:sentralix_app/features/assistant/features/knowledge/providers/assistant_knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_settings_provider.dart';
 
 class AssistantKnowledgeScreen extends ConsumerStatefulWidget {
   const AssistantKnowledgeScreen({super.key});
@@ -97,12 +99,37 @@ class _AssistantKnowledgeScreenState
 
   @override
   Widget build(BuildContext context) {
+    final loader = ref.watch(assistantKnowledgeProvider(_assistantId));
     final boot = ref.watch(assistantBootstrapProvider);
     final items = ref.watch(
       knowledgeProvider.select(
         (s) => s.byAssistantId[_assistantId] ?? const [],
       ),
     );
+    if (loader.isLoading) {
+      return Scaffold(
+        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Источники знаний'),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (loader.hasError) {
+      return Scaffold(
+        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Источники знаний'),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Ошибка загрузки данных'),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => ref.refresh(assistantKnowledgeProvider(_assistantId)),
+                child: const Text('Повторить'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     if (boot.isLoading) {
       return Scaffold(
         appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Источники знаний'),
@@ -145,12 +172,16 @@ class _AssistantKnowledgeScreenState
           final it = items[index];
           return Card(
             child: ListTile(
-              leading: Switch(
-                value: it.active,
-                onChanged: (v) => ref
-                    .read(knowledgeProvider.notifier)
-                    .toggleActive(_assistantId, it.id, v),
-              ),
+              leading: Consumer(builder: (context, ref, _) {
+                final linked = ref.watch(assistantSettingsProvider.select((s) =>
+                    s.byId[_assistantId]?.knowledgeExternalIds.contains(it.externalId) ?? false));
+                return Switch(
+                  value: linked,
+                  onChanged: (v) => ref
+                      .read(assistantSettingsProvider.notifier)
+                      .toggleKnowledge(_assistantId, it.externalId, v),
+                );
+              }),
               title: Text(
                 (it.name.trim().isNotEmpty) ? it.name : _titleFromMarkdown(it.markdown),
               ),
