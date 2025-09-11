@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/models/knowledge_item.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/knowledge_provider.dart';
-import 'package:sentralix_app/features/assistant/features/knowledge/widgets/knowledge_editor_dialog.dart';
+import 'package:sentralix_app/features/assistant/features/knowledge/screens/knowledge_editor_screen.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/assistant_knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
@@ -43,9 +43,14 @@ class _AssistantKnowledgeScreenState
       createdAt: now,
       updatedAt: now,
     );
-    final res = await showDialog<KnowledgeBaseItem>(
-      context: context,
-      builder: (_) => KnowledgeEditorDialog(initial: draft),
+    final res = await Navigator.push<KnowledgeBaseItem>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => KnowledgeEditorScreen(
+          assistantId: _assistantId,
+          initial: draft,
+        ),
+      ),
     );
     if (res != null) {
       ref.read(knowledgeProvider.notifier).add(_assistantId, res);
@@ -53,9 +58,14 @@ class _AssistantKnowledgeScreenState
   }
 
   void _editItem(KnowledgeBaseItem item) async {
-    final res = await showDialog<KnowledgeBaseItem>(
-      context: context,
-      builder: (_) => KnowledgeEditorDialog(initial: item),
+    final res = await Navigator.push<KnowledgeBaseItem>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => KnowledgeEditorScreen(
+          assistantId: _assistantId,
+          initial: item,
+        ),
+      ),
     );
     if (res != null) {
       ref.read(knowledgeProvider.notifier).update(_assistantId, res);

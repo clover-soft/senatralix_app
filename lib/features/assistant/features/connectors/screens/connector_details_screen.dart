@@ -7,6 +7,7 @@ import 'package:sentralix_app/features/assistant/features/connectors/providers/c
 import 'package:sentralix_app/features/assistant/features/connectors/providers/assistant_connectors_provider.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_feature_settings_provider.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/widgets/param_block_card.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/models/selection_options.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/models/dictor_options.dart';
@@ -26,41 +27,44 @@ class ConnectorDetailsScreen extends ConsumerWidget {
         (s) => s.byAssistantId[assistantId] ?? const <Connector>[],
       ),
     );
-    final initial = items.firstWhere(
-      (e) => e.id == connectorId,
-      orElse: () => Connector(
-        id: connectorId,
-        type: 'telephony',
-        name: '',
-        isActive: true,
-        settings: ConnectorSettings(
-          dialog: ConnectorDialogSettings(
-            greetingTexts: [],
-            greetingSelectionStrategy: 'first',
-            repromptTexts: [],
-            repromptSelectionStrategy: 'round_robin',
-            allowBargeIn: true,
-            maxTurns: 20,
-            noinputRetries: 3,
-            hangupOnNoinput: false,
-            maxCallDurationSec: 300,
-            repeatPromptOnInterrupt: true,
-            interruptMaxRetries: 0,
-            interruptFinalText: '',
-            noinputFinalText: '',
-            maxTurnsFinalText: '',
-            maxCallDurationFinalText: '',
+    final idx = items.indexWhere((e) => e.id == connectorId);
+    if (idx < 0) {
+      // Если список ещё грузится — показываем лоадер
+      if (loader.isLoading) {
+        return Scaffold(
+          appBar: AssistantAppBar(
+            assistantId: assistantId,
+            subfeatureTitle: 'Коннектор',
+            backPath: '/assistant/$assistantId/connectors',
+            backTooltip: 'К списку коннекторов',
           ),
-          assistant: ConnectorAssistantSettings(
-            fillerTextList: [],
-            fillerSelectionStrategy: 'round_robin',
-            softTimeoutMs: 2500,
-            dictor: 'oksana',
-            speed: 1.0,
+          body: const Center(child: CircularProgressIndicator()),
+        );
+      }
+      // После загрузки коннектор не найден — показываем сообщение
+      return Scaffold(
+        appBar: AssistantAppBar(
+          assistantId: assistantId,
+          subfeatureTitle: 'Коннектор',
+          backPath: '/assistant/$assistantId/connectors',
+          backTooltip: 'К списку коннекторов',
+        ),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Коннектор не найден'),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => context.go('/assistant/$assistantId/connectors'),
+                child: const Text('К списку'),
+              ),
+            ],
           ),
         ),
-      ),
-    );
+      );
+    }
+    final initial = items[idx];
 
     if (loader.isLoading && items.isEmpty) {
       return Scaffold(
@@ -97,13 +101,19 @@ class ConnectorDetailsScreen extends ConsumerWidget {
     final st = ref.watch(connectorEditProvider(initial));
     final ctrl = ref.read(connectorEditProvider(initial).notifier);
 
-    void onSave() {
-      final updated = ctrl.buildResult(initial);
-      ref.read(connectorsProvider.notifier).update(assistantId, updated);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Сохранено')));
-      context.go('/assistant/$assistantId/connectors');
+    Future<void> onSave() async {
+      final draft = ctrl.buildResult(initial);
+      try {
+        final api = ref.read(assistantApiProvider);
+        final saved = await api.updateConnector(draft);
+        ref.read(connectorsProvider.notifier).update(assistantId, saved);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Сохранено')));
+        context.go('/assistant/$assistantId/connectors');
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка сохранения: $e')));
+      }
     }
 
     // Локальный вспомогательный билдер больше не нужен — используем ReorderableAddListCard

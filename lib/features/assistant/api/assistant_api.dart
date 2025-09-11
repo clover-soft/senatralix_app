@@ -30,8 +30,18 @@ class AssistantApi {
   /// Создание нового коннектора на бэкенде. Возвращает созданный объект с дефолтными значениями.
   Future<Connector> createConnector({required String name}) async {
     final resp = await _client.post<dynamic>(
-      '/assistant/connectors/create',
+      '/assistant/connectors/create-default',
       data: {'name': name},
+    );
+    final data = Map<String, dynamic>.from(resp.data as Map);
+    return Connector.fromJson(data);
+  }
+
+  /// Обновление коннектора (PATCH) по id. Отправляем полную структуру, как в ответах бэкенда.
+  Future<Connector> updateConnector(Connector connector) async {
+    final resp = await _client.patch<dynamic>(
+      '/assistant/connectors/${connector.id}',
+      data: connector.toJson(),
     );
     final data = Map<String, dynamic>.from(resp.data as Map);
     return Connector.fromJson(data);
