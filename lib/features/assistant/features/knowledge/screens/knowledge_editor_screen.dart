@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/models/knowledge_item.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/knowledge_edit_provider.dart';
+import 'package:sentralix_app/features/assistant/features/knowledge/providers/knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 
 /// Экран редактирования источника знаний (вместо модалки)
 class KnowledgeEditorScreen extends ConsumerWidget {
-  const KnowledgeEditorScreen({super.key, required this.assistantId, required this.initial});
-
-  final String assistantId;
-  final KnowledgeBaseItem initial;
+  const KnowledgeEditorScreen({super.key});
 
   String? _req(String? v) => (v == null || v.trim().isEmpty) ? 'Обязательное поле' : null;
   String? _vInt(String? v, {int? min, int? max}) {
@@ -21,7 +20,7 @@ class KnowledgeEditorScreen extends ConsumerWidget {
     return null;
   }
 
-  void _onSave(BuildContext context, WidgetRef ref) {
+  void _onSave(BuildContext context, WidgetRef ref, KnowledgeBaseItem initial, String assistantId) {
     final st = ref.read(knowledgeEditProvider(initial));
     if (st.chunkOverlapTokens >= st.maxChunkSizeTokens) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -30,13 +29,44 @@ class KnowledgeEditorScreen extends ConsumerWidget {
       return;
     }
     final updated = ref.read(knowledgeEditProvider(initial).notifier).buildResult(initial);
-    Navigator.pop(context, updated);
+    // Обновляем провайдер и возвращаемся к списку
+    ref.read(knowledgeProvider.notifier).update(assistantId, updated);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Сохранено')));
+      context.go('/assistant/$assistantId/knowledge');
+    }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final st = ref.watch(knowledgeEditProvider(initial));
-    final ctrl = ref.read(knowledgeEditProvider(initial).notifier);
+    final route = GoRouterState.of(context);
+    final assistantId = route.pathParameters['assistantId'] ?? 'unknown';
+    final knowledgeIdStr = route.pathParameters['knowledgeId'];
+    KnowledgeBaseItem? initial = route.extra is KnowledgeBaseItem ? route.extra as KnowledgeBaseItem : null;
+    if (initial == null && knowledgeIdStr != null) {
+      final id = int.tryParse(knowledgeIdStr);
+      if (id != null) {
+        final items = ref.watch(knowledgeProvider.select((s) => s.byAssistantId[assistantId] ?? const <KnowledgeBaseItem>[]));
+        final idx = items.indexWhere((e) => e.id == id);
+        if (idx >= 0) initial = items[idx];
+      }
+    }
+
+    if (initial == null) {
+      return Scaffold(
+        appBar: AssistantAppBar(
+          assistantId: assistantId,
+          subfeatureTitle: 'Источник знаний',
+          backPath: '/assistant/$assistantId/knowledge',
+          backTooltip: 'К списку источников',
+        ),
+        body: const Center(child: Text('Источник не найден')),
+      );
+    }
+
+    final item = initial; // not null после проверки выше
+    final st = ref.watch(knowledgeEditProvider(item));
+    final ctrl = ref.read(knowledgeEditProvider(item).notifier);
 
     return Scaffold(
       appBar: AssistantAppBar(
@@ -44,9 +74,10 @@ class KnowledgeEditorScreen extends ConsumerWidget {
         subfeatureTitle: 'Источник знаний',
         backPath: '/assistant/$assistantId/knowledge',
         backTooltip: 'К списку источников',
+        backPopFirst: false,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _onSave(context, ref),
+        onPressed: () => _onSave(context, ref, item, assistantId),
         tooltip: 'Сохранить',
         child: const Icon(Icons.save),
       ),

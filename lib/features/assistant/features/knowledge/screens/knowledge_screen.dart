@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/models/knowledge_item.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/knowledge_provider.dart';
-import 'package:sentralix_app/features/assistant/features/knowledge/screens/knowledge_editor_screen.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/assistant_knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
@@ -43,33 +42,15 @@ class _AssistantKnowledgeScreenState
       createdAt: now,
       updatedAt: now,
     );
-    final res = await Navigator.push<KnowledgeBaseItem>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => KnowledgeEditorScreen(
-          assistantId: _assistantId,
-          initial: draft,
-        ),
-      ),
-    );
-    if (res != null) {
-      ref.read(knowledgeProvider.notifier).add(_assistantId, res);
-    }
+    // Переходим на экран создания по роуту, прокидываем draft через extra
+    if (!mounted) return;
+    context.go('/assistant/$_assistantId/knowledge/new', extra: draft);
   }
 
   void _editItem(KnowledgeBaseItem item) async {
-    final res = await Navigator.push<KnowledgeBaseItem>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => KnowledgeEditorScreen(
-          assistantId: _assistantId,
-          initial: item,
-        ),
-      ),
-    );
-    if (res != null) {
-      ref.read(knowledgeProvider.notifier).update(_assistantId, res);
-    }
+    if (!mounted) return;
+    // Переходим на экран редактирования с ID в URL
+    context.go('/assistant/$_assistantId/knowledge/${item.id}');
   }
 
   void _removeItem(int id) async {

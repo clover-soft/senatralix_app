@@ -6,6 +6,7 @@ import 'package:sentralix_app/features/assistant/screens/assistant_home_screen.d
 import 'package:sentralix_app/features/assistant/features/settings/screens/settings_screen.dart';
 import 'package:sentralix_app/features/assistant/features/tools/screens/tools_screen.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/screens/knowledge_screen.dart';
+import 'package:sentralix_app/features/assistant/features/knowledge/screens/knowledge_editor_screen.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/screens/connectors_screen.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/screens/connector_details_screen.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/screens/scripts_screen.dart';
@@ -34,6 +35,14 @@ List<RouteBase> assistantRoutes() => [
   GoRoute(
     path: '/assistant/:assistantId/knowledge',
     pageBuilder: (context, state) => const MaterialPage(child: AssistantKnowledgeScreen()),
+  ),
+  GoRoute(
+    path: '/assistant/:assistantId/knowledge/new',
+    pageBuilder: (context, state) => const MaterialPage(child: KnowledgeEditorScreen()),
+  ),
+  GoRoute(
+    path: '/assistant/:assistantId/knowledge/:knowledgeId',
+    pageBuilder: (context, state) => const MaterialPage(child: KnowledgeEditorScreen()),
   ),
   GoRoute(
     path: '/assistant/:assistantId/connectors',

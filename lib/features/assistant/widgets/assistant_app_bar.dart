@@ -18,6 +18,7 @@ class AssistantAppBar extends ConsumerWidget implements PreferredSizeWidget {
     this.subfeatureTitle,
     this.backPath,
     this.backTooltip,
+    this.backPopFirst = false,
   });
 
   final String assistantId;
@@ -26,6 +27,8 @@ class AssistantAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final String? backPath;
   // Текст подсказки для кнопки назад, если задан backPath
   final String? backTooltip;
+  // Если true, при нажатии «назад» сначала будет попытка закрыть текущий экран (Navigator.pop)
+  final bool backPopFirst;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -44,6 +47,10 @@ class AssistantAppBar extends ConsumerWidget implements PreferredSizeWidget {
             : (subfeatureTitle == null ? 'К списку ассистентов' : 'К ассистенту'),
         icon: const Icon(Icons.arrow_back),
         onPressed: () {
+          if (backPopFirst && Navigator.of(context).canPop()) {
+            Navigator.of(context).maybePop();
+            return;
+          }
           if (backPath != null) {
             context.go(backPath!);
           } else if (subfeatureTitle == null) {
