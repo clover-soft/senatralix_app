@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/models/knowledge_item.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/knowledge_edit_provider.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/knowledge_provider.dart';
+import 'package:sentralix_app/features/assistant/features/knowledge/providers/assistant_knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 
 /// Экран редактирования источника знаний (вместо модалки)
@@ -42,6 +43,8 @@ class KnowledgeEditorScreen extends ConsumerWidget {
     final route = GoRouterState.of(context);
     final assistantId = route.pathParameters['assistantId'] ?? 'unknown';
     final knowledgeIdStr = route.pathParameters['knowledgeId'];
+    // Убедимся, что список знаний загружен при прямом входе по URL
+    final loader = ref.watch(assistantKnowledgeProvider(assistantId));
     KnowledgeBaseItem? initial = route.extra is KnowledgeBaseItem ? route.extra as KnowledgeBaseItem : null;
     if (initial == null && knowledgeIdStr != null) {
       final id = int.tryParse(knowledgeIdStr);
@@ -53,6 +56,18 @@ class KnowledgeEditorScreen extends ConsumerWidget {
     }
 
     if (initial == null) {
+      // Если ещё идёт загрузка — показываем индикатор
+      if (loader.isLoading) {
+        return Scaffold(
+          appBar: AssistantAppBar(
+            assistantId: assistantId,
+            subfeatureTitle: 'Источник знаний',
+            backPath: '/assistant/$assistantId/knowledge',
+            backTooltip: 'К списку источников',
+          ),
+          body: const Center(child: CircularProgressIndicator()),
+        );
+      }
       return Scaffold(
         appBar: AssistantAppBar(
           assistantId: assistantId,
@@ -86,6 +101,20 @@ class KnowledgeEditorScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Нередактируемый external_id
+            Row(
+              children: [
+                Text(
+                  'external_id: ',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                SelectableText(
+                  st.externalId,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
             // Имя (обязательно)
             TextFormField(
               initialValue: st.name,
@@ -103,13 +132,6 @@ class KnowledgeEditorScreen extends ConsumerWidget {
                 helperText: 'Краткое описание источника (до 280 символов)',
               ),
               onChanged: ctrl.setDescription,
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              initialValue: st.externalId,
-              decoration: const InputDecoration(labelText: 'external_id'),
-              validator: _req,
-              onChanged: ctrl.setExternalId,
             ),
             const SizedBox(height: 8),
             TextFormField(
