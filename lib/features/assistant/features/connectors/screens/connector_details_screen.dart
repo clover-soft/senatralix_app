@@ -6,6 +6,7 @@ import 'package:sentralix_app/features/assistant/features/connectors/providers/c
 import 'package:sentralix_app/features/assistant/features/connectors/providers/connector_provider.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/providers/assistant_connectors_provider.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_feature_settings_provider.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/widgets/param_block_card.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/models/selection_options.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/models/dictor_options.dart';
@@ -177,25 +178,39 @@ class ConnectorDetailsScreen extends ConsumerWidget {
                     ),
                     Builder(
                       builder: (context) {
-                        final options = DictorOptions.ruOptions();
-                        // Поддержка старых значений: если без суффикса стиля — подобрать neutral/первый стиль
-                        String? currentValue = st.dictor;
-                        if (currentValue.isNotEmpty && !currentValue.contains('_')) {
-                          final guess = DictorOptions.firstByCode(currentValue);
-                          if (guess != null) currentValue = guess.value;
+                        // 1) Разрешённые дикторы из настроек ассистента
+                        final allowed = ref
+                            .watch(assistantFeatureSettingsProvider)
+                            .settings
+                            .connectors
+                            .dictors;
+
+                        // 2) Маппинг известных значений value->label (только для найденных)
+                        final known = {
+                          for (final o in DictorOptions.ruOptions()) o.value: o.label,
+                        };
+
+                        // 3) Текущее значение используем как есть (если оно пришло с бэка),
+                        // даже если его нет в allowed — добавим отдельной опцией для отображения
+                        final String? currentValue = st.dictor.isNotEmpty ? st.dictor : null;
+
+                        // 4) Построить элементы выпадающего списка: сначала текущее значение (если не входит в allowed),
+                        // затем все разрешённые значения. Лейблы берём из known, иначе raw value
+                        final List<DropdownMenuItem<String>> items = [];
+                        if (currentValue != null && !allowed.contains(currentValue)) {
+                          items.add(DropdownMenuItem<String>(
+                            value: currentValue,
+                            child: Text(known[currentValue] ?? currentValue),
+                          ));
                         }
-                        // Если текущее значение не найдено в списке, взять первое
-                        if (options.indexWhere((o) => o.value == currentValue) == -1) {
-                          currentValue = options.isNotEmpty ? options.first.value : currentValue;
-                        }
+                        items.addAll(allowed.map((v) => DropdownMenuItem<String>(
+                              value: v,
+                              child: Text(known[v] ?? v),
+                            )));
+
                         return DropdownButtonFormField<String>(
-                          value: currentValue,
-                          items: options
-                              .map((o) => DropdownMenuItem<String>(
-                                    value: o.value,
-                                    child: Text(o.label),
-                                  ))
-                              .toList(),
+                          value: currentValue ?? (allowed.isNotEmpty ? allowed.first : null),
+                          items: items,
                           onChanged: (v) => ctrl.setDictor(v ?? currentValue ?? st.dictor),
                           decoration: const InputDecoration(labelText: 'Голос'),
                         );
@@ -208,7 +223,7 @@ class ConnectorDetailsScreen extends ConsumerWidget {
                       min: 0.5,
                       max: 2.0,
                       divisions: 15,
-                      onChanged: (v) => ctrl.setSpeed(double.parse(v.toStringAsFixed(1))),
+                      onChanged: (v) => ctrl.setSpeed(v),
                     ),
                   ],
                 ),

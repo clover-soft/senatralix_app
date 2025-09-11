@@ -26,42 +26,44 @@ class _AssistantConnectorsScreenState
         GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
   }
 
-  void _createMock() async {
-    final now = DateTime.now().millisecondsSinceEpoch.toString();
-    final draft = Connector(
-      id: now,
-      type: 'telephony',
-      name: 'Новый коннектор',
-      isActive: true,
-      settings: ConnectorSettings(
-        dialog: ConnectorDialogSettings(
-          greetingTexts: const ['Алло'],
-          greetingSelectionStrategy: 'first',
-          repromptTexts: const ['Алло', 'Алло-алло', 'Что-то вас не слышно'],
-          repromptSelectionStrategy: 'round_robin',
-          allowBargeIn: true,
-          maxTurns: 20,
-          noinputRetries: 3,
-          hangupOnNoinput: false,
-          maxCallDurationSec: 300,
-          repeatPromptOnInterrupt: true,
-          interruptMaxRetries: 0,
-          interruptFinalText: 'Вы меня постоянно перебиваете, всего доброго',
-          noinputFinalText: 'Что-то вас не слышно, лучше перезвонить',
-          maxTurnsFinalText: 'Спасибо за разговор, до свидания',
-          maxCallDurationFinalText: 'Время разговора истекло, до свидания',
+  Future<void> _createConnector() async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Новый коннектор'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'Имя коннектора'),
+          autofocus: true,
+          onSubmitted: (v) => Navigator.pop(context, v.trim()),
         ),
-        assistant: const ConnectorAssistantSettings(
-          fillerTextList: ['Секундочку, пожалуйста'],
-          fillerSelectionStrategy: 'round_robin',
-          softTimeoutMs: 2500,
-          dictor: 'oksana',
-          speed: 1.0,
-        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Создать'),
+          ),
+        ],
       ),
     );
-    ref.read(connectorsProvider.notifier).add(_assistantId, draft);
-    if (mounted) context.go('/assistant/$_assistantId/connectors/${draft.id}');
+    if (name == null || name.isEmpty) return;
+
+    try {
+      final api = ref.read(assistantApiProvider);
+      final created = await api.createConnector(name: name);
+      // Обновить локальный список и перейти в детали
+      ref.read(connectorsProvider.notifier).add(_assistantId, created);
+      if (mounted) context.go('/assistant/$_assistantId/connectors/${created.id}');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка создания: $e')),
+      );
+    }
   }
 
   void _edit(Connector c) {
@@ -154,8 +156,8 @@ class _AssistantConnectorsScreenState
         subfeatureTitle: 'Коннекторы',
       ),
       floatingActionButton: FloatingActionButton(
-        tooltip: 'Создать коннектор (mock)',
-        onPressed: _createMock,
+        tooltip: 'Создать коннектор',
+        onPressed: _createConnector,
         child: const Icon(Icons.add),
       ),
       body: ListView.separated(

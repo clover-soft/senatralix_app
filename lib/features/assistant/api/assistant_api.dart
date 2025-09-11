@@ -27,6 +27,16 @@ class AssistantApi {
     return list.map((e) => Connector.fromJson(e)).toList();
   }
 
+  /// Создание нового коннектора на бэкенде. Возвращает созданный объект с дефолтными значениями.
+  Future<Connector> createConnector({required String name}) async {
+    final resp = await _client.post<dynamic>(
+      '/assistant/connectors/create',
+      data: {'name': name},
+    );
+    final data = Map<String, dynamic>.from(resp.data as Map);
+    return Connector.fromJson(data);
+  }
+
   /// Список ассистентов (минимальный маппинг под текущую модель)
   Future<List<Assistant>> fetchAssistants() async {
     final resp = await _client.get<dynamic>('/assistants/list/');

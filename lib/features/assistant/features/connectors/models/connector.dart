@@ -115,12 +115,25 @@ class ConnectorSettings {
 
   factory ConnectorSettings.fromJson(Map<String, dynamic> json) => ConnectorSettings(
         dialog: ConnectorDialogSettings.fromJson(Map<String, dynamic>.from(json['dialog'] as Map? ?? {})),
-        assistant: ConnectorAssistantSettings.fromJson(Map<String, dynamic>.from(json['assistant'] as Map? ?? {})),
+        // Бэкенд отдаёт dictor/speed на корневом уровне settings, а остальные поля ассистента — внутри 'assistant'
+        assistant: ConnectorAssistantSettings.fromJson({
+          ...Map<String, dynamic>.from(json['assistant'] as Map? ?? {}),
+          if (json.containsKey('dictor')) 'dictor': json['dictor'],
+          if (json.containsKey('speed')) 'speed': json['speed'],
+        }),
       );
 
   Map<String, dynamic> toJson() => {
         'dialog': dialog.toJson(),
-        'assistant': assistant.toJson(),
+        // В assistant отправляем только поля, которые реально ожидает бэкенд внутри 'assistant'
+        'assistant': {
+          'filler_text_list': assistant.fillerTextList,
+          'filler_selection_strategy': assistant.fillerSelectionStrategy,
+          'soft_timeout_ms': assistant.softTimeoutMs,
+        },
+        // dictor и speed — на корневом уровне settings
+        'dictor': assistant.dictor,
+        'speed': assistant.speed,
       };
 }
 
