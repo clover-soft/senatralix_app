@@ -38,6 +38,11 @@ class ConnectorsNotifier extends StateNotifier<ConnectorsState> {
     }
   }
 
+  /// Полная замена списка коннекторов ассистента
+  void replaceAll(String assistantId, List<Connector> items) {
+    _put(assistantId, List<Connector>.from(items));
+  }
+
   void remove(String assistantId, String id) {
     final ls = list(assistantId);
     ls.removeWhere((c) => c.id == id);

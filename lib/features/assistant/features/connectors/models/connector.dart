@@ -1,111 +1,133 @@
 import 'package:flutter/foundation.dart';
 
 @immutable
-class TtsVoice {
-  final String voice; // идентификатор голоса
-  final double speed; // 0.5..2.0
+class ConnectorDialogSettings {
+  final List<String> greetingTexts;
+  final String greetingSelectionStrategy; // first | round_robin | random
+  final List<String> repromptTexts;
+  final String repromptSelectionStrategy; // first | round_robin | random
+  final bool allowBargeIn;
+  final int maxTurns;
+  final int noinputRetries;
+  final bool hangupOnNoinput;
+  final int maxCallDurationSec;
+  final bool repeatPromptOnInterrupt;
+  final int interruptMaxRetries;
+  final String interruptFinalText;
+  final String noinputFinalText;
+  final String maxTurnsFinalText;
+  final String maxCallDurationFinalText;
 
-  const TtsVoice({
-    required this.voice,
+  const ConnectorDialogSettings({
+    required this.greetingTexts,
+    required this.greetingSelectionStrategy,
+    required this.repromptTexts,
+    required this.repromptSelectionStrategy,
+    required this.allowBargeIn,
+    required this.maxTurns,
+    required this.noinputRetries,
+    required this.hangupOnNoinput,
+    required this.maxCallDurationSec,
+    required this.repeatPromptOnInterrupt,
+    required this.interruptMaxRetries,
+    required this.interruptFinalText,
+    required this.noinputFinalText,
+    required this.maxTurnsFinalText,
+    required this.maxCallDurationFinalText,
+  });
+
+  factory ConnectorDialogSettings.fromJson(Map<String, dynamic> json) => ConnectorDialogSettings(
+        greetingTexts: (json['greeting_texts'] as List?)?.map((e) => '$e').toList() ?? const <String>[],
+        greetingSelectionStrategy: json['greeting_selection_strategy'] as String? ?? 'first',
+        repromptTexts: (json['reprompt_texts'] as List?)?.map((e) => '$e').toList() ?? const <String>[],
+        repromptSelectionStrategy: json['reprompt_selection_strategy'] as String? ?? 'round_robin',
+        allowBargeIn: json['allow_barge_in'] as bool? ?? true,
+        maxTurns: json['max_turns'] as int? ?? 20,
+        noinputRetries: json['noinput_retries'] as int? ?? 3,
+        hangupOnNoinput: json['hangup_on_noinput'] as bool? ?? false,
+        maxCallDurationSec: json['max_call_duration_sec'] as int? ?? 1800,
+        repeatPromptOnInterrupt: json['repeat_prompt_on_interrupt'] as bool? ?? true,
+        interruptMaxRetries: json['interrupt_max_retries'] as int? ?? 0,
+        interruptFinalText: json['interrupt_final_text'] as String? ?? '',
+        noinputFinalText: json['noinput_final_text'] as String? ?? '',
+        maxTurnsFinalText: json['max_turns_final_text'] as String? ?? '',
+        maxCallDurationFinalText: json['max_call_duration_final_text'] as String? ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'greeting_texts': greetingTexts,
+        'greeting_selection_strategy': greetingSelectionStrategy,
+        'reprompt_texts': repromptTexts,
+        'reprompt_selection_strategy': repromptSelectionStrategy,
+        'allow_barge_in': allowBargeIn,
+        'max_turns': maxTurns,
+        'noinput_retries': noinputRetries,
+        'hangup_on_noinput': hangupOnNoinput,
+        'max_call_duration_sec': maxCallDurationSec,
+        'repeat_prompt_on_interrupt': repeatPromptOnInterrupt,
+        'interrupt_max_retries': interruptMaxRetries,
+        'interrupt_final_text': interruptFinalText,
+        'noinput_final_text': noinputFinalText,
+        'max_turns_final_text': maxTurnsFinalText,
+        'max_call_duration_final_text': maxCallDurationFinalText,
+      };
+}
+
+@immutable
+class ConnectorAssistantSettings {
+  final List<String> fillerTextList;
+  final String fillerSelectionStrategy; // first | round_robin | random
+  final int softTimeoutMs;
+  final String dictor; // идентификатор диктора/голоса
+  final double speed; // скорость речи 0.5..2.0
+
+  const ConnectorAssistantSettings({
+    required this.fillerTextList,
+    required this.fillerSelectionStrategy,
+    required this.softTimeoutMs,
+    required this.dictor,
     required this.speed,
   });
 
-  factory TtsVoice.fromJson(Map<String, dynamic> json) => TtsVoice(
-        voice: json['voice'] as String? ?? 'default',
+  factory ConnectorAssistantSettings.fromJson(Map<String, dynamic> json) => ConnectorAssistantSettings(
+        fillerTextList: (json['filler_text_list'] as List?)?.map((e) => '$e').toList() ?? const <String>[],
+        fillerSelectionStrategy: json['filler_selection_strategy'] as String? ?? 'round_robin',
+        softTimeoutMs: json['soft_timeout_ms'] as int? ?? 2500,
+        dictor: json['dictor'] as String? ?? 'oksana',
         speed: (json['speed'] as num?)?.toDouble() ?? 1.0,
       );
 
   Map<String, dynamic> toJson() => {
-        'voice': voice,
+        'filler_text_list': fillerTextList,
+        'filler_selection_strategy': fillerSelectionStrategy,
+        'soft_timeout_ms': softTimeoutMs,
+        'dictor': dictor,
         'speed': speed,
       };
 }
 
 @immutable
-class LexiconRule {
-  final String type; // regex
-  final String pattern;
-  final String replace;
-  final bool enabled;
-  final List<String> flags; // i,m,s,u...
-
-  const LexiconRule({
-    required this.type,
-    required this.pattern,
-    required this.replace,
-    required this.enabled,
-    required this.flags,
-  });
-
-  factory LexiconRule.fromJson(Map<String, dynamic> json) => LexiconRule(
-        type: json['type'] as String? ?? 'regex',
-        pattern: json['pattern'] as String? ?? '',
-        replace: json['replace'] as String? ?? '',
-        enabled: json['enabled'] as bool? ?? true,
-        flags: (json['flags'] as List?)?.map((e) => '$e').toList() ?? const <String>[],
-      );
-
-  Map<String, dynamic> toJson() => {
-        'type': type,
-        'pattern': pattern,
-        'replace': replace,
-        'enabled': enabled,
-        'flags': flags,
-      };
-}
-
-@immutable
 class ConnectorSettings {
-  // Только для type=telephony на этом шаге
-  final List<TtsVoice> ttsVoicePool;
-  final List<LexiconRule> ttsLexicon;
+  final ConnectorDialogSettings dialog;
+  final ConnectorAssistantSettings assistant;
 
-  // Диалог (минимальный набор)
-  final List<String> dialogGreetingTexts;
-  final List<String> dialogRepromptTexts;
-  final bool dialogAllowBargeIn;
-
-  const ConnectorSettings({
-    required this.ttsVoicePool,
-    required this.ttsLexicon,
-    required this.dialogGreetingTexts,
-    required this.dialogRepromptTexts,
-    required this.dialogAllowBargeIn,
-  });
+  const ConnectorSettings({required this.dialog, required this.assistant});
 
   factory ConnectorSettings.fromJson(Map<String, dynamic> json) => ConnectorSettings(
-        ttsVoicePool: (json['tts']?['voice_pool'] as List?)
-                ?.map((e) => TtsVoice.fromJson(Map<String, dynamic>.from(e as Map)))
-                .toList() ??
-            const <TtsVoice>[],
-        ttsLexicon: (json['tts']?['lexicon'] as List?)
-                ?.map((e) => LexiconRule.fromJson(Map<String, dynamic>.from(e as Map)))
-                .toList() ??
-            const <LexiconRule>[],
-        dialogGreetingTexts:
-            (json['dialog']?['greeting_texts'] as List?)?.map((e) => '$e').toList() ?? const <String>[],
-        dialogRepromptTexts:
-            (json['dialog']?['reprompt_texts'] as List?)?.map((e) => '$e').toList() ?? const <String>[],
-        dialogAllowBargeIn: json['dialog']?['allow_barge_in'] as bool? ?? true,
+        dialog: ConnectorDialogSettings.fromJson(Map<String, dynamic>.from(json['dialog'] as Map? ?? {})),
+        assistant: ConnectorAssistantSettings.fromJson(Map<String, dynamic>.from(json['assistant'] as Map? ?? {})),
       );
 
   Map<String, dynamic> toJson() => {
-        'tts': {
-          'voice_pool': ttsVoicePool.map((e) => e.toJson()).toList(),
-          'lexicon': ttsLexicon.map((e) => e.toJson()).toList(),
-        },
-        'dialog': {
-          'greeting_texts': dialogGreetingTexts,
-          'reprompt_texts': dialogRepromptTexts,
-          'allow_barge_in': dialogAllowBargeIn,
-        },
+        'dialog': dialog.toJson(),
+        'assistant': assistant.toJson(),
       };
 }
 
 @immutable
 class Connector {
   final String id; // UUID (строка)
-  final String type; // telephony
+  final String type; // telephony (пока опускается в JSON)
   final String name;
   final bool isActive;
   final ConnectorSettings settings;

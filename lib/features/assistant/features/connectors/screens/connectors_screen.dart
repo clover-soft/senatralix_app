@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sentralix_app/features/assistant/features/connectors/data/connector_presets.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/models/connector.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/providers/connector_provider.dart';
-import 'package:sentralix_app/features/assistant/features/connectors/widgets/connector_editor_dialog.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
+import 'package:sentralix_app/features/assistant/features/connectors/providers/assistant_connectors_provider.dart';
 
 class AssistantConnectorsScreen extends ConsumerStatefulWidget {
   const AssistantConnectorsScreen({super.key});
@@ -27,31 +26,46 @@ class _AssistantConnectorsScreenState
         GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
   }
 
-  void _addByPreset(String presetKey) async {
-    final json =
-        getConnectorPreset(presetKey) ?? getConnectorPreset('telephony')!;
-    final draft = Connector.fromJson({
-      ...json,
-      'id': DateTime.now().millisecondsSinceEpoch.toString(),
-      'name': json['name'] ?? 'Новый коннектор',
-    });
-    final res = await showDialog<Connector>(
-      context: context,
-      builder: (_) => ConnectorEditorDialog(initial: draft),
+  void _createMock() async {
+    final now = DateTime.now().millisecondsSinceEpoch.toString();
+    final draft = Connector(
+      id: now,
+      type: 'telephony',
+      name: 'Новый коннектор',
+      isActive: true,
+      settings: ConnectorSettings(
+        dialog: ConnectorDialogSettings(
+          greetingTexts: const ['Алло'],
+          greetingSelectionStrategy: 'first',
+          repromptTexts: const ['Алло', 'Алло-алло', 'Что-то вас не слышно'],
+          repromptSelectionStrategy: 'round_robin',
+          allowBargeIn: true,
+          maxTurns: 20,
+          noinputRetries: 3,
+          hangupOnNoinput: false,
+          maxCallDurationSec: 300,
+          repeatPromptOnInterrupt: true,
+          interruptMaxRetries: 0,
+          interruptFinalText: 'Вы меня постоянно перебиваете, всего доброго',
+          noinputFinalText: 'Что-то вас не слышно, лучше перезвонить',
+          maxTurnsFinalText: 'Спасибо за разговор, до свидания',
+          maxCallDurationFinalText: 'Время разговора истекло, до свидания',
+        ),
+        assistant: const ConnectorAssistantSettings(
+          fillerTextList: ['Секундочку, пожалуйста'],
+          fillerSelectionStrategy: 'round_robin',
+          softTimeoutMs: 2500,
+          dictor: 'oksana',
+          speed: 1.0,
+        ),
+      ),
     );
-    if (res != null) {
-      ref.read(connectorsProvider.notifier).add(_assistantId, res);
-    }
+    ref.read(connectorsProvider.notifier).add(_assistantId, draft);
+    if (mounted) context.go('/assistant/$_assistantId/connectors/${draft.id}');
   }
 
-  void _edit(Connector c) async {
-    final res = await showDialog<Connector>(
-      context: context,
-      builder: (_) => ConnectorEditorDialog(initial: c),
-    );
-    if (res != null) {
-      ref.read(connectorsProvider.notifier).update(_assistantId, res);
-    }
+  void _edit(Connector c) {
+    context.go('/assistant/$_assistantId/connectors/${c.id}');
   }
 
   void _remove(String id) async {
@@ -80,11 +94,36 @@ class _AssistantConnectorsScreenState
   @override
   Widget build(BuildContext context) {
     final boot = ref.watch(assistantBootstrapProvider);
+    final loader = ref.watch(assistantConnectorsProvider(_assistantId));
     final items = ref.watch(
       connectorsProvider.select(
         (s) => s.byAssistantId[_assistantId] ?? const [],
       ),
     );
+    if (loader.isLoading) {
+      return Scaffold(
+        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Коннекторы'),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (loader.hasError) {
+      return Scaffold(
+        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Коннекторы'),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Ошибка загрузки коннекторов'),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => ref.refresh(assistantConnectorsProvider(_assistantId)),
+                child: const Text('Повторить'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     if (boot.isLoading) {
       return Scaffold(
         appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Коннекторы'),
@@ -115,27 +154,8 @@ class _AssistantConnectorsScreenState
         subfeatureTitle: 'Коннекторы',
       ),
       floatingActionButton: FloatingActionButton(
-        tooltip: 'Добавить коннектор',
-        onPressed: () async {
-          final choice = await showModalBottomSheet<String>(
-            context: context,
-            builder: (ctx) => SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.call_outlined),
-                    title: const Text('Telephony'),
-                    subtitle: const Text('Подключение к телефонии'),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                    onTap: () => Navigator.pop(ctx, 'telephony'),
-                  ),
-                ],
-              ),
-            ),
-          );
-          _addByPreset(choice ?? 'telephony');
-        },
+        tooltip: 'Создать коннектор (mock)',
+        onPressed: _createMock,
         child: const Icon(Icons.add),
       ),
       body: ListView.separated(
@@ -153,7 +173,6 @@ class _AssistantConnectorsScreenState
                     .toggleActive(_assistantId, it.id, v),
               ),
               title: Text(it.name.isEmpty ? 'Без имени' : it.name),
-              subtitle: Text(it.type),
               trailing: Wrap(
                 spacing: 8,
                 children: [

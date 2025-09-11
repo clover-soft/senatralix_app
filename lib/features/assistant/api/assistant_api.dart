@@ -3,6 +3,7 @@ import 'package:sentralix_app/features/assistant/models/assistant.dart';
 import 'package:sentralix_app/features/assistant/models/assistant_feature_settings.dart';
 import 'package:sentralix_app/features/assistant/models/assistant_settings.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/models/knowledge_item.dart';
+import 'package:sentralix_app/features/assistant/features/connectors/models/connector.dart';
 
 /// HTTP API для надфичи Assistant
 class AssistantApi {
@@ -16,6 +17,14 @@ class AssistantApi {
     return AssistantFeatureSettings.fromJson(
       Map<String, dynamic>.from(data as Map),
     );
+  }
+
+  /// Список коннекторов ассистента (READ)
+  Future<List<Connector>> fetchConnectorsList({int limit = 100, int offset = 0}) async {
+    final resp = await _client.get<dynamic>('/assistant/connectors/list?limit=$limit&offset=$offset');
+    final data = resp.data;
+    final list = List<Map<String, dynamic>>.from(data as List);
+    return list.map((e) => Connector.fromJson(e)).toList();
   }
 
   /// Список ассистентов (минимальный маппинг под текущую модель)

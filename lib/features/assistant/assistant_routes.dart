@@ -7,6 +7,7 @@ import 'package:sentralix_app/features/assistant/features/settings/screens/setti
 import 'package:sentralix_app/features/assistant/features/tools/screens/tools_screen.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/screens/knowledge_screen.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/screens/connectors_screen.dart';
+import 'package:sentralix_app/features/assistant/features/connectors/screens/connector_details_screen.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/screens/scripts_screen.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/screens/script_details_screen.dart';
 import 'package:sentralix_app/features/assistant/features/chat/screens/chat_screen.dart';
@@ -37,6 +38,10 @@ List<RouteBase> assistantRoutes() => [
   GoRoute(
     path: '/assistant/:assistantId/connectors',
     pageBuilder: (context, state) => const MaterialPage(child: AssistantConnectorsScreen()),
+  ),
+  GoRoute(
+    path: '/assistant/:assistantId/connectors/:connectorId',
+    pageBuilder: (context, state) => const MaterialPage(child: ConnectorDetailsScreen()),
   ),
   GoRoute(
     path: '/assistant/:assistantId/scripts',

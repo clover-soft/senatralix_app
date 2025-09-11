@@ -1,54 +1,79 @@
 import 'package:sentralix_app/features/assistant/features/connectors/models/connector.dart';
 
-/// Состояние редактора коннектора (упрощённый набор полей)
+/// Состояние редактора коннектора (новая структура)
 class ConnectorEditState {
   ConnectorEditState({
     required this.name,
     required this.isActive,
-    required this.voice,
-    required this.voiceSpeed,
     required this.greetingTexts,
+    required this.greetingSelectionStrategy,
     required this.repromptTexts,
+    required this.repromptSelectionStrategy,
     required this.allowBargeIn,
+    required this.softTimeoutMs,
+    required this.fillerTextList,
+    required this.fillerSelectionStrategy,
+    required this.dictor,
+    required this.speed,
   });
 
   final String name;
   final bool isActive;
-  final String voice;
-  final double voiceSpeed;
-  final String greetingTexts; // запятая-разделитель
-  final String repromptTexts; // запятая-разделитель
+  final List<String> greetingTexts;
+  final String greetingSelectionStrategy;
+  final List<String> repromptTexts;
+  final String repromptSelectionStrategy;
   final bool allowBargeIn;
+  final int softTimeoutMs;
+  final List<String> fillerTextList;
+  final String fillerSelectionStrategy;
+  final String dictor;
+  final double speed;
 
   ConnectorEditState copy({
     String? name,
     bool? isActive,
-    String? voice,
-    double? voiceSpeed,
-    String? greetingTexts,
-    String? repromptTexts,
+    List<String>? greetingTexts,
+    String? greetingSelectionStrategy,
+    List<String>? repromptTexts,
+    String? repromptSelectionStrategy,
     bool? allowBargeIn,
+    int? softTimeoutMs,
+    List<String>? fillerTextList,
+    String? fillerSelectionStrategy,
+    String? dictor,
+    double? speed,
   }) => ConnectorEditState(
         name: name ?? this.name,
         isActive: isActive ?? this.isActive,
-        voice: voice ?? this.voice,
-        voiceSpeed: voiceSpeed ?? this.voiceSpeed,
         greetingTexts: greetingTexts ?? this.greetingTexts,
+        greetingSelectionStrategy: greetingSelectionStrategy ?? this.greetingSelectionStrategy,
         repromptTexts: repromptTexts ?? this.repromptTexts,
+        repromptSelectionStrategy: repromptSelectionStrategy ?? this.repromptSelectionStrategy,
         allowBargeIn: allowBargeIn ?? this.allowBargeIn,
+        softTimeoutMs: softTimeoutMs ?? this.softTimeoutMs,
+        fillerTextList: fillerTextList ?? this.fillerTextList,
+        fillerSelectionStrategy: fillerSelectionStrategy ?? this.fillerSelectionStrategy,
+        dictor: dictor ?? this.dictor,
+        speed: speed ?? this.speed,
       );
 
   static ConnectorEditState fromConnector(Connector c) {
-    final s = c.settings;
-    final v = s.ttsVoicePool.isNotEmpty ? s.ttsVoicePool.first : const TtsVoice(voice: 'oksana', speed: 1.0);
+    final d = c.settings.dialog;
+    final a = c.settings.assistant;
     return ConnectorEditState(
       name: c.name,
       isActive: c.isActive,
-      voice: v.voice,
-      voiceSpeed: v.speed,
-      greetingTexts: s.dialogGreetingTexts.join(', '),
-      repromptTexts: s.dialogRepromptTexts.join(', '),
-      allowBargeIn: s.dialogAllowBargeIn,
+      greetingTexts: List<String>.from(d.greetingTexts),
+      greetingSelectionStrategy: d.greetingSelectionStrategy,
+      repromptTexts: List<String>.from(d.repromptTexts),
+      repromptSelectionStrategy: d.repromptSelectionStrategy,
+      allowBargeIn: d.allowBargeIn,
+      softTimeoutMs: a.softTimeoutMs,
+      fillerTextList: List<String>.from(a.fillerTextList),
+      fillerSelectionStrategy: a.fillerSelectionStrategy,
+      dictor: a.dictor,
+      speed: a.speed,
     );
   }
 }

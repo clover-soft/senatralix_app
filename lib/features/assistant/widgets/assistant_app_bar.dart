@@ -12,12 +12,20 @@ import 'package:sentralix_app/features/assistant/providers/assistant_list_provid
 ///   • title: "Assistant • <Subfeature> (<Имя>)"
 ///   • actions: кнопка "домой ассистента"
 class AssistantAppBar extends ConsumerWidget implements PreferredSizeWidget {
-  const AssistantAppBar({super.key, required this.assistantId, this.subfeatureTitle, this.backPath});
+  const AssistantAppBar({
+    super.key,
+    required this.assistantId,
+    this.subfeatureTitle,
+    this.backPath,
+    this.backTooltip,
+  });
 
   final String assistantId;
   final String? subfeatureTitle;
   // Если указан, кнопка "назад" ведёт по этому пути
   final String? backPath;
+  // Текст подсказки для кнопки назад, если задан backPath
+  final String? backTooltip;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -31,7 +39,9 @@ class AssistantAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
     return AppBar(
       leading: IconButton(
-        tooltip: subfeatureTitle == null ? 'К списку ассистентов' : 'К ассистенту',
+        tooltip: backPath != null
+            ? (backTooltip ?? 'Назад')
+            : (subfeatureTitle == null ? 'К списку ассистентов' : 'К ассистенту'),
         icon: const Icon(Icons.arrow_back),
         onPressed: () {
           if (backPath != null) {
