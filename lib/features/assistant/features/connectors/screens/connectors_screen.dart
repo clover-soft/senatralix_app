@@ -33,8 +33,16 @@ class _AssistantConnectorsScreenState
 
   Future<void> _createConnector() async {
     // Защита по лимиту перед показом диалога
-    final maxAllowed = ref.read(assistantFeatureSettingsProvider).settings.connectors.maxConnectorItems;
-    final currentCount = ref.read(connectorsProvider.select((s) => s.byAssistantId[_assistantId]?.length ?? 0));
+    final maxAllowed = ref
+        .read(assistantFeatureSettingsProvider)
+        .settings
+        .connectors
+        .maxConnectorItems;
+    final currentCount = ref.read(
+      connectorsProvider.select(
+        (s) => s.byAssistantId[_assistantId]?.length ?? 0,
+      ),
+    );
     if (maxAllowed > 0 && currentCount >= maxAllowed) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -73,12 +81,13 @@ class _AssistantConnectorsScreenState
       final created = await api.createConnector(name: name);
       // Обновить локальный список и перейти в детали
       ref.read(connectorsProvider.notifier).add(_assistantId, created);
-      if (mounted) context.go('/assistant/$_assistantId/connectors/${created.id}');
+      if (mounted)
+        context.go('/assistant/$_assistantId/connectors/${created.id}');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка создания: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Ошибка создания: $e')));
     }
   }
 
@@ -110,10 +119,14 @@ class _AssistantConnectorsScreenState
         await api.deleteConnector(id);
         if (!mounted) return;
         ref.read(connectorsProvider.notifier).remove(_assistantId, id);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Удалено')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Удалено')));
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка удаления: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Ошибка удаления: $e')));
       }
     }
   }
@@ -122,8 +135,12 @@ class _AssistantConnectorsScreenState
   Widget build(BuildContext context) {
     final boot = ref.watch(assistantBootstrapProvider);
     final loader = ref.watch(assistantConnectorsProvider(_assistantId));
-    final attachedSet = ref.watch(assistantAttachedConnectorsProvider(_assistantId));
-    final featureSettings = ref.watch(assistantFeatureSettingsProvider).settings;
+    final attachedSet = ref.watch(
+      assistantAttachedConnectorsProvider(_assistantId),
+    );
+    final featureSettings = ref
+        .watch(assistantFeatureSettingsProvider)
+        .settings;
     final items = ref.watch(
       connectorsProvider.select(
         (s) => s.byAssistantId[_assistantId] ?? const [],
@@ -132,13 +149,19 @@ class _AssistantConnectorsScreenState
     final maxAllowed = featureSettings.connectors.maxConnectorItems;
     if (loader.isLoading) {
       return Scaffold(
-        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Коннекторы'),
+        appBar: AssistantAppBar(
+          assistantId: _assistantId,
+          subfeatureTitle: 'Коннекторы',
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (loader.hasError) {
       return Scaffold(
-        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Коннекторы'),
+        appBar: AssistantAppBar(
+          assistantId: _assistantId,
+          subfeatureTitle: 'Коннекторы',
+        ),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -146,7 +169,8 @@ class _AssistantConnectorsScreenState
               const Text('Ошибка загрузки коннекторов'),
               const SizedBox(height: 12),
               FilledButton(
-                onPressed: () => ref.refresh(assistantConnectorsProvider(_assistantId)),
+                onPressed: () =>
+                    ref.refresh(assistantConnectorsProvider(_assistantId)),
                 child: const Text('Повторить'),
               ),
             ],
@@ -156,13 +180,19 @@ class _AssistantConnectorsScreenState
     }
     if (boot.isLoading) {
       return Scaffold(
-        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Коннекторы'),
+        appBar: AssistantAppBar(
+          assistantId: _assistantId,
+          subfeatureTitle: 'Коннекторы',
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (boot.hasError) {
       return Scaffold(
-        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Коннекторы'),
+        appBar: AssistantAppBar(
+          assistantId: _assistantId,
+          subfeatureTitle: 'Коннекторы',
+        ),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -199,10 +229,12 @@ class _AssistantConnectorsScreenState
         itemBuilder: (context, index) {
           final it = items[index];
           final bool isAttached = attachedSet.maybeWhen(
-            data: (s) => s.contains(it.id), // external_id совпадает с it.id (UUID)
+            data: (s) =>
+                s.contains(it.id), // external_id совпадает с it.id (UUID)
             orElse: () => false,
           );
-          final bool isBusy = _toggling.contains(it.id) || attachedSet.isLoading;
+          final bool isBusy =
+              _toggling.contains(it.id) || attachedSet.isLoading;
           return AppListItem(
             onTap: () => _edit(it),
             leading: SizedBox(
@@ -211,7 +243,7 @@ class _AssistantConnectorsScreenState
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    it.type == 'voip' ? RemixIcons.phone_line : RemixIcons.link_m,
+                    RemixIcons.phone_line,
                     color: Theme.of(context).colorScheme.secondary,
                   ),
                   const SizedBox(width: 6),
@@ -230,7 +262,8 @@ class _AssistantConnectorsScreenState
                         scale: 0.85,
                         child: Switch(
                           value: isAttached,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
                           onChanged: (v) async {
                             setState(() => _toggling.add(it.id));
                             try {
@@ -242,8 +275,11 @@ class _AssistantConnectorsScreenState
                                   type: 'voip',
                                 );
                                 if (mounted) {
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(const SnackBar(content: Text('Коннектор подключён')));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Коннектор подключён'),
+                                    ),
+                                  );
                                 }
                               } else {
                                 await api.unassignConnectorFromAssistant(
@@ -251,20 +287,31 @@ class _AssistantConnectorsScreenState
                                   externalId: it.id,
                                 );
                                 if (mounted) {
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(const SnackBar(content: Text('Коннектор отключён')));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Коннектор отключён'),
+                                    ),
+                                  );
                                 }
                               }
                               // Обновим набор подключённых
-                              ref.invalidate(assistantAttachedConnectorsProvider);
-                              await ref.read(assistantAttachedConnectorsProvider(_assistantId).future);
+                              ref.invalidate(
+                                assistantAttachedConnectorsProvider,
+                              );
+                              await ref.read(
+                                assistantAttachedConnectorsProvider(
+                                  _assistantId,
+                                ).future,
+                              );
                             } catch (e) {
                               if (mounted) {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(SnackBar(content: Text('Ошибка: $e')));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Ошибка: $e')),
+                                );
                               }
                             } finally {
-                              if (mounted) setState(() => _toggling.remove(it.id));
+                              if (mounted)
+                                setState(() => _toggling.remove(it.id));
                             }
                           },
                         ),
@@ -285,9 +332,13 @@ class _AssistantConnectorsScreenState
                   onPressed: () => _edit(it),
                 ),
                 IconButton(
-                  tooltip: it.settings.allowDelete ? 'Удалить' : 'Удаление запрещено',
+                  tooltip: it.settings.allowDelete
+                      ? 'Удалить'
+                      : 'Удаление запрещено',
                   icon: const Icon(Icons.delete_outline),
-                  onPressed: it.settings.allowDelete ? () => _remove(it.id) : null,
+                  onPressed: it.settings.allowDelete
+                      ? () => _remove(it.id)
+                      : null,
                 ),
               ],
             ),

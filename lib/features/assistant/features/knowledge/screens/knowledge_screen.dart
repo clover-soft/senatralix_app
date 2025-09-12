@@ -174,7 +174,7 @@ class _AssistantKnowledgeScreenState
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(RemixIcons.book_2_line, color: Theme.of(context).colorScheme.secondary),
+                  Icon(RemixIcons.git_repository_line, color: Theme.of(context).colorScheme.secondary),
                   const SizedBox(width: 6),
                   Consumer(builder: (context, ref, _) {
                     final linked = ref.watch(assistantSettingsProvider.select((s) =>
