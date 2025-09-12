@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
+import 'package:remixicon/remixicon.dart';
 
 /// Локальное меню подфич ассистента
 class AssistantHomeScreen extends ConsumerWidget {
@@ -17,43 +18,43 @@ class AssistantHomeScreen extends ConsumerWidget {
       _SubItem(
         'Настройки',
         'Модель, температура, токены, промпт…',
-        Icons.tune,
+        RemixIcons.settings_3_line,
         '/assistant/$id/settings',
       ),
       _SubItem(
         'Навыки',
         'Инструменты, которые ассистент может вызывать',
-        Icons.extension,
+        RemixIcons.tools_line,
         '/assistant/$id/tools',
       ),
       _SubItem(
         'Базы знаний',
         'База знаний: загрузка и управление',
-        Icons.storage,
+        RemixIcons.database_2_line,
         '/assistant/$id/knowledge',
       ),
       _SubItem(
         'Коннекторы',
         'VOIP, Telegram, Avito, WhatsApp…',
-        Icons.link,
+        RemixIcons.link_m,
         '/assistant/$id/connectors',
       ),
       _SubItem(
         'Скрипты',
         'События и действия: вход/выход, триггеры',
-        Icons.schedule,
+        RemixIcons.file_code_line,
         '/assistant/$id/scripts',
       ),
       _SubItem(
         'Чат',
         'Тестовый диалог с ассистентом',
-        Icons.smart_toy,
+        RemixIcons.chat_voice_line,
         '/assistant/$id/chat',
       ),
       _SubItem(
         'История чатов',
         'Посмотреть историю чатов',
-        Icons.history,
+        RemixIcons.history_line,
         '/assistant/$id/sessions',
       ),
     ];

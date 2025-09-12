@@ -17,7 +17,11 @@ class AssistantFeatureSettingsNotifier extends StateNotifier<AssistantFeatureSet
           const AssistantFeatureSettings(
             maxAssistantItems: 10,
             allowedModels: ['YandexGPT Pro 5.1', 'YandexGPT Lite'],
-            connectors: ConnectorsSettings(types: ['voip'], dictors: ['alena_good', 'lera_friendly']),
+            connectors: ConnectorsSettings(
+              maxConnectorItems: 10,
+              types: ['voip'],
+              dictors: ['alena_good', 'lera_friendly'],
+            ),
             scripts: ScriptsSettings(maxScriptItems: 10),
             tools: ToolsSettings(maxToolsItems: 10),
           ),

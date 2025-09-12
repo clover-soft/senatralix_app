@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_list_provider.dart';
+import 'package:remixicon/remixicon.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 
 class AssistantScreen extends ConsumerWidget {
@@ -79,7 +80,7 @@ class AssistantScreen extends ConsumerWidget {
                   ),
               ],
             ),
-            leading: Icon(Icons.smart_toy, color: scheme.secondary),
+            leading: Icon(RemixIcons.robot_2_line, color: scheme.secondary),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

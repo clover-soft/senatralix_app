@@ -44,12 +44,20 @@ class AssistantFeatureSettings {
 
 @immutable
 class ConnectorsSettings {
+  final int maxConnectorItems;
   final List<String> types;
   final List<String> dictors;
 
-  const ConnectorsSettings({required this.types, required this.dictors});
+  const ConnectorsSettings({
+    required this.maxConnectorItems,
+    required this.types,
+    required this.dictors,
+  });
 
   factory ConnectorsSettings.fromJson(Map<String, dynamic> json) => ConnectorsSettings(
+        maxConnectorItems: (json['max_connector_items'] is num)
+            ? (json['max_connector_items'] as num).toInt()
+            : int.tryParse('${json['max_connector_items']}') ?? 0,
         types: (json['types'] as List?)?.map((e) => e.toString()).toList() ?? const [],
         dictors: (json['dictors'] as List?)?.map((e) => e.toString()).toList() ?? const [],
       );

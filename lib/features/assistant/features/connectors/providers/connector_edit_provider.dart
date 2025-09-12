@@ -47,6 +47,8 @@ class ConnectorEditController extends StateNotifier<ConnectorEditState> {
             dictor: state.dictor,
             speed: state.speed,
           ),
+          allowDelete: initial.settings.allowDelete,
+          allowUpdate: initial.settings.allowUpdate,
         ),
       );
 }

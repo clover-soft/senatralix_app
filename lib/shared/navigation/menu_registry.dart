@@ -30,8 +30,8 @@ const Map<String, MenuDef> kMenuRegistry = {
   'assistant': MenuDef(
     key: 'assistant',
     route: '/assistant',
-    icon: RemixIcons.speak_ai_line,
-    selectedIcon: RemixIcons.speak_ai_line,
+    icon: RemixIcons.robot_2_line,
+    selectedIcon: RemixIcons.robot_2_line,
     defaultLabel: 'Assistant',
   ),
   'profile': MenuDef(

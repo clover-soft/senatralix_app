@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:sentralix_app/data/api/api_client.dart';
 import 'package:sentralix_app/features/assistant/models/assistant.dart';
 import 'package:sentralix_app/features/assistant/models/assistant_feature_settings.dart';
@@ -14,9 +15,70 @@ class AssistantApi {
   Future<AssistantFeatureSettings> fetchFeatureSettings() async {
     final resp = await _client.get<dynamic>('/assistants/settings/');
     final data = resp.data;
-    return AssistantFeatureSettings.fromJson(
-      Map<String, dynamic>.from(data as Map),
-    );
+    // Возможные форматы:
+    // 1) Уже готовый объект assistants {...}
+    // 2) Объект { subscription: { settings: "{...}" } }, где внутри settings есть ключ assistants
+    if (data is Map && data['subscription'] is Map) {
+      final sub = Map<String, dynamic>.from(data['subscription'] as Map);
+      final rawSettings = sub['settings'];
+      if (rawSettings is String && rawSettings.isNotEmpty) {
+        final parsed = jsonDecode(rawSettings);
+        if (parsed is Map && parsed['assistants'] is Map) {
+          final assistants = Map<String, dynamic>.from(parsed['assistants'] as Map);
+          final s = AssistantFeatureSettings.fromJson(assistants);
+          return s;
+        }
+      } else if (rawSettings is Map && rawSettings['assistants'] is Map) {
+        final assistants = Map<String, dynamic>.from(rawSettings['assistants'] as Map);
+        final s = AssistantFeatureSettings.fromJson(assistants);
+        return s;
+      }
+    }
+    // Альтернативный формат: на верхнем уровне есть settings
+    if (data is Map && data['settings'] != null) {
+      final rawTop = data['settings'];
+      if (rawTop is String && rawTop.isNotEmpty) {
+        final parsed = jsonDecode(rawTop);
+        if (parsed is Map && parsed['assistants'] is Map) {
+          final assistants = Map<String, dynamic>.from(parsed['assistants'] as Map);
+          final s = AssistantFeatureSettings.fromJson(assistants);
+          return s;
+        }
+      } else if (rawTop is Map && rawTop['assistants'] is Map) {
+        final assistants = Map<String, dynamic>.from(rawTop['assistants'] as Map);
+        final s = AssistantFeatureSettings.fromJson(assistants);
+        return s;
+      }
+    }
+    // Fallback: считаем, что data уже имеет нужные поля
+    AssistantFeatureSettings s = AssistantFeatureSettings.fromJson(Map<String, dynamic>.from(data as Map));
+    // Если лимит не пришёл (==0), попробуем достать из /me/context
+    if (s.connectors.maxConnectorItems == 0) {
+      try {
+        final ctxResp = await _client.get<dynamic>('/me/context');
+        final ctx = ctxResp.data;
+        if (ctx is Map && ctx['subscription'] is Map) {
+          final sub = Map<String, dynamic>.from(ctx['subscription'] as Map);
+          final raw = sub['settings'];
+          Map<String, dynamic>? assistants;
+          if (raw is String && raw.isNotEmpty) {
+            final parsed = jsonDecode(raw);
+            if (parsed is Map && parsed['assistants'] is Map) {
+              assistants = Map<String, dynamic>.from(parsed['assistants'] as Map);
+            }
+          } else if (raw is Map && raw['assistants'] is Map) {
+            assistants = Map<String, dynamic>.from(raw['assistants'] as Map);
+          }
+          if (assistants != null) {
+            final s2 = AssistantFeatureSettings.fromJson(assistants);
+            s = s.copyWith(connectors: s2.connectors, maxAssistantItems: s2.maxAssistantItems, allowedModels: s2.allowedModels);
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    return s;
   }
 
   /// Список коннекторов ассистента (READ)
@@ -39,6 +101,37 @@ class AssistantApi {
         .map((e) => (e['external_id'] as String?)?.trim())
         .whereType<String>()
         .toSet();
+  }
+
+  /// Назначить коннектор ассистенту
+  Future<Map<String, dynamic>> assignConnectorToAssistant({
+    required String assistantId,
+    required String externalId,
+    required String type,
+  }) async {
+    final resp = await _client.post<dynamic>(
+      '/assistants/connectors/assign',
+      data: {
+        'assistant_id': assistantId,
+        'external_id': externalId,
+        'type': type,
+      },
+    );
+    return Map<String, dynamic>.from(resp.data as Map);
+  }
+
+  /// Разназначить коннектор от ассистента
+  Future<void> unassignConnectorFromAssistant({
+    required String assistantId,
+    required String externalId,
+  }) async {
+    await _client.post<dynamic>(
+      '/assistants/connectors/unassign',
+      data: {
+        'assistant_id': assistantId,
+        'external_id': externalId,
+      },
+    );
   }
 
   /// Создание нового коннектора на бэкенде. Возвращает созданный объект с дефолтными значениями.
