@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:remixicon/remixicon.dart';
 
 // comment: Registry of supported menu definitions on the client
 class MenuDef {
@@ -29,8 +30,8 @@ const Map<String, MenuDef> kMenuRegistry = {
   'assistant': MenuDef(
     key: 'assistant',
     route: '/assistant',
-    icon: Icons.smart_toy_outlined,
-    selectedIcon: Icons.smart_toy,
+    icon: RemixIcons.speak_ai_line,
+    selectedIcon: RemixIcons.speak_ai_line,
     defaultLabel: 'Assistant',
   ),
   'profile': MenuDef(
