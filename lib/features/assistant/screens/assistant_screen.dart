@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_list_provider.dart';
-import 'package:remixicon/remixicon.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
+import 'package:sentralix_app/features/assistant/widgets/assistant_list_item.dart';
 
 class AssistantScreen extends ConsumerWidget {
   const AssistantScreen({super.key});
@@ -12,7 +12,6 @@ class AssistantScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final boot = ref.watch(assistantBootstrapProvider);
-    final scheme = Theme.of(context).colorScheme;
     final listState = ref.watch(assistantListProvider);
     final notifier = ref.read(assistantListProvider.notifier);
 
@@ -59,66 +58,32 @@ class AssistantScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         itemBuilder: (_, i) {
           final a = listState.items[i];
-          return ListTile(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            title: Text(a.name),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  (a.description?.isNotEmpty ?? false) ? a.description! : a.id,
-                  style: Theme.of(context).textTheme.labelSmall,
-                ),
-                if (a.settings != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      'Модель: ${a.settings!.model}  •  Темп: ${a.settings!.temperature.toStringAsFixed(1)}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-              ],
-            ),
-            leading: Icon(RemixIcons.robot_2_line, color: scheme.secondary),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: 'Переименовать',
-                  icon: const Icon(Icons.edit),
-                  onPressed: () async {
-                    await _showEditDialog(context, notifier, a.id, a.name, a.description);
-                  },
-                ),
-                IconButton(
-                  tooltip: 'Удалить',
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () async {
-                    final ok = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Удалить ассистента?'),
-                        content: Text('Будет удалён "${a.name}"'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(ctx).pop(false),
-                            child: const Text('Отмена'),
-                          ),
-                          FilledButton(
-                            onPressed: () => Navigator.of(ctx).pop(true),
-                            child: const Text('Удалить'),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (ok == true) notifier.remove(a.id);
-                  },
-                ),
-                const Icon(Icons.chevron_right),
-              ],
-            ),
+          return AssistantListItem(
+            assistant: a,
             onTap: () => context.go('/assistant/${a.id}'),
+            onEdit: () async {
+              await _showEditDialog(context, notifier, a.id, a.name, a.description);
+            },
+            onDelete: () async {
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Удалить ассистента?'),
+                  content: Text('Будет удалён "${a.name}"'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text('Отмена'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text('Удалить'),
+                    ),
+                  ],
+                ),
+              );
+              if (ok == true) notifier.remove(a.id);
+            },
           );
         },
         separatorBuilder: (_, __) => const SizedBox(height: 8),

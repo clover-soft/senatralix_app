@@ -8,6 +8,8 @@ import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_p
 import 'package:sentralix_app/features/assistant/features/connectors/providers/assistant_connectors_provider.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/providers/assistant_attached_connectors_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_feature_settings_provider.dart';
+import 'package:sentralix_app/features/assistant/shared/widgets/app_list_item.dart';
+import 'package:remixicon/remixicon.dart';
 
 class AssistantConnectorsScreen extends ConsumerStatefulWidget {
   const AssistantConnectorsScreen({super.key});
@@ -201,65 +203,79 @@ class _AssistantConnectorsScreenState
             orElse: () => false,
           );
           final bool isBusy = _toggling.contains(it.id) || attachedSet.isLoading;
-          return ListTile(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            leading: isBusy
-                ? const SizedBox(
-                    width: 42,
-                    height: 24,
-                    child: Center(
-                      child: SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2.4),
+          return AppListItem(
+            onTap: () => _edit(it),
+            leading: SizedBox(
+              width: 120,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    it.type == 'voip' ? RemixIcons.phone_line : RemixIcons.link_m,
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                  const SizedBox(width: 6),
+                  if (isBusy)
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2.4),
+                    )
+                  else
+                    Tooltip(
+                      message: isAttached
+                          ? 'Отключить коннектор от ассистента'
+                          : 'Подключить коннектор к ассистенту',
+                      child: Transform.scale(
+                        scale: 0.85,
+                        child: Switch(
+                          value: isAttached,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          onChanged: (v) async {
+                            setState(() => _toggling.add(it.id));
+                            try {
+                              final api = ref.read(assistantApiProvider);
+                              if (v) {
+                                await api.assignConnectorToAssistant(
+                                  assistantId: _assistantId,
+                                  externalId: it.id,
+                                  type: 'voip',
+                                );
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(const SnackBar(content: Text('Коннектор подключён')));
+                                }
+                              } else {
+                                await api.unassignConnectorFromAssistant(
+                                  assistantId: _assistantId,
+                                  externalId: it.id,
+                                );
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(const SnackBar(content: Text('Коннектор отключён')));
+                                }
+                              }
+                              // Обновим набор подключённых
+                              ref.invalidate(assistantAttachedConnectorsProvider);
+                              await ref.read(assistantAttachedConnectorsProvider(_assistantId).future);
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(SnackBar(content: Text('Ошибка: $e')));
+                              }
+                            } finally {
+                              if (mounted) setState(() => _toggling.remove(it.id));
+                            }
+                          },
+                        ),
                       ),
                     ),
-                  )
-                : Tooltip(
-                    message: isAttached
-                        ? 'Отключить коннектор от ассистента'
-                        : 'Подключить коннектор к ассистенту',
-                    child: Switch(
-                      value: isAttached,
-                      onChanged: (v) async {
-                        setState(() => _toggling.add(it.id));
-                        try {
-                          final api = ref.read(assistantApiProvider);
-                          if (v) {
-                            await api.assignConnectorToAssistant(
-                              assistantId: _assistantId,
-                              externalId: it.id,
-                              type: 'voip',
-                            );
-                            if (mounted) {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(const SnackBar(content: Text('Коннектор подключён')));
-                            }
-                          } else {
-                            await api.unassignConnectorFromAssistant(
-                              assistantId: _assistantId,
-                              externalId: it.id,
-                            );
-                            if (mounted) {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(const SnackBar(content: Text('Коннектор отключён')));
-                            }
-                          }
-                          // Обновим набор подключённых
-                          ref.invalidate(assistantAttachedConnectorsProvider);
-                          await ref.read(assistantAttachedConnectorsProvider(_assistantId).future);
-                        } catch (e) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(SnackBar(content: Text('Ошибка: $e')));
-                          }
-                        } finally {
-                          if (mounted) setState(() => _toggling.remove(it.id));
-                        }
-                      },
-                    ),
-                  ),
-            title: Text(it.name.isEmpty ? 'Без имени' : it.name),
+                ],
+              ),
+            ),
+            title: it.name.isEmpty ? 'Без имени' : it.name,
+            subtitle: it.id,
+            meta: isAttached ? 'Подключён к ассистенту' : 'Не подключён',
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
