@@ -7,6 +7,8 @@ import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart'
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/assistant_knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_settings_provider.dart';
+import 'package:sentralix_app/features/assistant/shared/widgets/app_list_item.dart';
+import 'package:remixicon/remixicon.dart';
 
 class AssistantKnowledgeScreen extends ConsumerStatefulWidget {
   const AssistantKnowledgeScreen({super.key});
@@ -156,57 +158,61 @@ class _AssistantKnowledgeScreenState
         child: const Icon(Icons.add),
       ),
       body: ListView.separated(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           final it = items[index];
-          return Card(
-            child: ListTile(
-              leading: Consumer(builder: (context, ref, _) {
-                final linked = ref.watch(assistantSettingsProvider.select((s) =>
-                    s.byId[_assistantId]?.knowledgeExternalIds.contains(it.externalId) ?? false));
-                return Switch(
-                  value: linked,
-                  onChanged: (v) => ref
-                      .read(assistantSettingsProvider.notifier)
-                      .toggleKnowledge(_assistantId, it.externalId, v),
-                );
-              }),
-              title: Text(
-                (it.name.trim().isNotEmpty) ? it.name : _titleFromMarkdown(it.markdown),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          final title = (it.name.trim().isNotEmpty) ? it.name : _titleFromMarkdown(it.markdown);
+          final subtitle = it.description.trim().isNotEmpty ? it.description : '';
+          final meta = '${it.externalId} • ${it.updatedAt.toLocal()}';
+
+          return AppListItem(
+            onTap: () => _editItem(it),
+            leading: SizedBox(
+              width: 120,
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (it.description.trim().isNotEmpty)
-                    Text(
-                      it.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  Text(
-                    '${it.externalId} • ${it.updatedAt.toLocal()}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+                  Icon(RemixIcons.book_2_line, color: Theme.of(context).colorScheme.secondary),
+                  const SizedBox(width: 6),
+                  Consumer(builder: (context, ref, _) {
+                    final linked = ref.watch(assistantSettingsProvider.select((s) =>
+                        s.byId[_assistantId]?.knowledgeExternalIds.contains(it.externalId) ?? false));
+                    return Tooltip(
+                      message: linked ? 'Отключить источник от ассистента' : 'Подключить источник к ассистенту',
+                      child: Transform.scale(
+                        scale: 0.85,
+                        child: Switch(
+                          value: linked,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          onChanged: (v) => ref
+                              .read(assistantSettingsProvider.notifier)
+                              .toggleKnowledge(_assistantId, it.externalId, v),
+                        ),
+                      ),
+                    );
+                  }),
                 ],
               ),
-              trailing: Wrap(
-                spacing: 8,
-                children: [
-                  IconButton(
-                    tooltip: 'Редактировать',
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: () => _editItem(it),
-                  ),
-                  IconButton(
-                    tooltip: 'Удалить',
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () => _removeItem(it.id),
-                  ),
-                ],
-              ),
+            ),
+            title: title,
+            subtitle: subtitle,
+            meta: meta,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: 'Редактировать',
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => _editItem(it),
+                ),
+                IconButton(
+                  tooltip: 'Удалить',
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => _removeItem(it.id),
+                ),
+              ],
             ),
           );
         },
