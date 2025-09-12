@@ -59,6 +59,20 @@ class AssistantSettingsNotifier extends StateNotifier<AssistantSettingsState> {
       unlinkKnowledge(assistantId, externalId);
     }
   }
+
+  /// Установить единственный external_id базы знаний (остальные очистить)
+  void setSingleKnowledge(String assistantId, String externalId) {
+    final current = getFor(assistantId);
+    final next = current.copyWith(knowledgeExternalIds: {externalId});
+    save(assistantId, next);
+  }
+
+  /// Очистить все связи баз знаний у ассистента
+  void clearKnowledge(String assistantId) {
+    final current = getFor(assistantId);
+    final next = current.copyWith(knowledgeExternalIds: {});
+    save(assistantId, next);
+  }
 }
 
 /// Провайдер настроек

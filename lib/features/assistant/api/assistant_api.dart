@@ -89,6 +89,18 @@ class AssistantApi {
     return list.map((e) => Connector.fromJson(e)).toList();
   }
 
+  /// Привязать базу знаний к ассистенту. Возвращает external_id привязанной БЗ
+  Future<String> bindKnowledgeToAssistant({required String assistantId, required int knowledgeId}) async {
+    final resp = await _client.post<dynamic>('/assistants/$assistantId/knowledge/$knowledgeId/bind', data: {});
+    final data = Map<String, dynamic>.from(resp.data as Map);
+    return data['external_id']?.toString() ?? '';
+  }
+
+  /// Отвязать базу знаний от ассистента
+  Future<void> unbindKnowledgeFromAssistant({required String assistantId, required int knowledgeId}) async {
+    await _client.post<dynamic>('/assistants/$assistantId/knowledge/$knowledgeId/unbind', data: {});
+  }
+
   /// Список коннекторов, подключенных к ассистенту (возвращает external_id)
   Future<Set<String>> fetchAssistantAttachedConnectors(String assistantId, {int limit = 50, int offset = 0}) async {
     final resp = await _client.get<dynamic>('/assistants/$assistantId/connectors', query: {

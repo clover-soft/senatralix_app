@@ -186,9 +186,46 @@ class _AssistantKnowledgeScreenState
                         child: Switch(
                           value: linked,
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          onChanged: (v) => ref
-                              .read(assistantSettingsProvider.notifier)
-                              .toggleKnowledge(_assistantId, it.externalId, v),
+                          onChanged: (v) async {
+                            try {
+                              final api = ref.read(assistantApiProvider);
+                              if (v) {
+                                // bind: получаем новый external_id и обновляем модель
+                                final newExt = await api.bindKnowledgeToAssistant(
+                                  assistantId: _assistantId,
+                                  knowledgeId: it.id,
+                                );
+                                // Обновим сам элемент (externalId) в списке знаний
+                                final updated = it.copyWith(externalId: newExt);
+                                ref.read(knowledgeProvider.notifier).update(_assistantId, updated);
+                                // Установим единственный external_id у ассистента
+                                ref.read(assistantSettingsProvider.notifier).setSingleKnowledge(_assistantId, newExt);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Источник привязан к ассистенту')),
+                                  );
+                                }
+                              } else {
+                                // unbind: очистить связи у ассистента
+                                await api.unbindKnowledgeFromAssistant(
+                                  assistantId: _assistantId,
+                                  knowledgeId: it.id,
+                                );
+                                ref.read(assistantSettingsProvider.notifier).clearKnowledge(_assistantId);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Источник отвязан от ассистента')),
+                                  );
+                                }
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Ошибка: $e')),
+                                );
+                              }
+                            }
+                          },
                         ),
                       ),
                     );

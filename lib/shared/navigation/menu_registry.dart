@@ -39,6 +39,6 @@ const Map<String, MenuDef> kMenuRegistry = {
     route: '/profile',
     icon: Icons.person_outline,
     selectedIcon: Icons.person,
-    defaultLabel: 'Profile',
+    defaultLabel: 'Профиль',
   ),
 };
