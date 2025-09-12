@@ -191,7 +191,7 @@ class _AssistantConnectorsScreenState
         child: const Icon(Icons.add),
       ),
       body: ListView.separated(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
@@ -201,80 +201,79 @@ class _AssistantConnectorsScreenState
             orElse: () => false,
           );
           final bool isBusy = _toggling.contains(it.id) || attachedSet.isLoading;
-          return Card(
-            child: ListTile(
-              leading: isBusy
-                  ? const SizedBox(
-                      width: 42,
-                      height: 24,
-                      child: Center(
-                        child: SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2.4),
-                        ),
-                      ),
-                    )
-                  : Tooltip(
-                      message: isAttached
-                          ? 'Отключить коннектор от ассистента'
-                          : 'Подключить коннектор к ассистенту',
-                      child: Switch(
-                        value: isAttached,
-                        onChanged: (v) async {
-                          setState(() => _toggling.add(it.id));
-                          try {
-                            final api = ref.read(assistantApiProvider);
-                            if (v) {
-                              await api.assignConnectorToAssistant(
-                                assistantId: _assistantId,
-                                externalId: it.id,
-                                type: 'voip',
-                              );
-                              if (mounted) {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(const SnackBar(content: Text('Коннектор подключён')));
-                              }
-                            } else {
-                              await api.unassignConnectorFromAssistant(
-                                assistantId: _assistantId,
-                                externalId: it.id,
-                              );
-                              if (mounted) {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(const SnackBar(content: Text('Коннектор отключён')));
-                              }
-                            }
-                            // Обновим набор подключённых
-                            ref.invalidate(assistantAttachedConnectorsProvider);
-                            await ref.read(assistantAttachedConnectorsProvider(_assistantId).future);
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(SnackBar(content: Text('Ошибка: $e')));
-                            }
-                          } finally {
-                            if (mounted) setState(() => _toggling.remove(it.id));
-                          }
-                        },
+          return ListTile(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            leading: isBusy
+                ? const SizedBox(
+                    width: 42,
+                    height: 24,
+                    child: Center(
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2.4),
                       ),
                     ),
-              title: Text(it.name.isEmpty ? 'Без имени' : it.name),
-              trailing: Wrap(
-                spacing: 8,
-                children: [
-                  IconButton(
-                    tooltip: 'Редактировать',
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: () => _edit(it),
+                  )
+                : Tooltip(
+                    message: isAttached
+                        ? 'Отключить коннектор от ассистента'
+                        : 'Подключить коннектор к ассистенту',
+                    child: Switch(
+                      value: isAttached,
+                      onChanged: (v) async {
+                        setState(() => _toggling.add(it.id));
+                        try {
+                          final api = ref.read(assistantApiProvider);
+                          if (v) {
+                            await api.assignConnectorToAssistant(
+                              assistantId: _assistantId,
+                              externalId: it.id,
+                              type: 'voip',
+                            );
+                            if (mounted) {
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(const SnackBar(content: Text('Коннектор подключён')));
+                            }
+                          } else {
+                            await api.unassignConnectorFromAssistant(
+                              assistantId: _assistantId,
+                              externalId: it.id,
+                            );
+                            if (mounted) {
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(const SnackBar(content: Text('Коннектор отключён')));
+                            }
+                          }
+                          // Обновим набор подключённых
+                          ref.invalidate(assistantAttachedConnectorsProvider);
+                          await ref.read(assistantAttachedConnectorsProvider(_assistantId).future);
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(SnackBar(content: Text('Ошибка: $e')));
+                          }
+                        } finally {
+                          if (mounted) setState(() => _toggling.remove(it.id));
+                        }
+                      },
+                    ),
                   ),
-                  IconButton(
-                    tooltip: it.settings.allowDelete ? 'Удалить' : 'Удаление запрещено',
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: it.settings.allowDelete ? () => _remove(it.id) : null,
-                  ),
-                ],
-              ),
+            title: Text(it.name.isEmpty ? 'Без имени' : it.name),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: 'Редактировать',
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => _edit(it),
+                ),
+                IconButton(
+                  tooltip: it.settings.allowDelete ? 'Удалить' : 'Удаление запрещено',
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: it.settings.allowDelete ? () => _remove(it.id) : null,
+                ),
+              ],
             ),
           );
         },
