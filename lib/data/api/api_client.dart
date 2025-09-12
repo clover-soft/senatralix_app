@@ -120,6 +120,26 @@ class ApiClient {
     }
   }
 
+  Future<Response<T>> delete<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? query,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      return await _dio.delete<T>(
+        path,
+        data: data,
+        queryParameters: query,
+        options: options,
+        cancelToken: cancelToken,
+      );
+    } on DioException catch (e) {
+      throw _toApiException(e);
+    }
+  }
+
   Future<Response<T>> post<T>(
     String path, {
     dynamic data,

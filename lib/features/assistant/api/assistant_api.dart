@@ -27,6 +27,20 @@ class AssistantApi {
     return list.map((e) => Connector.fromJson(e)).toList();
   }
 
+  /// Список коннекторов, подключенных к ассистенту (возвращает external_id)
+  Future<Set<String>> fetchAssistantAttachedConnectors(String assistantId, {int limit = 50, int offset = 0}) async {
+    final resp = await _client.get<dynamic>('/assistants/$assistantId/connectors', query: {
+      'limit': '$limit',
+      'offset': '$offset',
+    });
+    final data = resp.data;
+    final list = List<Map<String, dynamic>>.from(data as List);
+    return list
+        .map((e) => (e['external_id'] as String?)?.trim())
+        .whereType<String>()
+        .toSet();
+  }
+
   /// Создание нового коннектора на бэкенде. Возвращает созданный объект с дефолтными значениями.
   Future<Connector> createConnector({required String name}) async {
     final resp = await _client.post<dynamic>(
@@ -45,6 +59,11 @@ class AssistantApi {
     );
     final data = Map<String, dynamic>.from(resp.data as Map);
     return Connector.fromJson(data);
+  }
+
+  /// Удаление коннектора по id
+  Future<void> deleteConnector(String id) async {
+    await _client.delete<dynamic>('/assistant/connectors/$id');
   }
 
   /// Список ассистентов (минимальный маппинг под текущую модель)

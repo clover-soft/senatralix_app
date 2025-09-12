@@ -6,6 +6,7 @@ import 'package:sentralix_app/features/assistant/features/connectors/providers/c
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/providers/assistant_connectors_provider.dart';
+import 'package:sentralix_app/features/assistant/features/connectors/providers/assistant_attached_connectors_provider.dart';
 
 class AssistantConnectorsScreen extends ConsumerStatefulWidget {
   const AssistantConnectorsScreen({super.key});
@@ -89,7 +90,16 @@ class _AssistantConnectorsScreenState
       ),
     );
     if (ok == true) {
-      ref.read(connectorsProvider.notifier).remove(_assistantId, id);
+      try {
+        final api = ref.read(assistantApiProvider);
+        await api.deleteConnector(id);
+        if (!mounted) return;
+        ref.read(connectorsProvider.notifier).remove(_assistantId, id);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Удалено')));
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка удаления: $e')));
+      }
     }
   }
 
@@ -97,6 +107,7 @@ class _AssistantConnectorsScreenState
   Widget build(BuildContext context) {
     final boot = ref.watch(assistantBootstrapProvider);
     final loader = ref.watch(assistantConnectorsProvider(_assistantId));
+    final attachedSet = ref.watch(assistantAttachedConnectorsProvider(_assistantId));
     final items = ref.watch(
       connectorsProvider.select(
         (s) => s.byAssistantId[_assistantId] ?? const [],
@@ -166,13 +177,18 @@ class _AssistantConnectorsScreenState
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           final it = items[index];
+          final bool isAttached = attachedSet.maybeWhen(
+            data: (s) => s.contains(it.id), // id коннектора у нас UUID; бек присылает external_id (UUID)
+            orElse: () => false,
+          );
           return Card(
             child: ListTile(
-              leading: Switch(
-                value: it.isActive,
-                onChanged: (v) => ref
-                    .read(connectorsProvider.notifier)
-                    .toggleActive(_assistantId, it.id, v),
+              leading: Tooltip(
+                message: 'Подключен к ассистенту',
+                child: Switch(
+                  value: isAttached,
+                  onChanged: null, // только отображение
+                ),
               ),
               title: Text(it.name.isEmpty ? 'Без имени' : it.name),
               trailing: Wrap(
