@@ -6,12 +6,23 @@ import 'package:sentralix_app/features/assistant/features/knowledge/providers/kn
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/assistant_knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_list_provider.dart';
 
 /// Экран редактирования источника знаний (вместо модалки)
-class KnowledgeEditorScreen extends ConsumerWidget {
+class KnowledgeEditorScreen extends ConsumerStatefulWidget {
   const KnowledgeEditorScreen({super.key});
 
-  String? _req(String? v) => (v == null || v.trim().isEmpty) ? 'Обязательное поле' : null;
+  @override
+  ConsumerState<KnowledgeEditorScreen> createState() =>
+      _KnowledgeEditorScreenState();
+}
+
+class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
+  bool _saving = false;
+
+  String? _req(String? v) =>
+      (v == null || v.trim().isEmpty) ? 'Обязательное поле' : null;
   String? _vInt(String? v, {int? min, int? max}) {
     if (v == null || v.trim().isEmpty) return 'Укажите значение';
     final n = int.tryParse(v.trim());
@@ -21,35 +32,73 @@ class KnowledgeEditorScreen extends ConsumerWidget {
     return null;
   }
 
-  void _onSave(BuildContext context, WidgetRef ref, KnowledgeBaseItem initial, String assistantId) {
+  Future<void> _onSave(KnowledgeBaseItem initial, String assistantId) async {
     final st = ref.read(knowledgeEditProvider(initial));
     if (st.chunkOverlapTokens >= st.maxChunkSizeTokens) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('chunk_overlap_tokens должен быть меньше max_chunk_size_tokens')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'chunk_overlap_tokens должен быть меньше max_chunk_size_tokens',
+            ),
+          ),
+        );
+      }
       return;
     }
-    final updated = ref.read(knowledgeEditProvider(initial).notifier).buildResult(initial);
-    // Обновляем провайдер и возвращаемся к списку
-    ref.read(knowledgeProvider.notifier).update(assistantId, updated);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Сохранено')));
-      context.go('/assistant/$assistantId/knowledge');
+    setState(() => _saving = true);
+    final draft = ref
+        .read(knowledgeEditProvider(initial).notifier)
+        .buildResult(initial);
+    try {
+      final api = ref.read(assistantApiProvider);
+      final resp = await api.updateKnowledge(draft);
+      // Преобразуем ответ обратно в модель и обновим провайдер
+      final updatedItem = KnowledgeBaseItem.fromJson(resp);
+      ref.read(knowledgeProvider.notifier).update(assistantId, updatedItem);
+
+      // Если пришёл список ассистентов для обновления — перезагрузим их список
+      final au = resp['assistants_updated'];
+      if (au is List && au.isNotEmpty) {
+        final assistants = await api.fetchAssistants();
+        ref.read(assistantListProvider.notifier).replaceAll(assistants);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Сохранено')));
+        context.go('/assistant/$assistantId/knowledge');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Ошибка сохранения: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final route = GoRouterState.of(context);
     final assistantId = route.pathParameters['assistantId'] ?? 'unknown';
     final knowledgeIdStr = route.pathParameters['knowledgeId'];
     // Убедимся, что список знаний загружен при прямом входе по URL
     final loader = ref.watch(assistantKnowledgeProvider(assistantId));
-    KnowledgeBaseItem? initial = route.extra is KnowledgeBaseItem ? route.extra as KnowledgeBaseItem : null;
+    KnowledgeBaseItem? initial = route.extra is KnowledgeBaseItem
+        ? route.extra as KnowledgeBaseItem
+        : null;
     if (initial == null && knowledgeIdStr != null) {
       final id = int.tryParse(knowledgeIdStr);
       if (id != null) {
-        final items = ref.watch(knowledgeProvider.select((s) => s.byAssistantId[assistantId] ?? const <KnowledgeBaseItem>[]));
+        final items = ref.watch(
+          knowledgeProvider.select(
+            (s) => s.byAssistantId[assistantId] ?? const <KnowledgeBaseItem>[],
+          ),
+        );
         final idx = items.indexWhere((e) => e.id == id);
         if (idx >= 0) initial = items[idx];
       }
@@ -92,9 +141,18 @@ class KnowledgeEditorScreen extends ConsumerWidget {
         backPopFirst: false,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _onSave(context, ref, item, assistantId),
-        tooltip: 'Сохранить',
-        child: const Icon(Icons.save),
+        onPressed: _saving ? null : () => _onSave(item, assistantId),
+        tooltip: _saving ? 'Сохранение…' : 'Сохранить',
+        child: _saving
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                ),
+              )
+            : const Icon(Icons.save),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(12),
@@ -106,7 +164,9 @@ class KnowledgeEditorScreen extends ConsumerWidget {
               children: [
                 Text(
                   'external_id: ',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 SelectableText(
                   st.externalId,
@@ -118,7 +178,7 @@ class KnowledgeEditorScreen extends ConsumerWidget {
             // Имя (обязательно)
             TextFormField(
               initialValue: st.name,
-              decoration: const InputDecoration(labelText: 'name'),
+              decoration: const InputDecoration(labelText: 'Название'),
               validator: _req,
               onChanged: ctrl.setName,
             ),
@@ -128,8 +188,7 @@ class KnowledgeEditorScreen extends ConsumerWidget {
               initialValue: st.description,
               maxLines: 2,
               decoration: const InputDecoration(
-                labelText: 'description',
-                helperText: 'Краткое описание источника (до 280 символов)',
+                labelText: 'Краткое описание источника',
               ),
               onChanged: ctrl.setDescription,
             ),
@@ -138,8 +197,9 @@ class KnowledgeEditorScreen extends ConsumerWidget {
               initialValue: st.markdown,
               maxLines: 12,
               decoration: const InputDecoration(
-                labelText: 'markdown',
-                helperText: 'Контент (markdown). Рекомендовано не слишком большие тексты.',
+                labelText: 'Текст в формате Markdown',
+                helperText:
+                    'Текст в формате Markdown. Рекомендуется не слишком большие тексты.',
               ),
               validator: _req,
               onChanged: ctrl.setMarkdown,
@@ -150,7 +210,9 @@ class KnowledgeEditorScreen extends ConsumerWidget {
                 Expanded(
                   child: TextFormField(
                     initialValue: st.maxChunkSizeTokens.toString(),
-                    decoration: const InputDecoration(labelText: 'max_chunk_size_tokens'),
+                    decoration: const InputDecoration(
+                      labelText: 'Максимальный размер чанка (токены)',
+                    ),
                     keyboardType: TextInputType.number,
                     validator: (v) => _vInt(v, min: 100, max: 2000),
                     onChanged: (v) {
@@ -163,7 +225,9 @@ class KnowledgeEditorScreen extends ConsumerWidget {
                 Expanded(
                   child: TextFormField(
                     initialValue: st.chunkOverlapTokens.toString(),
-                    decoration: const InputDecoration(labelText: 'chunk_overlap_tokens'),
+                    decoration: const InputDecoration(
+                      labelText: 'Перекрытие чанков (токены)',
+                    ),
                     keyboardType: TextInputType.number,
                     validator: (v) => _vInt(v, min: 0, max: 1000),
                     onChanged: (v) {

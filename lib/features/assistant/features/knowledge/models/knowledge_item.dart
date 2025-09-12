@@ -87,8 +87,12 @@ class KnowledgeBaseItem {
 
   factory KnowledgeBaseItem.fromJson(Map<String, dynamic> json) => KnowledgeBaseItem(
         id: int.tryParse('${json['id']}') ?? 0,
-        name: json['name'] as String? ?? '',
-        description: json['description'] as String? ?? '',
+        name: (json['settings'] is Map && (json['settings'] as Map).containsKey('name'))
+            ? (json['settings']['name'] as String? ?? '')
+            : (json['name'] as String? ?? ''),
+        description: (json['settings'] is Map && (json['settings'] as Map).containsKey('description'))
+            ? (json['settings']['description'] as String? ?? '')
+            : (json['description'] as String? ?? ''),
         externalId: json['external_id'] as String? ?? '',
         markdown: json['markdown'] as String? ?? '',
         status: _statusFromString(json['status'] as String? ?? 'ready'),
@@ -101,8 +105,6 @@ class KnowledgeBaseItem {
 
   Map<String, dynamic> toJson() => {
         'id': id,
-        'name': name,
-        'description': description,
         'external_id': externalId,
         'markdown': markdown,
         'status': _statusToString(status),
@@ -110,6 +112,8 @@ class KnowledgeBaseItem {
         'settings': {
           'max_chunk_size_tokens': maxChunkSizeTokens,
           'chunk_overlap_tokens': chunkOverlapTokens,
+          'name': name,
+          'description': description,
         },
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),

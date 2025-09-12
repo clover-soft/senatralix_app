@@ -184,9 +184,9 @@ class _AssistantConnectorsScreenState
                     onPressed: () => _edit(it),
                   ),
                   IconButton(
-                    tooltip: 'Удалить',
+                    tooltip: it.settings.allowDelete ? 'Удалить' : 'Удаление запрещено',
                     icon: const Icon(Icons.delete_outline),
-                    onPressed: () => _remove(it.id),
+                    onPressed: it.settings.allowDelete ? () => _remove(it.id) : null,
                   ),
                 ],
               ),

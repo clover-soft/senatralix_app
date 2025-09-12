@@ -110,8 +110,15 @@ class ConnectorAssistantSettings {
 class ConnectorSettings {
   final ConnectorDialogSettings dialog;
   final ConnectorAssistantSettings assistant;
+  final bool allowDelete; // разрешено ли удаление на бэкенде
+  final bool allowUpdate; // разрешено ли обновление на бэкенде
 
-  const ConnectorSettings({required this.dialog, required this.assistant});
+  const ConnectorSettings({
+    required this.dialog,
+    required this.assistant,
+    this.allowDelete = true,
+    this.allowUpdate = true,
+  });
 
   factory ConnectorSettings.fromJson(Map<String, dynamic> json) => ConnectorSettings(
         dialog: ConnectorDialogSettings.fromJson(Map<String, dynamic>.from(json['dialog'] as Map? ?? {})),
@@ -121,6 +128,8 @@ class ConnectorSettings {
           if (json.containsKey('dictor')) 'dictor': json['dictor'],
           if (json.containsKey('speed')) 'speed': json['speed'],
         }),
+        allowDelete: json['allow_delete'] as bool? ?? true,
+        allowUpdate: json['allow_update'] as bool? ?? true,
       );
 
   Map<String, dynamic> toJson() => {
@@ -134,6 +143,9 @@ class ConnectorSettings {
         // dictor и speed — на корневом уровне settings
         'dictor': assistant.dictor,
         'speed': assistant.speed,
+        // allow_delete / allow_update — также на корневом уровне settings
+        'allow_delete': allowDelete,
+        'allow_update': allowUpdate,
       };
 }
 

@@ -118,6 +118,7 @@ class ConnectorDetailsScreen extends ConsumerWidget {
 
     // Локальный вспомогательный билдер больше не нужен — используем ReorderableAddListCard
 
+    final canUpdate = initial.settings.allowUpdate;
     return Scaffold(
       appBar: AssistantAppBar(
         assistantId: assistantId,
@@ -127,8 +128,8 @@ class ConnectorDetailsScreen extends ConsumerWidget {
         backTooltip: 'К списку коннекторов',
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: onSave,
-        tooltip: 'Сохранить',
+        onPressed: canUpdate ? onSave : null,
+        tooltip: canUpdate ? 'Сохранить' : 'Изменения запрещены',
         child: const Icon(Icons.save),
       ),
       body: LayoutBuilder(

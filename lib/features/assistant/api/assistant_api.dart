@@ -95,4 +95,28 @@ class AssistantApi {
       );
     }).toList();
   }
+
+  /// Обновление базы знаний (PATCH) по id. Возвращает сырой JSON ответа бэкенда.
+  Future<Map<String, dynamic>> updateKnowledgeRaw({
+    required int id,
+    required Map<String, dynamic> body,
+  }) async {
+    final resp = await _client.patch<dynamic>('/assistants/knowledge/$id', data: body);
+    return Map<String, dynamic>.from(resp.data as Map);
+  }
+
+  /// Удобный метод: собрать тело запроса из модели KnowledgeBaseItem и выполнить PATCH
+  Future<Map<String, dynamic>> updateKnowledge(KnowledgeBaseItem item) async {
+    final body = <String, dynamic>{
+      'id': item.id,
+      'markdown': item.markdown,
+      'settings': {
+        'max_chunk_size_tokens': item.maxChunkSizeTokens,
+        'chunk_overlap_tokens': item.chunkOverlapTokens,
+        'name': item.name,
+        'description': item.description.isEmpty ? null : item.description,
+      },
+    };
+    return updateKnowledgeRaw(id: item.id, body: body);
+  }
 }

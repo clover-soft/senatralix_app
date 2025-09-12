@@ -187,7 +187,7 @@ class _AssistantKnowledgeScreenState
                       overflow: TextOverflow.ellipsis,
                     ),
                   Text(
-                    '${it.externalId} • ${it.createdAt.toLocal()}',
+                    '${it.externalId} • ${it.updatedAt.toLocal()}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
