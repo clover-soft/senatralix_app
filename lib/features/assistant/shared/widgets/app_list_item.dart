@@ -33,7 +33,8 @@ class AppListItem extends StatelessWidget {
 
   Widget? _buildLeading(BuildContext context) {
     final hasIcon = leadingIcon != null;
-    final hasSwitch = onSwitchChanged != null;
+    // Свитч отображаем, если передано хотя бы значение (он может быть disabled при null-обработчике)
+    final hasSwitch = switchValue != null;
     if (!hasIcon && !hasSwitch) return null;
 
     final children = <Widget>[];
