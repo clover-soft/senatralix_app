@@ -11,6 +11,7 @@ import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_p
 import 'package:sentralix_app/features/assistant/features/connectors/widgets/param_block_card.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/models/selection_options.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/models/dictor_options.dart';
+import 'package:sentralix_app/features/assistant/shared/widgets/assistant_fab.dart';
 
 class ConnectorDetailsScreen extends ConsumerWidget {
   const ConnectorDetailsScreen({super.key});
@@ -132,10 +133,10 @@ class ConnectorDetailsScreen extends ConsumerWidget {
         backPath: '/assistant/$assistantId/connectors',
         backTooltip: 'К списку коннекторов',
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: canUpdate ? onSave : null,
+      floatingActionButton: AssistantActionFab(
+        icon: Icons.save,
         tooltip: canUpdate ? 'Сохранить' : 'Изменения запрещены',
-        child: const Icon(Icons.save),
+        onPressed: canUpdate ? onSave : null,
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {

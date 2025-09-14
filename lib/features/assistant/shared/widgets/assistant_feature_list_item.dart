@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 /// - trailing: любой виджет (иконки действий, индикаторы)
 /// - title/subtitle: основная информация
 /// - meta: служебные поля, например, параметры/состояние
-class AppListItem extends StatelessWidget {
+class AssistantFeatureListItem extends StatelessWidget {
   // Новый API для leading
   final Widget? leadingIcon;
   final ValueChanged<bool>? onSwitchChanged;
@@ -13,12 +13,17 @@ class AppListItem extends StatelessWidget {
   final String? switchTooltip;
 
   final Widget? trailing;
+  // Новый API для trailing
+  final bool showDelete;
+  final bool deleteEnabled;
+  final bool showChevron;
+  final Future<void> Function()? onDeletePressed;
   final String title;
   final String? subtitle;
   final String? meta;
   final VoidCallback? onTap;
 
-  const AppListItem({
+  const AssistantFeatureListItem({
     super.key,
     required this.title,
     this.subtitle,
@@ -29,6 +34,10 @@ class AppListItem extends StatelessWidget {
     this.trailing,
     this.onTap,
     this.switchTooltip,
+    this.showDelete = false,
+    this.deleteEnabled = true,
+    this.showChevron = true,
+    this.onDeletePressed,
   });
 
   Widget? _buildLeading(BuildContext context) {
@@ -66,6 +75,30 @@ class AppListItem extends StatelessWidget {
     );
   }
 
+  /// Собирает trailing-часть: удаление (при наличии) и стрелка вправо (при наличии)
+  Widget? _buildTrailing(BuildContext context) {
+    final widgets = <Widget>[];
+    if (showDelete) {
+      widgets.add(
+        IconButton(
+          tooltip: deleteEnabled ? 'Удалить' : 'Удаление запрещено',
+          icon: const Icon(Icons.delete_outline),
+          onPressed: deleteEnabled
+              ? () {
+                  // Вызов без ожидания; обработчик может быть async
+                  onDeletePressed?.call();
+                }
+              : null,
+        ),
+      );
+    }
+    if (showChevron) {
+      widgets.add(const Icon(Icons.chevron_right));
+    }
+    if (widgets.isEmpty) return null;
+    return Row(mainAxisSize: MainAxisSize.min, children: widgets);
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListTile(
@@ -85,7 +118,7 @@ class AppListItem extends StatelessWidget {
             ),
         ],
       ),
-      trailing: trailing,
+      trailing: trailing ?? _buildTrailing(context),
       onTap: onTap,
     );
   }

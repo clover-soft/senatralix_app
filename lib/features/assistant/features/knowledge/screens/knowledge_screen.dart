@@ -7,7 +7,8 @@ import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart'
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/assistant_knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_settings_provider.dart';
-import 'package:sentralix_app/features/assistant/shared/widgets/app_list_item.dart';
+import 'package:sentralix_app/features/assistant/shared/widgets/assistant_feature_list_item.dart';
+import 'package:sentralix_app/features/assistant/shared/widgets/assistant_fab.dart';
 import 'package:remixicon/remixicon.dart';
 
 class AssistantKnowledgeScreen extends ConsumerStatefulWidget {
@@ -141,10 +142,10 @@ class _AssistantKnowledgeScreenState
         assistantId: _assistantId,
         subfeatureTitle: 'Источники знаний',
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: AssistantActionFab(
+        icon: Icons.add,
         tooltip: 'Добавить источник',
         onPressed: _addItem,
-        child: const Icon(Icons.add),
       ),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
@@ -170,7 +171,7 @@ class _AssistantKnowledgeScreenState
             ),
           );
 
-          return AppListItem(
+          return AssistantFeatureListItem(
             onTap: () => _editItem(it),
             leadingIcon: Icon(
               RemixIcons.git_repository_line,
@@ -227,55 +228,41 @@ class _AssistantKnowledgeScreenState
             title: title,
             subtitle: subtitle,
             meta: meta,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: 'Редактировать',
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: () => _editItem(it),
+            showDelete: true,
+            showChevron: true,
+            onDeletePressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Удалить источник?'),
+                  content: const Text('Действие необратимо'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Отмена'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Удалить'),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  tooltip: 'Удалить',
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    final ok = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Удалить источник?'),
-                        content: const Text('Действие необратимо'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Отмена'),
-                          ),
-                          FilledButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text('Удалить'),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (ok != true) return;
-                    try {
-                      final api = ref.read(assistantApiProvider);
-                      await api.deleteKnowledgeBase(it.id);
-                      ref
-                          .read(knowledgeProvider.notifier)
-                          .remove(_assistantId, it.id);
-                      messenger.showSnackBar(
-                        const SnackBar(content: Text('Источник удалён')),
-                      );
-                    } catch (e) {
-                      messenger.showSnackBar(
-                        SnackBar(content: Text('Ошибка удаления: $e')),
-                      );
-                    }
-                  },
-                ),
-              ],
-            ),
+              );
+              if (ok != true) return;
+              try {
+                final api = ref.read(assistantApiProvider);
+                await api.deleteKnowledgeBase(it.id);
+                ref.read(knowledgeProvider.notifier).remove(_assistantId, it.id);
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Источник удалён')),
+                );
+              } catch (e) {
+                messenger.showSnackBar(
+                  SnackBar(content: Text('Ошибка удаления: $e')),
+                );
+              }
+            },
           );
         },
       ),

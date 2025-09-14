@@ -8,6 +8,7 @@ import 'package:sentralix_app/features/assistant/features/knowledge/providers/as
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_list_provider.dart';
+import 'package:sentralix_app/features/assistant/shared/widgets/assistant_fab.dart';
 
 /// Экран редактирования источника знаний (вместо модалки)
 class KnowledgeEditorScreen extends ConsumerStatefulWidget {
@@ -140,10 +141,11 @@ class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
         backTooltip: 'К списку источников',
         backPopFirst: false,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _saving ? null : () => _onSave(item, assistantId),
+      floatingActionButton: AssistantActionFab(
+        icon: Icons.save,
         tooltip: _saving ? 'Сохранение…' : 'Сохранить',
-        child: _saving
+        onPressed: _saving ? null : () => _onSave(item, assistantId),
+        customChild: _saving
             ? const SizedBox(
                 width: 22,
                 height: 22,
@@ -152,7 +154,7 @@ class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
                   valueColor: AlwaysStoppedAnimation(Colors.white),
                 ),
               )
-            : const Icon(Icons.save),
+            : null,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(12),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:sentralix_app/features/assistant/models/assistant.dart';
-import 'package:sentralix_app/features/assistant/shared/widgets/app_list_item.dart';
+import 'package:sentralix_app/features/assistant/shared/widgets/assistant_feature_list_item.dart';
 
 /// Элемент списка ассистентов на базе универсального AppListItem.
 /// Позволяет переопределять leading/trailing (например, добавить переключатели/кнопки),
@@ -37,11 +37,6 @@ class AssistantListItem extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          tooltip: 'Переименовать',
-          icon: const Icon(Icons.edit),
-          onPressed: onEdit,
-        ),
-        IconButton(
           tooltip: 'Удалить',
           icon: const Icon(Icons.delete_outline),
           onPressed: onDelete,
@@ -58,7 +53,7 @@ class AssistantListItem extends StatelessWidget {
         ? 'Модель: ${assistant.settings!.model}  •  Темп: ${assistant.settings!.temperature.toStringAsFixed(1)}'
         : null;
 
-    return AppListItem(
+    return AssistantFeatureListItem(
       leadingIcon: leading ?? defaultLeading,
       trailing: trailing ?? defaultTrailing,
       title: assistant.name,

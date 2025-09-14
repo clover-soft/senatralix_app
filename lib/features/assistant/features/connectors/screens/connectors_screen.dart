@@ -8,7 +8,8 @@ import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_p
 import 'package:sentralix_app/features/assistant/features/connectors/providers/assistant_connectors_provider.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/providers/assistant_attached_connectors_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_feature_settings_provider.dart';
-import 'package:sentralix_app/features/assistant/shared/widgets/app_list_item.dart';
+import 'package:sentralix_app/features/assistant/shared/widgets/assistant_feature_list_item.dart';
+import 'package:sentralix_app/features/assistant/shared/widgets/assistant_fab.dart';
 import 'package:remixicon/remixicon.dart';
 
 class AssistantConnectorsScreen extends ConsumerStatefulWidget {
@@ -231,14 +232,14 @@ class _AssistantConnectorsScreenState
         assistantId: _assistantId,
         subfeatureTitle: 'Коннекторы',
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: AssistantActionFab(
+        icon: Icons.add,
         tooltip: (maxAllowed > 0 && items.length >= maxAllowed)
             ? 'Коннекторы: ${items.length} из $maxAllowed. Лимит коннекторов достигнут'
             : 'Создать коннектор (${items.length}${maxAllowed > 0 ? ' / $maxAllowed' : ''})',
         onPressed: (maxAllowed > 0 && items.length >= maxAllowed)
             ? null
             : _createConnector,
-        child: const Icon(Icons.add),
       ),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),
@@ -251,7 +252,7 @@ class _AssistantConnectorsScreenState
           ); // external_id совпадает с it.id (UUID)
           // Локальная блокировка только для конкретного элемента
           final bool isBusy = _toggling.contains(it.id);
-          return AppListItem(
+          return AssistantFeatureListItem(
             onTap: () => _edit(it),
             leadingIcon: Icon(
               RemixIcons.phone_line,
@@ -306,25 +307,14 @@ class _AssistantConnectorsScreenState
             title: it.name.isEmpty ? 'Без имени' : it.name,
             subtitle: it.id,
             meta: isAttached ? 'Подключён к ассистенту' : 'Не подключён',
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: 'Редактировать',
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: () => _edit(it),
-                ),
-                IconButton(
-                  tooltip: it.settings.allowDelete
-                      ? 'Удалить'
-                      : 'Удаление запрещено',
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: it.settings.allowDelete
-                      ? () => _remove(it.id)
-                      : null,
-                ),
-              ],
-            ),
+            showDelete: true,
+            deleteEnabled: it.settings.allowDelete,
+            showChevron: true,
+            onDeletePressed: it.settings.allowDelete
+                ? () async {
+                    _remove(it.id);
+                  }
+                : null,
           );
         },
       ),
