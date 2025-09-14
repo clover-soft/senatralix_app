@@ -42,7 +42,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _saveName() async {
     if (!_nameFormKey.currentState!.validate()) return;
-    final ok = await ref.read(profileDataProvider).updateName(_nameCtrl.text.trim(), ref);
+    final ok = await ref
+        .read(profileDataProvider)
+        .updateName(_nameCtrl.text.trim(), ref);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(ok ? 'ФИО обновлено' : 'Не удалось обновить ФИО')),
@@ -51,13 +53,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _changePassword() async {
     if (!_passFormKey.currentState!.validate()) return;
-    final ok = await ref.read(profileDataProvider).changePassword(
+    final ok = await ref
+        .read(profileDataProvider)
+        .changePassword(
           oldPassword: _oldPassCtrl.text,
           newPassword: _newPassCtrl.text,
         );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(ok ? 'Пароль изменён' : 'Не удалось изменить пароль')),
+      SnackBar(
+        content: Text(ok ? 'Пароль изменён' : 'Не удалось изменить пароль'),
+      ),
     );
     if (ok) {
       _oldPassCtrl.clear();
@@ -105,7 +111,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 20),
 
                 // comment: Form 1 — Update Name
-                Text('Смена ФИО', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Смена ФИО',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 8),
                 Form(
                   key: _nameFormKey,
@@ -130,7 +139,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Text('Сохранить'),
                       ),
@@ -146,7 +157,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 28),
 
                 // comment: Form 2 — Change Password
-                Text('Смена пароля', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Смена пароля',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 8),
                 Form(
                   key: _passFormKey,
@@ -160,7 +174,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           labelText: 'Текущий пароль',
                           prefixIcon: Icon(Icons.lock_outline),
                         ),
-                        validator: (v) => (v == null || v.isEmpty) ? 'Введите текущий пароль' : null,
+                        validator: (v) => (v == null || v.isEmpty)
+                            ? 'Введите текущий пароль'
+                            : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
@@ -170,7 +186,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           labelText: 'Новый пароль',
                           prefixIcon: Icon(Icons.lock_outline),
                         ),
-                        validator: (v) => (v == null || v.isEmpty) ? 'Введите новый пароль' : null,
+                        validator: (v) => (v == null || v.isEmpty)
+                            ? 'Введите новый пароль'
+                            : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
@@ -191,12 +209,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: FilledButton(
-                          onPressed: profileState.loading ? null : _changePassword,
+                          onPressed: profileState.loading
+                              ? null
+                              : _changePassword,
                           child: profileState.loading
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Text('Изменить пароль'),
                         ),
@@ -209,7 +231,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                 // comment: Logout button
                 OutlinedButton.icon(
-                  onPressed: auth.loading ? null : () => ref.read(authDataProvider).logout(),
+                  onPressed: auth.loading
+                      ? null
+                      : () => ref.read(authDataProvider).logout(),
                   icon: const Icon(Icons.logout),
                   label: const Text('Выйти'),
                 ),

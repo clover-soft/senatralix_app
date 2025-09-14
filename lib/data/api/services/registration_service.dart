@@ -9,7 +9,7 @@ class RegistrationService {
 
   // Stage 1: submit contact info to receive SMS code
   // params: email, mobilePhone
-  Future<void> register_stage1({
+  Future<void> registerStage1({
     required String email,
     required String mobilePhone,
   }) async {
@@ -21,7 +21,7 @@ class RegistrationService {
 
   // Stage 2: confirm by smsCode and set password
   // params: smsCode, password
-  Future<void> register_stage2({
+  Future<void> registerStage2({
     required String smsCode,
     required String password,
   }) async {

@@ -20,10 +20,20 @@ class AssistantFeatureSettings {
   factory AssistantFeatureSettings.fromJson(Map<String, dynamic> json) {
     return AssistantFeatureSettings(
       maxAssistantItems: json['max_assistent_items'] as int? ?? 0,
-      allowedModels: (json['allowed_models'] as List?)?.map((e) => e.toString()).toList() ?? const [],
-      connectors: ConnectorsSettings.fromJson(Map<String, dynamic>.from(json['connectors'] as Map? ?? const {})),
-      scripts: ScriptsSettings.fromJson(Map<String, dynamic>.from(json['scripts'] as Map? ?? const {})),
-      tools: ToolsSettings.fromJson(Map<String, dynamic>.from(json['tools'] as Map? ?? const {})),
+      allowedModels:
+          (json['allowed_models'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      connectors: ConnectorsSettings.fromJson(
+        Map<String, dynamic>.from(json['connectors'] as Map? ?? const {}),
+      ),
+      scripts: ScriptsSettings.fromJson(
+        Map<String, dynamic>.from(json['scripts'] as Map? ?? const {}),
+      ),
+      tools: ToolsSettings.fromJson(
+        Map<String, dynamic>.from(json['tools'] as Map? ?? const {}),
+      ),
     );
   }
 
@@ -34,12 +44,12 @@ class AssistantFeatureSettings {
     ScriptsSettings? scripts,
     ToolsSettings? tools,
   }) => AssistantFeatureSettings(
-        maxAssistantItems: maxAssistantItems ?? this.maxAssistantItems,
-        allowedModels: allowedModels ?? this.allowedModels,
-        connectors: connectors ?? this.connectors,
-        scripts: scripts ?? this.scripts,
-        tools: tools ?? this.tools,
-      );
+    maxAssistantItems: maxAssistantItems ?? this.maxAssistantItems,
+    allowedModels: allowedModels ?? this.allowedModels,
+    connectors: connectors ?? this.connectors,
+    scripts: scripts ?? this.scripts,
+    tools: tools ?? this.tools,
+  );
 }
 
 @immutable
@@ -54,12 +64,17 @@ class ConnectorsSettings {
     required this.dictors,
   });
 
-  factory ConnectorsSettings.fromJson(Map<String, dynamic> json) => ConnectorsSettings(
+  factory ConnectorsSettings.fromJson(Map<String, dynamic> json) =>
+      ConnectorsSettings(
         maxConnectorItems: (json['max_connector_items'] is num)
             ? (json['max_connector_items'] as num).toInt()
             : int.tryParse('${json['max_connector_items']}') ?? 0,
-        types: (json['types'] as List?)?.map((e) => e.toString()).toList() ?? const [],
-        dictors: (json['dictors'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+        types:
+            (json['types'] as List?)?.map((e) => e.toString()).toList() ??
+            const [],
+        dictors:
+            (json['dictors'] as List?)?.map((e) => e.toString()).toList() ??
+            const [],
       );
 }
 

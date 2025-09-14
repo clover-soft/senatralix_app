@@ -5,13 +5,15 @@ import 'package:sentralix_app/features/assistant/features/scripts/models/script_
 /// Контроллер редактора скрипта (управляет временным состоянием формы)
 class ScriptEditController extends StateNotifier<ScriptEditState> {
   ScriptEditController(Script initial)
-      : super(ScriptEditState(
+    : super(
+        ScriptEditState(
           name: initial.name,
           enabled: initial.enabled,
           trigger: initial.trigger,
           params: initial.params.keys.toList(),
           steps: List<ScriptStep>.from(initial.steps),
-        ));
+        ),
+      );
 
   void setName(String v) => state = state.copy(name: v);
   void setEnabled(bool v) => state = state.copy(enabled: v);
@@ -28,7 +30,8 @@ class ScriptEditController extends StateNotifier<ScriptEditState> {
     state = state.copy(params: p);
   }
 
-  void addStep(ScriptStep step) => state = state.copy(steps: [...state.steps, step]);
+  void addStep(ScriptStep step) =>
+      state = state.copy(steps: [...state.steps, step]);
   void updateStep(int i, ScriptStep step) {
     final s = [...state.steps];
     s[i] = step;
@@ -53,16 +56,16 @@ class ScriptEditController extends StateNotifier<ScriptEditState> {
   }
 
   Script buildResult(Script initial) => initial.copyWith(
-        name: state.name.trim(),
-        enabled: state.enabled,
-        trigger: state.trigger,
-        params: {for (final k in state.params) k.trim(): ''},
-        steps: state.steps,
-      );
+    name: state.name.trim(),
+    enabled: state.enabled,
+    trigger: state.trigger,
+    params: {for (final k in state.params) k.trim(): ''},
+    steps: state.steps,
+  );
 }
 
 /// Family-провайдер, чтобы хранить отдельное состояние на каждый запуск диалога
 final scriptEditProvider = StateNotifierProvider.autoDispose
     .family<ScriptEditController, ScriptEditState, Script>((ref, initial) {
-  return ScriptEditController(initial);
-});
+      return ScriptEditController(initial);
+    });

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sentralix_app/core/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/data/providers/registration_data_provider.dart';
 
@@ -17,7 +18,7 @@ class RegistrationProvider with ChangeNotifier {
         mobilePhone: mobilePhone,
       );
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.e(e.toString(), tag: 'RegistrationProvider');
     }
   }
 }

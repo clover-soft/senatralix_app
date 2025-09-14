@@ -22,8 +22,10 @@ class AssistantConnectorsScreen extends ConsumerStatefulWidget {
 class _AssistantConnectorsScreenState
     extends ConsumerState<AssistantConnectorsScreen> {
   late String _assistantId;
-  final _toggling = <String>{}; // id коннектора, который в процессе переключения
-  Set<String> _lastAttached = <String>{}; // кеш последнего набора прикреплённых external_id
+  final _toggling =
+      <String>{}; // id коннектора, который в процессе переключения
+  Set<String> _lastAttached =
+      <String>{}; // кеш последнего набора прикреплённых external_id
 
   @override
   void didChangeDependencies() {
@@ -77,18 +79,18 @@ class _AssistantConnectorsScreenState
     );
     if (name == null || name.isEmpty) return;
 
+    // ignore: use_build_context_synchronously
+    final messenger = ScaffoldMessenger.maybeOf(context);
     try {
       final api = ref.read(assistantApiProvider);
       final created = await api.createConnector(name: name);
       // Обновить локальный список и перейти в детали
       ref.read(connectorsProvider.notifier).add(_assistantId, created);
-      if (!context.mounted) return;
+      if (!mounted) return;
       context.go('/assistant/$_assistantId/connectors/${created.id}');
     } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Ошибка создания: $e')));
+      if (!mounted) return;
+      messenger?.showSnackBar(SnackBar(content: Text('Ошибка создания: $e')));
     }
   }
 
@@ -136,7 +138,9 @@ class _AssistantConnectorsScreenState
   Widget build(BuildContext context) {
     final boot = ref.watch(assistantBootstrapProvider);
     final loader = ref.watch(assistantConnectorsProvider(_assistantId));
-    final attachedSet = ref.watch(assistantAttachedConnectorsProvider(_assistantId));
+    final attachedSet = ref.watch(
+      assistantAttachedConnectorsProvider(_assistantId),
+    );
     // Вычислим актуальный набор прикреплённых коннекторов, не сбрасывая UI на время загрузки
     Set<String> attached = _lastAttached;
     attachedSet.when(
@@ -145,7 +149,8 @@ class _AssistantConnectorsScreenState
         _lastAttached = s; // обновим кеш
       },
       loading: () {
-        attached = _lastAttached; // оставим предыдущее значение, чтобы не мигали свитчи
+        attached =
+            _lastAttached; // оставим предыдущее значение, чтобы не мигали свитчи
       },
       error: (_, __) {
         attached = _lastAttached; // при ошибке тоже оставим последнее известное
@@ -241,7 +246,9 @@ class _AssistantConnectorsScreenState
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           final it = items[index];
-          final bool isAttached = attached.contains(it.id); // external_id совпадает с it.id (UUID)
+          final bool isAttached = attached.contains(
+            it.id,
+          ); // external_id совпадает с it.id (UUID)
           // Локальная блокировка только для конкретного элемента
           final bool isBusy = _toggling.contains(it.id);
           return AppListItem(
@@ -258,7 +265,8 @@ class _AssistantConnectorsScreenState
                 ? null
                 : (v) async {
                     // Получим messenger заранее, до async-gap
-                    final messenger = ScaffoldMessenger.of(context);
+                    // ignore: use_build_context_synchronously
+                    final messenger = ScaffoldMessenger.maybeOf(context);
                     setState(() => _toggling.add(it.id));
                     try {
                       final api = ref.read(assistantApiProvider);
@@ -268,7 +276,7 @@ class _AssistantConnectorsScreenState
                           externalId: it.id,
                           type: 'voip',
                         );
-                        messenger.showSnackBar(
+                        messenger?.showSnackBar(
                           const SnackBar(content: Text('Коннектор подключён')),
                         );
                       } else {
@@ -276,7 +284,7 @@ class _AssistantConnectorsScreenState
                           assistantId: _assistantId,
                           externalId: it.id,
                         );
-                        messenger.showSnackBar(
+                        messenger?.showSnackBar(
                           const SnackBar(content: Text('Коннектор отключён')),
                         );
                       }
@@ -288,7 +296,7 @@ class _AssistantConnectorsScreenState
                         ).future,
                       );
                     } catch (e) {
-                      messenger.showSnackBar(
+                      messenger?.showSnackBar(
                         SnackBar(content: Text('Ошибка: $e')),
                       );
                     } finally {

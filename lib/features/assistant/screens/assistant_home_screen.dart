@@ -67,13 +67,15 @@ class AssistantHomeScreen extends ConsumerWidget {
           builder: (context, constraints) {
             final w = constraints.maxWidth;
             final crossAxisCount = w <= 480 ? 1 : (w <= 900 ? 2 : 3);
-            final textScale = MediaQuery.textScaleFactorOf(context);
+            final textScale = MediaQuery.textScalerOf(context).scale(1.0);
             // Больше высоты для узких экранов и увеличенного масштаба текста
             double childAspectRatio = 1.9; // ширина/высота
-            if (crossAxisCount == 2)
+            if (crossAxisCount == 2) {
               childAspectRatio = 1.6; // выше, чтобы поместились 2 строки
-            if (crossAxisCount == 1)
+            }
+            if (crossAxisCount == 1) {
               childAspectRatio = 1.2; // ещё выше в 1 колонку
+            }
             if (textScale > 1.0) {
               childAspectRatio -=
                   0.3; // делаем карточку выше при крупном шрифте
@@ -83,11 +85,13 @@ class AssistantHomeScreen extends ConsumerWidget {
             // увеличиваем aspectRatio на 1.5x (чем больше ratio, тем ниже карточка),
             // но оставляем разумные ограничения.
             childAspectRatio *= 1.5;
-            if (childAspectRatio > 3.2)
+            if (childAspectRatio > 3.2) {
               childAspectRatio =
                   3.2; // верхняя граница (слишком плоские карточки не нужны)
-            if (childAspectRatio < 1.1)
+            }
+            if (childAspectRatio < 1.1) {
               childAspectRatio = 1.1; // нижняя граница (не слишком высокие)
+            }
             return GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,

@@ -22,13 +22,15 @@ class ThemeState {
   final AppThemeMode mode;
   final int seedIndex; // индекс в kSeedPalette
 
-  ThemeState copyWith({AppThemeMode? mode, int? seedIndex}) =>
-      ThemeState(mode: mode ?? this.mode, seedIndex: seedIndex ?? this.seedIndex);
+  ThemeState copyWith({AppThemeMode? mode, int? seedIndex}) => ThemeState(
+    mode: mode ?? this.mode,
+    seedIndex: seedIndex ?? this.seedIndex,
+  );
 }
 
 class ThemeController extends StateNotifier<ThemeState> {
   ThemeController(this._storage)
-      : super(const ThemeState(mode: AppThemeMode.system, seedIndex: 1)) {
+    : super(const ThemeState(mode: AppThemeMode.system, seedIndex: 1)) {
     _load();
   }
 
@@ -66,11 +68,14 @@ class ThemeController extends StateNotifier<ThemeState> {
 
   Future<void> setMode(AppThemeMode mode) async {
     state = state.copyWith(mode: mode);
-    await _storage.write(key: _kModeKey, value: switch (mode) {
-      AppThemeMode.system => 'system',
-      AppThemeMode.light => 'light',
-      AppThemeMode.dark => 'dark',
-    });
+    await _storage.write(
+      key: _kModeKey,
+      value: switch (mode) {
+        AppThemeMode.system => 'system',
+        AppThemeMode.light => 'light',
+        AppThemeMode.dark => 'dark',
+      },
+    );
   }
 
   Future<void> setSeedIndex(int index) async {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sentralix_app/core/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/features/registration/screens/registration_screen.dart';
@@ -21,10 +22,13 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
 
     // Поддержка hash-стратегии: если во фрагменте есть путь — используем его как эффективный
     final rawUri = state.uri;
-    final hasFragmentPath = (rawUri.fragment).isNotEmpty && rawUri.fragment.startsWith('/');
+    final hasFragmentPath =
+        (rawUri.fragment).isNotEmpty && rawUri.fragment.startsWith('/');
     final fragmentUri = hasFragmentPath ? Uri.parse(rawUri.fragment) : null;
     final effectivePath = hasFragmentPath ? fragmentUri!.path : rawUri.path;
-    final effectiveLoc = hasFragmentPath ? fragmentUri!.toString() : rawUri.toString();
+    final effectiveLoc = hasFragmentPath
+        ? fragmentUri!.toString()
+        : rawUri.toString();
 
     final loc = effectiveLoc;
     final path = effectivePath; // путь для логики роутера
@@ -32,7 +36,7 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
     final isSplash = path == '/splash';
     final isRegistration = path == '/registration';
 
-    print('redirect: raw=${state.uri} eff=$loc path=$path authRoute=$isAuthRoute splash=$isSplash reg=$isRegistration');
+    AppLogger.d('redirect: raw=${state.uri} eff=$loc path=$path authRoute=$isAuthRoute splash=$isSplash reg=$isRegistration', tag: 'Router');
 
     // Важно: не дёргать URL на стадии инициализации auth (auth.ready == false)
     // Разрешаем рендер страницы; protected-редирект выполняем только когда auth.ready == true.

@@ -19,11 +19,10 @@ class Assistant {
     String? name,
     String? description,
     AssistantSettings? settings,
-  }) =>
-      Assistant(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        description: description ?? this.description,
-        settings: settings ?? this.settings,
-      );
+  }) => Assistant(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    description: description ?? this.description,
+    settings: settings ?? this.settings,
+  );
 }

@@ -5,7 +5,7 @@ import 'package:sentralix_app/features/assistant/models/assistant_tool.dart';
 
 class FunctionToolEditController extends StateNotifier<FunctionToolEditState> {
   FunctionToolEditController(AssistantFunctionTool initial)
-      : super(FunctionToolEditState.fromTool(initial));
+    : super(FunctionToolEditState.fromTool(initial));
 
   void setName(String v) => state = state.copy(name: v);
   void setDescription(String v) => state = state.copy(description: v);
@@ -29,6 +29,10 @@ class FunctionToolEditController extends StateNotifier<FunctionToolEditState> {
 }
 
 final functionToolEditProvider = StateNotifierProvider.autoDispose
-    .family<FunctionToolEditController, FunctionToolEditState, AssistantFunctionTool>((ref, initial) {
-  return FunctionToolEditController(initial);
-});
+    .family<
+      FunctionToolEditController,
+      FunctionToolEditState,
+      AssistantFunctionTool
+    >((ref, initial) {
+      return FunctionToolEditController(initial);
+    });

@@ -22,15 +22,17 @@ class ScriptEditorDialog extends ConsumerWidget {
     final state = ref.read(scriptEditProvider(initial));
     // Валидация
     if (state.name.trim().length < 2 || state.name.trim().length > 60) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Название: 2–60 символов')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Название: 2–60 символов')));
       return;
     }
     for (final p in state.params) {
       if (p.trim().isEmpty || p.trim().length > 40) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ключ параметра должен быть 1–40 символов')),
+          const SnackBar(
+            content: Text('Ключ параметра должен быть 1–40 символов'),
+          ),
         );
         return;
       }
@@ -41,7 +43,10 @@ class ScriptEditorDialog extends ConsumerWidget {
       );
       return;
     }
-    Navigator.pop(context, ref.read(scriptEditProvider(initial).notifier).buildResult(initial));
+    Navigator.pop(
+      context,
+      ref.read(scriptEditProvider(initial).notifier).buildResult(initial),
+    );
   }
 
   void _addStep(BuildContext context, WidgetRef ref) async {
@@ -65,7 +70,12 @@ class ScriptEditorDialog extends ConsumerWidget {
     }
   }
 
-  void _editStep(BuildContext context, WidgetRef ref, int index, ScriptStep current) async {
+  void _editStep(
+    BuildContext context,
+    WidgetRef ref,
+    int index,
+    ScriptStep current,
+  ) async {
     final step = await showDialog<ScriptStep>(
       context: context,
       builder: (_) => StepEditorDialog(initial: current),
@@ -111,7 +121,8 @@ class ScriptEditorDialog extends ConsumerWidget {
                           child: Text('on_dialog_end'),
                         ),
                       ],
-                      onChanged: (v) => ctrl.setTrigger(v ?? ScriptTrigger.onDialogStart),
+                      onChanged: (v) =>
+                          ctrl.setTrigger(v ?? ScriptTrigger.onDialogStart),
                       decoration: const InputDecoration(labelText: 'Trigger'),
                     ),
                   ),
@@ -126,7 +137,10 @@ class ScriptEditorDialog extends ConsumerWidget {
               const Divider(height: 24),
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Параметры', style: Theme.of(context).textTheme.titleMedium),
+                child: Text(
+                  'Параметры',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ),
               const SizedBox(height: 8),
               ListView.separated(
@@ -165,7 +179,10 @@ class ScriptEditorDialog extends ConsumerWidget {
               const Divider(height: 24),
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Шаги', style: Theme.of(context).textTheme.titleMedium),
+                child: Text(
+                  'Шаги',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ),
               const SizedBox(height: 8),
               ListView.separated(
@@ -178,8 +195,12 @@ class ScriptEditorDialog extends ConsumerWidget {
                   final order = index + 1;
                   return Card(
                     child: ListTile(
-                      title: Text(st.title.isEmpty ? '(без названия)' : st.title),
-                      subtitle: Text('Шаг $order • spec: ${st.spec.isEmpty ? '(не задан)' : 'JSON'}'),
+                      title: Text(
+                        st.title.isEmpty ? '(без названия)' : st.title,
+                      ),
+                      subtitle: Text(
+                        'Шаг $order • spec: ${st.spec.isEmpty ? '(не задан)' : 'JSON'}',
+                      ),
                       trailing: Wrap(
                         spacing: 8,
                         children: [
@@ -212,8 +233,14 @@ class ScriptEditorDialog extends ConsumerWidget {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
-        FilledButton(onPressed: () => _onSave(context, ref), child: const Text('Сохранить')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Отмена'),
+        ),
+        FilledButton(
+          onPressed: () => _onSave(context, ref),
+          child: const Text('Сохранить'),
+        ),
       ],
     );
   }

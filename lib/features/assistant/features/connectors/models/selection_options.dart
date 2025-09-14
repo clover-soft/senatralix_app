@@ -11,8 +11,10 @@ class SelectorOption {
 /// Наборы опций для стратегий выбора фраз (greeting/reprompt/filler)
 class SelectionStrategyOptions {
   static const first = SelectorOption(value: 'first', label: 'Первый');
-  static const roundRobin =
-      SelectorOption(value: 'round_robin', label: 'По кругу');
+  static const roundRobin = SelectorOption(
+    value: 'round_robin',
+    label: 'По кругу',
+  );
   static const random = SelectorOption(value: 'random', label: 'Случайно');
 
   /// Универсальный список стратегий выбора

@@ -4,7 +4,7 @@ import 'package:sentralix_app/features/assistant/features/knowledge/models/knowl
 
 class KnowledgeEditController extends StateNotifier<KnowledgeEditState> {
   KnowledgeEditController(KnowledgeBaseItem initial)
-      : super(KnowledgeEditState.fromItem(initial));
+    : super(KnowledgeEditState.fromItem(initial));
 
   void setName(String v) => state = state.copy(name: v);
   void setDescription(String v) => state = state.copy(description: v);
@@ -14,17 +14,20 @@ class KnowledgeEditController extends StateNotifier<KnowledgeEditState> {
   void setOverlap(int v) => state = state.copy(chunkOverlapTokens: v);
 
   KnowledgeBaseItem buildResult(KnowledgeBaseItem initial) => initial.copyWith(
-        name: state.name.trim(),
-        description: state.description.trim(),
-        externalId: state.externalId.trim(),
-        markdown: state.markdown,
-        maxChunkSizeTokens: state.maxChunkSizeTokens,
-        chunkOverlapTokens: state.chunkOverlapTokens,
-        updatedAt: DateTime.now(),
-      );
+    name: state.name.trim(),
+    description: state.description.trim(),
+    externalId: state.externalId.trim(),
+    markdown: state.markdown,
+    maxChunkSizeTokens: state.maxChunkSizeTokens,
+    chunkOverlapTokens: state.chunkOverlapTokens,
+    updatedAt: DateTime.now(),
+  );
 }
 
 final knowledgeEditProvider = StateNotifierProvider.autoDispose
-    .family<KnowledgeEditController, KnowledgeEditState, KnowledgeBaseItem>((ref, initial) {
-  return KnowledgeEditController(initial);
-});
+    .family<KnowledgeEditController, KnowledgeEditState, KnowledgeBaseItem>((
+      ref,
+      initial,
+    ) {
+      return KnowledgeEditController(initial);
+    });

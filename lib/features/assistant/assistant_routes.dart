@@ -17,55 +17,68 @@ import 'package:sentralix_app/features/assistant/features/sessions/screens/sessi
 List<RouteBase> assistantRoutes() => [
   GoRoute(
     path: '/assistant',
-    pageBuilder: (context, state) => const MaterialPage(child: AssistantScreen()),
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: AssistantScreen()),
   ),
   // По умолчанию показываем настройки выбранного ассистента
   GoRoute(
     path: '/assistant/:assistantId',
-    pageBuilder: (context, state) => const MaterialPage(child: AssistantHomeScreen()),
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: AssistantHomeScreen()),
   ),
   GoRoute(
     path: '/assistant/:assistantId/settings',
-    pageBuilder: (context, state) => const MaterialPage(child: AssistantSettingsScreen()),
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: AssistantSettingsScreen()),
   ),
   GoRoute(
     path: '/assistant/:assistantId/tools',
-    pageBuilder: (context, state) => const MaterialPage(child: AssistantToolsScreen()),
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: AssistantToolsScreen()),
   ),
   GoRoute(
     path: '/assistant/:assistantId/knowledge',
-    pageBuilder: (context, state) => const MaterialPage(child: AssistantKnowledgeScreen()),
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: AssistantKnowledgeScreen()),
   ),
   GoRoute(
     path: '/assistant/:assistantId/knowledge/new',
-    pageBuilder: (context, state) => const MaterialPage(child: KnowledgeEditorScreen()),
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: KnowledgeEditorScreen()),
   ),
   GoRoute(
     path: '/assistant/:assistantId/knowledge/:knowledgeId',
-    pageBuilder: (context, state) => const MaterialPage(child: KnowledgeEditorScreen()),
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: KnowledgeEditorScreen()),
   ),
   GoRoute(
     path: '/assistant/:assistantId/connectors',
-    pageBuilder: (context, state) => const MaterialPage(child: AssistantConnectorsScreen()),
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: AssistantConnectorsScreen()),
   ),
   GoRoute(
     path: '/assistant/:assistantId/connectors/:connectorId',
-    pageBuilder: (context, state) => const MaterialPage(child: ConnectorDetailsScreen()),
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: ConnectorDetailsScreen()),
   ),
   GoRoute(
     path: '/assistant/:assistantId/scripts',
-    pageBuilder: (context, state) => const MaterialPage(child: AssistantScriptsScreen()),
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: AssistantScriptsScreen()),
   ),
   GoRoute(
     path: '/assistant/:assistantId/scripts/:scriptId',
-    pageBuilder: (context, state) => const MaterialPage(child: ScriptDetailsScreen()),
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: ScriptDetailsScreen()),
   ),
   GoRoute(
     path: '/assistant/:assistantId/chat',
-    pageBuilder: (context, state) => const MaterialPage(child: AssistantChatScreen()),
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: AssistantChatScreen()),
   ),
   GoRoute(
     path: '/assistant/:assistantId/sessions',
-    pageBuilder: (context, state) => const MaterialPage(child: AssistantSessionsScreen()),
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: AssistantSessionsScreen()),
   ),
 ];

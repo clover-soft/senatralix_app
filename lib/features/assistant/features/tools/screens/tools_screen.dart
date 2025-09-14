@@ -80,13 +80,19 @@ class _AssistantToolsScreenState extends ConsumerState<AssistantToolsScreen> {
     );
     if (boot.isLoading) {
       return Scaffold(
-        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Инструменты'),
+        appBar: AssistantAppBar(
+          assistantId: _assistantId,
+          subfeatureTitle: 'Инструменты',
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (boot.hasError) {
       return Scaffold(
-        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Инструменты'),
+        appBar: AssistantAppBar(
+          assistantId: _assistantId,
+          subfeatureTitle: 'Инструменты',
+        ),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

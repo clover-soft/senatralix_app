@@ -11,10 +11,10 @@ class JsonSchemaObject {
   });
 
   Map<String, dynamic> toJson() => {
-        'type': 'object',
-        'properties': properties,
-        'required': requiredKeys,
-      };
+    'type': 'object',
+    'properties': properties,
+    'required': requiredKeys,
+  };
 
   factory JsonSchemaObject.fromJson(Map<String, dynamic> json) {
     if (json['type'] != 'object') {
@@ -60,23 +60,26 @@ class FunctionToolDef {
     String? description,
     JsonSchemaObject? parameters,
   }) => FunctionToolDef(
-        name: name ?? this.name,
-        description: description ?? this.description,
-        parameters: parameters ?? this.parameters,
-      );
+    name: name ?? this.name,
+    description: description ?? this.description,
+    parameters: parameters ?? this.parameters,
+  );
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'description': description,
-        if (parameters != null) 'parameters': parameters!.toJson(),
-      };
+    'name': name,
+    'description': description,
+    if (parameters != null) 'parameters': parameters!.toJson(),
+  };
 
-  factory FunctionToolDef.fromJson(Map<String, dynamic> json) => FunctionToolDef(
+  factory FunctionToolDef.fromJson(Map<String, dynamic> json) =>
+      FunctionToolDef(
         name: json['name'] as String,
         description: json['description'] as String? ?? '',
         parameters: json['parameters'] == null
             ? null
-            : JsonSchemaObject.fromJson(Map<String, dynamic>.from(json['parameters'] as Map)),
+            : JsonSchemaObject.fromJson(
+                Map<String, dynamic>.from(json['parameters'] as Map),
+              ),
       );
 }
 
@@ -93,17 +96,24 @@ class AssistantFunctionTool {
   });
 
   AssistantFunctionTool copyWith({bool? enabled, FunctionToolDef? def}) =>
-      AssistantFunctionTool(id: id, enabled: enabled ?? this.enabled, def: def ?? this.def);
+      AssistantFunctionTool(
+        id: id,
+        enabled: enabled ?? this.enabled,
+        def: def ?? this.def,
+      );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'enabled': enabled,
-        'function': def.toJson(),
-      };
+    'id': id,
+    'enabled': enabled,
+    'function': def.toJson(),
+  };
 
-  factory AssistantFunctionTool.fromJson(Map<String, dynamic> json) => AssistantFunctionTool(
+  factory AssistantFunctionTool.fromJson(Map<String, dynamic> json) =>
+      AssistantFunctionTool(
         id: json['id'] as String,
         enabled: json['enabled'] as bool? ?? true,
-        def: FunctionToolDef.fromJson(Map<String, dynamic>.from(json['function'] as Map)),
+        def: FunctionToolDef.fromJson(
+          Map<String, dynamic>.from(json['function'] as Map),
+        ),
       );
 }

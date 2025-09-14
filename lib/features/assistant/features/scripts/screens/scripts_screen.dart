@@ -73,13 +73,19 @@ class _AssistantScriptsScreenState
     );
     if (boot.isLoading) {
       return Scaffold(
-        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Скрипты'),
+        appBar: AssistantAppBar(
+          assistantId: _assistantId,
+          subfeatureTitle: 'Скрипты',
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (boot.hasError) {
       return Scaffold(
-        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Скрипты'),
+        appBar: AssistantAppBar(
+          assistantId: _assistantId,
+          subfeatureTitle: 'Скрипты',
+        ),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

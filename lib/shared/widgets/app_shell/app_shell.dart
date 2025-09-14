@@ -34,7 +34,7 @@ class AppShell extends ConsumerWidget {
     } else {
       // 2) Вложенные маршруты: для пунктов, отличных от корневого '/'
       final nestedIdx = dynamicItems.indexWhere(
-        (e) => e.route != '/' && currentPath.startsWith(e.route + '/'),
+        (e) => e.route != '/' && currentPath.startsWith('${e.route}/'),
       );
       featureIndex = nestedIdx >= 0 ? nestedIdx : null;
     }

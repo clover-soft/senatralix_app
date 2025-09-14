@@ -23,10 +23,10 @@ class ScriptEditState {
     List<String>? params,
     List<ScriptStep>? steps,
   }) => ScriptEditState(
-        name: name ?? this.name,
-        enabled: enabled ?? this.enabled,
-        trigger: trigger ?? this.trigger,
-        params: params ?? this.params,
-        steps: steps ?? this.steps,
-      );
+    name: name ?? this.name,
+    enabled: enabled ?? this.enabled,
+    trigger: trigger ?? this.trigger,
+    params: params ?? this.params,
+    steps: steps ?? this.steps,
+  );
 }

@@ -21,11 +21,11 @@ class AuthFormState {
     bool? submitting,
     String? error,
   }) => AuthFormState(
-        email: email ?? this.email,
-        password: password ?? this.password,
-        submitting: submitting ?? this.submitting,
-        error: error,
-      );
+    email: email ?? this.email,
+    password: password ?? this.password,
+    submitting: submitting ?? this.submitting,
+    error: error,
+  );
 }
 
 // comment: StateNotifier to manage auth form and submit via AuthDataProvider
@@ -34,7 +34,8 @@ class AuthFormController extends StateNotifier<AuthFormState> {
   final Ref ref;
 
   void setEmail(String v) => state = state.copyWith(email: v, error: null);
-  void setPassword(String v) => state = state.copyWith(password: v, error: null);
+  void setPassword(String v) =>
+      state = state.copyWith(password: v, error: null);
 
   Future<bool> submit() async {
     final email = state.email.trim();
@@ -45,7 +46,9 @@ class AuthFormController extends StateNotifier<AuthFormState> {
     }
     state = state.copyWith(submitting: true, error: null);
     try {
-      final ok = await ref.read(authDataProvider).login(email: email, password: password);
+      final ok = await ref
+          .read(authDataProvider)
+          .login(email: email, password: password);
       state = state.copyWith(submitting: false);
       if (!ok) {
         state = state.copyWith(error: ref.read(authDataProvider).state.error);
@@ -58,6 +61,7 @@ class AuthFormController extends StateNotifier<AuthFormState> {
   }
 }
 
-final authFormProvider = StateNotifierProvider<AuthFormController, AuthFormState>(
-  (ref) => AuthFormController(ref),
-);
+final authFormProvider =
+    StateNotifierProvider<AuthFormController, AuthFormState>(
+      (ref) => AuthFormController(ref),
+    );

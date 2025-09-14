@@ -10,21 +10,17 @@ class ProfileDataState {
   final Map<String, dynamic>? profile; // {id, email, username, phone}
   final String? error;
 
-  const ProfileDataState({
-    this.loading = false,
-    this.profile,
-    this.error,
-  });
+  const ProfileDataState({this.loading = false, this.profile, this.error});
 
   ProfileDataState copyWith({
     bool? loading,
     Map<String, dynamic>? profile,
     String? error,
   }) => ProfileDataState(
-        loading: loading ?? this.loading,
-        profile: profile ?? this.profile,
-        error: error,
-      );
+    loading: loading ?? this.loading,
+    profile: profile ?? this.profile,
+    error: error,
+  );
 
   static const initial = ProfileDataState();
 }
@@ -32,7 +28,7 @@ class ProfileDataState {
 /// Провайдер данных профиля (загрузка/обновление/смена пароля)
 class ProfileDataProvider with ChangeNotifier {
   ProfileDataProvider({ProfileService? service})
-      : _service = service ?? ProfileService();
+    : _service = service ?? ProfileService();
 
   final ProfileService _service;
   ProfileDataState _state = ProfileDataState.initial;
@@ -80,7 +76,10 @@ class ProfileDataProvider with ChangeNotifier {
     _state = _state.copyWith(loading: true, error: null);
     notifyListeners();
     try {
-      await _service.changePassword(oldPassword: oldPassword, newPassword: newPassword);
+      await _service.changePassword(
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+      );
       _state = _state.copyWith(loading: false, error: null);
       notifyListeners();
       return true;
@@ -101,39 +100,39 @@ final profileDataProvider = ChangeNotifierProvider<ProfileDataProvider>((ref) {
     p.load();
   }
   // слушаем смену авторизации (именно состояние AuthState)
-  ref.listen<AuthState>(
-    authDataProvider.select((p) => p.state),
-    (prev, next) {
-      final wasIn = prev?.loggedIn ?? false;
-      final nowIn = next.loggedIn;
-      final Map<String, dynamic>? prevUser = prev?.user;
-      final Map<String, dynamic>? nextUser = next.user;
+  ref.listen<AuthState>(authDataProvider.select((p) => p.state), (prev, next) {
+    final wasIn = prev?.loggedIn ?? false;
+    final nowIn = next.loggedIn;
+    final Map<String, dynamic>? prevUser = prev?.user;
+    final Map<String, dynamic>? nextUser = next.user;
 
-      bool identityChanged = false;
-      if (wasIn && nowIn) {
-        final prevId = prevUser?['id']?.toString();
-        final nextId = nextUser?['id']?.toString();
-        final prevEmail = prevUser?['email']?.toString();
-        final nextEmail = nextUser?['email']?.toString();
-        final prevUsername = prevUser?['username']?.toString();
-        final nextUsername = nextUser?['username']?.toString();
-        identityChanged = (prevId != nextId) || (prevEmail != nextEmail) || (prevUsername != nextUsername);
-      }
+    bool identityChanged = false;
+    if (wasIn && nowIn) {
+      final prevId = prevUser?['id']?.toString();
+      final nextId = nextUser?['id']?.toString();
+      final prevEmail = prevUser?['email']?.toString();
+      final nextEmail = nextUser?['email']?.toString();
+      final prevUsername = prevUser?['username']?.toString();
+      final nextUsername = nextUser?['username']?.toString();
+      identityChanged =
+          (prevId != nextId) ||
+          (prevEmail != nextEmail) ||
+          (prevUsername != nextUsername);
+    }
 
-      if (!wasIn && nowIn) {
-        // login
-        // ignore: discarded_futures
-        p.load();
-      } else if (wasIn && !nowIn) {
-        // logout
-        p.clear();
-      } else if (identityChanged) {
-        // same loggedIn state but different user
-        p.clear();
-        // ignore: discarded_futures
-        p.load();
-      }
-    },
-  );
+    if (!wasIn && nowIn) {
+      // login
+      // ignore: discarded_futures
+      p.load();
+    } else if (wasIn && !nowIn) {
+      // logout
+      p.clear();
+    } else if (identityChanged) {
+      // same loggedIn state but different user
+      p.clear();
+      // ignore: discarded_futures
+      p.load();
+    }
+  });
   return p;
 });

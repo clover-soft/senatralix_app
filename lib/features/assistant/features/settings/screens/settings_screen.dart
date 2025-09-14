@@ -10,7 +10,8 @@ class AssistantSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final id = GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
+    final id =
+        GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
     final boot = ref.watch(assistantBootstrapProvider);
     if (boot.isLoading) {
       return Scaffold(
@@ -27,7 +28,10 @@ class AssistantSettingsScreen extends ConsumerWidget {
             children: [
               const Text('Ошибка загрузки данных'),
               const SizedBox(height: 12),
-              FilledButton(onPressed: () => ref.refresh(assistantBootstrapProvider), child: const Text('Повторить')),
+              FilledButton(
+                onPressed: () => ref.refresh(assistantBootstrapProvider),
+                child: const Text('Повторить'),
+              ),
             ],
           ),
         ),

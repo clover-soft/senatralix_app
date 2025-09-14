@@ -34,17 +34,11 @@ class AppListItem extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (subtitle != null && subtitle!.isNotEmpty)
-            Text(
-              subtitle!,
-              style: Theme.of(context).textTheme.labelSmall,
-            ),
+            Text(subtitle!, style: Theme.of(context).textTheme.labelSmall),
           if (meta != null && meta!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                meta!,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              child: Text(meta!, style: Theme.of(context).textTheme.bodySmall),
             ),
         ],
       ),

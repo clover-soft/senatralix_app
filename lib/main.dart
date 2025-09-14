@@ -55,7 +55,10 @@ class SentralixApp extends ConsumerWidget {
           child: MaterialApp.router(
             title: "Sentralix",
             theme: appTheme.themeData(AppThemeMode.light, seedColor: seedColor),
-            darkTheme: appTheme.themeData(AppThemeMode.dark, seedColor: seedColor),
+            darkTheme: appTheme.themeData(
+              AppThemeMode.dark,
+              seedColor: seedColor,
+            ),
             themeMode: themeMode,
             routerConfig: router,
           ),

@@ -20,13 +20,14 @@ class SettingsEditState {
     double? temperature,
     int? maxTokens,
   }) => SettingsEditState(
-        model: model ?? this.model,
-        instruction: instruction ?? this.instruction,
-        temperature: temperature ?? this.temperature,
-        maxTokens: maxTokens ?? this.maxTokens,
-      );
+    model: model ?? this.model,
+    instruction: instruction ?? this.instruction,
+    temperature: temperature ?? this.temperature,
+    maxTokens: maxTokens ?? this.maxTokens,
+  );
 
-  static SettingsEditState fromSettings(AssistantSettings s) => SettingsEditState(
+  static SettingsEditState fromSettings(AssistantSettings s) =>
+      SettingsEditState(
         model: s.model,
         instruction: s.instruction,
         temperature: s.temperature,

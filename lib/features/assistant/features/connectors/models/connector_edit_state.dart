@@ -44,19 +44,22 @@ class ConnectorEditState {
     String? dictor,
     double? speed,
   }) => ConnectorEditState(
-        name: name ?? this.name,
-        isActive: isActive ?? this.isActive,
-        greetingTexts: greetingTexts ?? this.greetingTexts,
-        greetingSelectionStrategy: greetingSelectionStrategy ?? this.greetingSelectionStrategy,
-        repromptTexts: repromptTexts ?? this.repromptTexts,
-        repromptSelectionStrategy: repromptSelectionStrategy ?? this.repromptSelectionStrategy,
-        allowBargeIn: allowBargeIn ?? this.allowBargeIn,
-        softTimeoutMs: softTimeoutMs ?? this.softTimeoutMs,
-        fillerTextList: fillerTextList ?? this.fillerTextList,
-        fillerSelectionStrategy: fillerSelectionStrategy ?? this.fillerSelectionStrategy,
-        dictor: dictor ?? this.dictor,
-        speed: speed ?? this.speed,
-      );
+    name: name ?? this.name,
+    isActive: isActive ?? this.isActive,
+    greetingTexts: greetingTexts ?? this.greetingTexts,
+    greetingSelectionStrategy:
+        greetingSelectionStrategy ?? this.greetingSelectionStrategy,
+    repromptTexts: repromptTexts ?? this.repromptTexts,
+    repromptSelectionStrategy:
+        repromptSelectionStrategy ?? this.repromptSelectionStrategy,
+    allowBargeIn: allowBargeIn ?? this.allowBargeIn,
+    softTimeoutMs: softTimeoutMs ?? this.softTimeoutMs,
+    fillerTextList: fillerTextList ?? this.fillerTextList,
+    fillerSelectionStrategy:
+        fillerSelectionStrategy ?? this.fillerSelectionStrategy,
+    dictor: dictor ?? this.dictor,
+    speed: speed ?? this.speed,
+  );
 
   static ConnectorEditState fromConnector(Connector c) {
     final d = c.settings.dialog;

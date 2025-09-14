@@ -18,10 +18,11 @@ class ProfileService {
 
   /// Обновить имя пользователя (ФИО = username)
   /// Возвращает актуальный профиль
-  Future<Map<String, dynamic>> updateName({required String username, String path = '/me/profile'}) async {
-    final r = await _api.patch(path, data: {
-      'username': username,
-    });
+  Future<Map<String, dynamic>> updateName({
+    required String username,
+    String path = '/me/profile',
+  }) async {
+    final r = await _api.patch(path, data: {'username': username});
     final data = r.data;
     return data is Map<String, dynamic> ? data : <String, dynamic>{};
   }
@@ -33,10 +34,10 @@ class ProfileService {
     required String newPassword,
     String path = '/me/password',
   }) async {
-    final r = await _api.post(path, data: {
-      'old_password': oldPassword,
-      'new_password': newPassword,
-    });
+    final r = await _api.post(
+      path,
+      data: {'old_password': oldPassword, 'new_password': newPassword},
+    );
     final data = r.data;
     return data is Map<String, dynamic> ? data : <String, dynamic>{};
   }

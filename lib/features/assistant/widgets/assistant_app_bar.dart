@@ -9,7 +9,7 @@ import 'package:sentralix_app/features/assistant/providers/assistant_list_provid
 ///   • title: "Assistant (Имя)"
 /// - Для подфич (settings/tools/…): укажите [subfeatureTitle]
 ///   • leading: назад к локальному меню ассистента
-///   • title: "Assistant • <Subfeature> (<Имя>)"
+///   • title: "Assistant • `Subfeature` (`Имя`)"
 ///   • actions: кнопка "домой ассистента"
 class AssistantAppBar extends ConsumerWidget implements PreferredSizeWidget {
   const AssistantAppBar({
@@ -35,7 +35,8 @@ class AssistantAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final name = ref.watch(assistantListProvider).byId(assistantId)?.name ?? 'Unknown';
+    final name =
+        ref.watch(assistantListProvider).byId(assistantId)?.name ?? 'Unknown';
     final title = subfeatureTitle == null
         ? 'Assistant ($name)'
         : 'Assistant • ${subfeatureTitle!} ($name)';
@@ -44,7 +45,9 @@ class AssistantAppBar extends ConsumerWidget implements PreferredSizeWidget {
       leading: IconButton(
         tooltip: backPath != null
             ? (backTooltip ?? 'Назад')
-            : (subfeatureTitle == null ? 'К списку ассистентов' : 'К ассистенту'),
+            : (subfeatureTitle == null
+                  ? 'К списку ассистентов'
+                  : 'К ассистенту'),
         icon: const Icon(Icons.arrow_back),
         onPressed: () {
           if (backPopFirst && Navigator.of(context).canPop()) {

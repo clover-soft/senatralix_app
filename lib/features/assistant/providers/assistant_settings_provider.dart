@@ -13,8 +13,7 @@ class AssistantSettingsState {
 }
 
 class AssistantSettingsNotifier extends StateNotifier<AssistantSettingsState> {
-  AssistantSettingsNotifier()
-      : super(const AssistantSettingsState(byId: {}));
+  AssistantSettingsNotifier() : super(const AssistantSettingsState(byId: {}));
 
   /// Получить настройки ассистента (если нет — вернём дефолт)
   AssistantSettings getFor(String assistantId) {
@@ -78,5 +77,5 @@ class AssistantSettingsNotifier extends StateNotifier<AssistantSettingsState> {
 /// Провайдер настроек
 final assistantSettingsProvider =
     StateNotifierProvider<AssistantSettingsNotifier, AssistantSettingsState>(
-  (ref) => AssistantSettingsNotifier(),
-);
+      (ref) => AssistantSettingsNotifier(),
+    );

@@ -27,7 +27,11 @@ class ScriptsNotifier extends StateNotifier<ScriptsState> {
 
   void add(String assistantId, Script script) {
     final items = list(assistantId);
-    final max = _ref.read(assistantFeatureSettingsProvider).settings.scripts.maxScriptItems;
+    final max = _ref
+        .read(assistantFeatureSettingsProvider)
+        .settings
+        .scripts
+        .maxScriptItems;
     if (max > 0 && items.length >= max) {
       if (kDebugMode) {
         print('Scripts limit reached ($max) for assistant=$assistantId');
@@ -88,11 +92,14 @@ class ScriptsNotifier extends StateNotifier<ScriptsState> {
     final items = list(assistantId);
     final idx = items.indexWhere((e) => e.id == scriptId);
     if (idx >= 0) {
-      final steps = List<ScriptStep>.from(items[idx].steps)..removeWhere((s) => s.id == stepId);
+      final steps = List<ScriptStep>.from(items[idx].steps)
+        ..removeWhere((s) => s.id == stepId);
       items[idx] = items[idx].copyWith(steps: steps);
       _put(assistantId, items);
     }
   }
 }
 
-final scriptsProvider = StateNotifierProvider<ScriptsNotifier, ScriptsState>((ref) => ScriptsNotifier(ref));
+final scriptsProvider = StateNotifierProvider<ScriptsNotifier, ScriptsState>(
+  (ref) => ScriptsNotifier(ref),
+);

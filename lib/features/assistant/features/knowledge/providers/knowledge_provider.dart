@@ -7,15 +7,18 @@ class KnowledgeState {
   final Map<String, List<KnowledgeBaseItem>> byAssistantId;
   const KnowledgeState({required this.byAssistantId});
 
-  KnowledgeState copyWith({Map<String, List<KnowledgeBaseItem>>? byAssistantId}) =>
-      KnowledgeState(byAssistantId: byAssistantId ?? this.byAssistantId);
+  KnowledgeState copyWith({
+    Map<String, List<KnowledgeBaseItem>>? byAssistantId,
+  }) => KnowledgeState(byAssistantId: byAssistantId ?? this.byAssistantId);
 }
 
 class KnowledgeNotifier extends StateNotifier<KnowledgeState> {
   KnowledgeNotifier() : super(const KnowledgeState(byAssistantId: {}));
 
   List<KnowledgeBaseItem> list(String assistantId) {
-    return List<KnowledgeBaseItem>.from(state.byAssistantId[assistantId] ?? const []);
+    return List<KnowledgeBaseItem>.from(
+      state.byAssistantId[assistantId] ?? const [],
+    );
   }
 
   void _put(String assistantId, List<KnowledgeBaseItem> items) {
@@ -60,6 +63,7 @@ class KnowledgeNotifier extends StateNotifier<KnowledgeState> {
   }
 }
 
-final knowledgeProvider = StateNotifierProvider<KnowledgeNotifier, KnowledgeState>(
-  (ref) => KnowledgeNotifier(),
-);
+final knowledgeProvider =
+    StateNotifierProvider<KnowledgeNotifier, KnowledgeState>(
+      (ref) => KnowledgeNotifier(),
+    );

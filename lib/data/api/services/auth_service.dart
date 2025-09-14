@@ -16,10 +16,7 @@ class AuthService {
   }) async {
     final r = await _api.post(
       path,
-      data: {
-        'email': email,
-        'password': password,
-      },
+      data: {'email': email, 'password': password},
     );
     // Response may include user info; return as Map for flexibility.
     final data = r.data;
@@ -38,4 +35,3 @@ class AuthService {
     return data is Map<String, dynamic> ? data : <String, dynamic>{};
   }
 }
-

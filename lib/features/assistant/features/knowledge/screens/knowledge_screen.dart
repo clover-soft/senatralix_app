@@ -77,13 +77,19 @@ class _AssistantKnowledgeScreenState
     );
     if (loader.isLoading) {
       return Scaffold(
-        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Источники знаний'),
+        appBar: AssistantAppBar(
+          assistantId: _assistantId,
+          subfeatureTitle: 'Источники знаний',
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (loader.hasError) {
       return Scaffold(
-        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Источники знаний'),
+        appBar: AssistantAppBar(
+          assistantId: _assistantId,
+          subfeatureTitle: 'Источники знаний',
+        ),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -91,7 +97,8 @@ class _AssistantKnowledgeScreenState
               const Text('Ошибка загрузки данных'),
               const SizedBox(height: 12),
               FilledButton(
-                onPressed: () => ref.refresh(assistantKnowledgeProvider(_assistantId)),
+                onPressed: () =>
+                    ref.refresh(assistantKnowledgeProvider(_assistantId)),
                 child: const Text('Повторить'),
               ),
             ],
@@ -101,13 +108,19 @@ class _AssistantKnowledgeScreenState
     }
     if (boot.isLoading) {
       return Scaffold(
-        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Источники знаний'),
+        appBar: AssistantAppBar(
+          assistantId: _assistantId,
+          subfeatureTitle: 'Источники знаний',
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (boot.hasError) {
       return Scaffold(
-        appBar: AssistantAppBar(assistantId: _assistantId, subfeatureTitle: 'Источники знаний'),
+        appBar: AssistantAppBar(
+          assistantId: _assistantId,
+          subfeatureTitle: 'Источники знаний',
+        ),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -139,22 +152,37 @@ class _AssistantKnowledgeScreenState
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           final it = items[index];
-          final title = (it.name.trim().isNotEmpty) ? it.name : _titleFromMarkdown(it.markdown);
-          final subtitle = it.description.trim().isNotEmpty ? it.description : '';
+          final title = (it.name.trim().isNotEmpty)
+              ? it.name
+              : _titleFromMarkdown(it.markdown);
+          final subtitle = it.description.trim().isNotEmpty
+              ? it.description
+              : '';
           final meta = '${it.externalId} • ${it.updatedAt.toLocal()}';
 
-          final linked = ref.watch(assistantSettingsProvider.select((s) =>
-              s.byId[_assistantId]?.knowledgeExternalIds.contains(it.externalId) ?? false));
+          final linked = ref.watch(
+            assistantSettingsProvider.select(
+              (s) =>
+                  s.byId[_assistantId]?.knowledgeExternalIds.contains(
+                    it.externalId,
+                  ) ??
+                  false,
+            ),
+          );
 
           return AppListItem(
             onTap: () => _editItem(it),
-            leadingIcon: Icon(RemixIcons.git_repository_line, color: Theme.of(context).colorScheme.secondary),
+            leadingIcon: Icon(
+              RemixIcons.git_repository_line,
+              color: Theme.of(context).colorScheme.secondary,
+            ),
             // состояние и обработчик свитча
             switchValue: linked,
             switchTooltip: linked
                 ? 'Отключить источник от ассистента'
                 : 'Подключить источник к ассистенту',
             onSwitchChanged: (v) async {
+              final messenger = ScaffoldMessenger.of(context);
               try {
                 final api = ref.read(assistantApiProvider);
                 if (v) {
@@ -165,33 +193,35 @@ class _AssistantKnowledgeScreenState
                   );
                   // Обновим сам элемент (externalId) в списке знаний
                   final updated = it.copyWith(externalId: newExt);
-                  ref.read(knowledgeProvider.notifier).update(_assistantId, updated);
+                  ref
+                      .read(knowledgeProvider.notifier)
+                      .update(_assistantId, updated);
                   // Установим единственный external_id у ассистента
-                  ref.read(assistantSettingsProvider.notifier).setSingleKnowledge(_assistantId, newExt);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Источник привязан к ассистенту')),
-                    );
-                  }
+                  ref
+                      .read(assistantSettingsProvider.notifier)
+                      .setSingleKnowledge(_assistantId, newExt);
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Источник привязан к ассистенту'),
+                    ),
+                  );
                 } else {
                   // unbind: очистить связи у ассистента
                   await api.unbindKnowledgeFromAssistant(
                     assistantId: _assistantId,
                     knowledgeId: it.id,
                   );
-                  ref.read(assistantSettingsProvider.notifier).clearKnowledge(_assistantId);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Источник отвязан от ассистента')),
-                    );
-                  }
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Ошибка: $e')),
+                  ref
+                      .read(assistantSettingsProvider.notifier)
+                      .clearKnowledge(_assistantId);
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Источник отвязан от ассистента'),
+                    ),
                   );
                 }
+              } catch (e) {
+                messenger.showSnackBar(SnackBar(content: Text('Ошибка: $e')));
               }
             },
             title: title,
@@ -209,6 +239,7 @@ class _AssistantKnowledgeScreenState
                   tooltip: 'Удалить',
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
                     final ok = await showDialog<bool>(
                       context: context,
                       builder: (context) => AlertDialog(
@@ -230,18 +261,16 @@ class _AssistantKnowledgeScreenState
                     try {
                       final api = ref.read(assistantApiProvider);
                       await api.deleteKnowledgeBase(it.id);
-                      ref.read(knowledgeProvider.notifier).remove(_assistantId, it.id);
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Источник удалён')),
-                        );
-                      }
+                      ref
+                          .read(knowledgeProvider.notifier)
+                          .remove(_assistantId, it.id);
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text('Источник удалён')),
+                      );
                     } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Ошибка удаления: $e')),
-                        );
-                      }
+                      messenger.showSnackBar(
+                        SnackBar(content: Text('Ошибка удаления: $e')),
+                      );
                     }
                   },
                 ),

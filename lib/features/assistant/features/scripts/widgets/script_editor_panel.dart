@@ -7,7 +7,11 @@ import 'package:sentralix_app/features/assistant/features/scripts/widgets/step_e
 
 /// Встроенная панель редактирования скрипта (без модального окна)
 class ScriptEditorPanel extends ConsumerWidget {
-  const ScriptEditorPanel({super.key, required this.assistantId, required this.initial});
+  const ScriptEditorPanel({
+    super.key,
+    required this.assistantId,
+    required this.initial,
+  });
 
   final String assistantId;
   final Script initial;
@@ -19,9 +23,13 @@ class ScriptEditorPanel extends ConsumerWidget {
   }
 
   void _onSave(WidgetRef ref, Script initial) {
-    final updated = ref.read(scriptEditProvider(initial).notifier).buildResult(initial);
+    final updated = ref
+        .read(scriptEditProvider(initial).notifier)
+        .buildResult(initial);
     ref.read(scriptsProvider.notifier).update(assistantId, updated);
-    ScaffoldMessenger.of(ref.context).showSnackBar(const SnackBar(content: Text('Скрипт сохранён')));
+    ScaffoldMessenger.of(
+      ref.context,
+    ).showSnackBar(const SnackBar(content: Text('Скрипт сохранён')));
   }
 
   @override
@@ -60,7 +68,8 @@ class ScriptEditorPanel extends ConsumerWidget {
                         child: Text('on_dialog_end'),
                       ),
                     ],
-                    onChanged: (v) => ctrl.setTrigger(v ?? ScriptTrigger.onDialogStart),
+                    onChanged: (v) =>
+                        ctrl.setTrigger(v ?? ScriptTrigger.onDialogStart),
                     decoration: const InputDecoration(labelText: 'Trigger'),
                   ),
                 ),
@@ -91,11 +100,16 @@ class ScriptEditorPanel extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Шаги', style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        'Шаги',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 8),
                       DecoratedBox(
                         decoration: BoxDecoration(
-                          border: Border.all(color: Theme.of(context).dividerColor),
+                          border: Border.all(
+                            color: Theme.of(context).dividerColor,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Padding(
@@ -106,7 +120,8 @@ class ScriptEditorPanel extends ConsumerWidget {
                               child: ReorderableListView.builder(
                                 buildDefaultDragHandles: false,
                                 itemCount: state.steps.length,
-                                onReorder: (oldIndex, newIndex) => ctrl.moveStep(oldIndex, newIndex),
+                                onReorder: (oldIndex, newIndex) =>
+                                    ctrl.moveStep(oldIndex, newIndex),
                                 itemBuilder: (context, index) {
                                   final st = state.steps[index];
                                   final order = index + 1;
@@ -117,19 +132,31 @@ class ScriptEditorPanel extends ConsumerWidget {
                                         index: index,
                                         child: const Icon(Icons.drag_handle),
                                       ),
-                                      title: Text(st.title.isEmpty ? '(без названия)' : st.title),
-                                      subtitle: Text('Шаг $order • spec: ${st.spec.isEmpty ? '(не задан)' : 'JSON'}'),
+                                      title: Text(
+                                        st.title.isEmpty
+                                            ? '(без названия)'
+                                            : st.title,
+                                      ),
+                                      subtitle: Text(
+                                        'Шаг $order • spec: ${st.spec.isEmpty ? '(не задан)' : 'JSON'}',
+                                      ),
                                       trailing: Wrap(
                                         spacing: 8,
                                         children: [
                                           IconButton(
                                             tooltip: 'Редактировать',
-                                            icon: const Icon(Icons.edit_outlined),
+                                            icon: const Icon(
+                                              Icons.edit_outlined,
+                                            ),
                                             onPressed: () async {
-                                              final res = await showDialog<ScriptStep>(
-                                                context: context,
-                                                builder: (_) => StepEditorDialog(initial: st),
-                                              );
+                                              final res =
+                                                  await showDialog<ScriptStep>(
+                                                    context: context,
+                                                    builder: (_) =>
+                                                        StepEditorDialog(
+                                                          initial: st,
+                                                        ),
+                                                  );
                                               if (res != null) {
                                                 ctrl.updateStep(index, res);
                                               }
@@ -137,8 +164,11 @@ class ScriptEditorPanel extends ConsumerWidget {
                                           ),
                                           IconButton(
                                             tooltip: 'Удалить',
-                                            icon: const Icon(Icons.delete_outline),
-                                            onPressed: () => ctrl.removeStep(index),
+                                            icon: const Icon(
+                                              Icons.delete_outline,
+                                            ),
+                                            onPressed: () =>
+                                                ctrl.removeStep(index),
                                           ),
                                         ],
                                       ),
@@ -156,14 +186,15 @@ class ScriptEditorPanel extends ConsumerWidget {
                         child: TextButton.icon(
                           onPressed: () {
                             final step = ScriptStep(
-                              id: DateTime.now().millisecondsSinceEpoch.toString(),
+                              id: DateTime.now().millisecondsSinceEpoch
+                                  .toString(),
                               title: '',
                               spec: r'''
 {
   "when": {"jsonpath": "$.path.to.value"},
   "action": {"type": "http_post", "http": {"url": "https://...", "headers": {}, "query": {}, "body_template": ""}}
 }
-''' ,
+''',
                             );
                             ctrl.addStep(step);
                           },
@@ -181,11 +212,16 @@ class ScriptEditorPanel extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Список переменных', style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        'Список переменных',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 8),
                       DecoratedBox(
                         decoration: BoxDecoration(
-                          border: Border.all(color: Theme.of(context).dividerColor),
+                          border: Border.all(
+                            color: Theme.of(context).dividerColor,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Padding(
@@ -195,7 +231,8 @@ class ScriptEditorPanel extends ConsumerWidget {
                             child: Scrollbar(
                               child: ListView.separated(
                                 itemCount: state.params.length,
-                                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 8),
                                 itemBuilder: (context, index) {
                                   final keyStr = state.params[index];
                                   return Row(
@@ -203,14 +240,18 @@ class ScriptEditorPanel extends ConsumerWidget {
                                       Expanded(
                                         child: TextFormField(
                                           initialValue: keyStr,
-                                          decoration: const InputDecoration(labelText: 'key'),
-                                          onChanged: (v) => ctrl.setParamKey(index, v),
+                                          decoration: const InputDecoration(
+                                            labelText: 'key',
+                                          ),
+                                          onChanged: (v) =>
+                                              ctrl.setParamKey(index, v),
                                         ),
                                       ),
                                       IconButton(
                                         tooltip: 'Удалить',
                                         icon: const Icon(Icons.delete_outline),
-                                        onPressed: () => ctrl.removeParam(index),
+                                        onPressed: () =>
+                                            ctrl.removeParam(index),
                                       ),
                                     ],
                                   );

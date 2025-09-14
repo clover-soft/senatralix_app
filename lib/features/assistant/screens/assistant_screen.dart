@@ -51,7 +51,7 @@ class AssistantScreen extends ConsumerWidget {
             onPressed: () async {
               await _showCreateDialog(context, notifier);
             },
-          )
+          ),
         ],
       ),
       body: ListView.separated(
@@ -62,7 +62,13 @@ class AssistantScreen extends ConsumerWidget {
             assistant: a,
             onTap: () => context.go('/assistant/${a.id}'),
             onEdit: () async {
-              await _showEditDialog(context, notifier, a.id, a.name, a.description);
+              await _showEditDialog(
+                context,
+                notifier,
+                a.id,
+                a.name,
+                a.description,
+              );
             },
             onDelete: () async {
               final ok = await showDialog<bool>(
@@ -98,60 +104,81 @@ class AssistantScreen extends ConsumerWidget {
   }
 }
 
-Future<void> _showCreateDialog(BuildContext context, AssistantListNotifier notifier) async {
+Future<void> _showCreateDialog(
+  BuildContext context,
+  AssistantListNotifier notifier,
+) async {
   final nameCtrl = TextEditingController(text: 'Екатерина');
-  final descCtrl = TextEditingController(text: 'Персональный ассистент для тестов');
+  final descCtrl = TextEditingController(
+    text: 'Персональный ассистент для тестов',
+  );
   String? nameError;
   String? descError;
   await showDialog<void>(
     context: context,
     builder: (ctx) {
-      return StatefulBuilder(builder: (ctx, setState) {
-        void validate() {
-          final n = nameCtrl.text.trim();
-          final d = descCtrl.text.trim();
-          nameError = (n.isEmpty || n.length < 2 || n.length > 40) ? 'Имя: 2–40 символов' : null;
-          descError = (d.isNotEmpty && d.length > 280) ? 'Описание: до 280 символов' : null;
-          setState(() {});
-        }
+      return StatefulBuilder(
+        builder: (ctx, setState) {
+          void validate() {
+            final n = nameCtrl.text.trim();
+            final d = descCtrl.text.trim();
+            nameError = (n.isEmpty || n.length < 2 || n.length > 40)
+                ? 'Имя: 2–40 символов'
+                : null;
+            descError = (d.isNotEmpty && d.length > 280)
+                ? 'Описание: до 280 символов'
+                : null;
+            setState(() {});
+          }
 
-        return AlertDialog(
-          title: const Text('Новый ассистент'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: InputDecoration(labelText: 'Имя', errorText: nameError),
-                onChanged: (_) => validate(),
+          return AlertDialog(
+            title: const Text('Новый ассистент'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'Имя',
+                    errorText: nameError,
+                  ),
+                  onChanged: (_) => validate(),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    labelText: 'Описание',
+                    helperText: 'До 280 символов',
+                    errorText: descError,
+                  ),
+                  onChanged: (_) => validate(),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Отмена'),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descCtrl,
-                maxLines: 3,
-                decoration: InputDecoration(labelText: 'Описание', helperText: 'До 280 символов', errorText: descError),
-                onChanged: (_) => validate(),
+              FilledButton(
+                onPressed: () {
+                  validate();
+                  if (nameError == null && descError == null) {
+                    notifier.add(
+                      nameCtrl.text.trim(),
+                      description: descCtrl.text.trim(),
+                    );
+                    Navigator.of(ctx).pop();
+                  }
+                },
+                child: const Text('Создать'),
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Отмена'),
-            ),
-            FilledButton(
-              onPressed: () {
-                validate();
-                if (nameError == null && descError == null) {
-                  notifier.add(nameCtrl.text.trim(), description: descCtrl.text.trim());
-                  Navigator.of(ctx).pop();
-                }
-              },
-              child: const Text('Создать'),
-            ),
-          ],
-        );
-      });
+          );
+        },
+      );
     },
   );
 }
@@ -170,52 +197,69 @@ Future<void> _showEditDialog(
   await showDialog<void>(
     context: context,
     builder: (ctx) {
-      return StatefulBuilder(builder: (ctx, setState) {
-        void validate() {
-          final n = nameCtrl.text.trim();
-          final d = descCtrl.text.trim();
-          nameError = (n.isEmpty || n.length < 2 || n.length > 40) ? 'Имя: 2–40 символов' : null;
-          descError = (d.isNotEmpty && d.length > 280) ? 'Описание: до 280 символов' : null;
-          setState(() {});
-        }
+      return StatefulBuilder(
+        builder: (ctx, setState) {
+          void validate() {
+            final n = nameCtrl.text.trim();
+            final d = descCtrl.text.trim();
+            nameError = (n.isEmpty || n.length < 2 || n.length > 40)
+                ? 'Имя: 2–40 символов'
+                : null;
+            descError = (d.isNotEmpty && d.length > 280)
+                ? 'Описание: до 280 символов'
+                : null;
+            setState(() {});
+          }
 
-        return AlertDialog(
-          title: const Text('Редактировать ассистента'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: InputDecoration(labelText: 'Имя', errorText: nameError),
-                onChanged: (_) => validate(),
+          return AlertDialog(
+            title: const Text('Редактировать ассистента'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'Имя',
+                    errorText: nameError,
+                  ),
+                  onChanged: (_) => validate(),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    labelText: 'Описание',
+                    helperText: 'До 280 символов',
+                    errorText: descError,
+                  ),
+                  onChanged: (_) => validate(),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Отмена'),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descCtrl,
-                maxLines: 3,
-                decoration: InputDecoration(labelText: 'Описание', helperText: 'До 280 символов', errorText: descError),
-                onChanged: (_) => validate(),
+              FilledButton(
+                onPressed: () {
+                  validate();
+                  if (nameError == null && descError == null) {
+                    notifier.rename(
+                      id,
+                      nameCtrl.text.trim(),
+                      description: descCtrl.text.trim(),
+                    );
+                    Navigator.of(ctx).pop();
+                  }
+                },
+                child: const Text('Сохранить'),
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Отмена'),
-            ),
-            FilledButton(
-              onPressed: () {
-                validate();
-                if (nameError == null && descError == null) {
-                  notifier.rename(id, nameCtrl.text.trim(), description: descCtrl.text.trim());
-                  Navigator.of(ctx).pop();
-                }
-              },
-              child: const Text('Сохранить'),
-            ),
-          ],
-        );
-      });
+          );
+        },
+      );
     },
   );
 }

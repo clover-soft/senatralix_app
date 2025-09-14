@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
   go_router: ^15.1.1
   flutter_riverpod: ^2.6.1
   remixicon: ^1.4.1

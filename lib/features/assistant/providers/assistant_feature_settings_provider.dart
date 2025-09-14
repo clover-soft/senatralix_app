@@ -7,13 +7,16 @@ class AssistantFeatureSettingsState {
   final AssistantFeatureSettings settings;
   const AssistantFeatureSettingsState(this.settings);
 
-  AssistantFeatureSettingsState copyWith({AssistantFeatureSettings? settings}) =>
-      AssistantFeatureSettingsState(settings ?? this.settings);
+  AssistantFeatureSettingsState copyWith({
+    AssistantFeatureSettings? settings,
+  }) => AssistantFeatureSettingsState(settings ?? this.settings);
 }
 
-class AssistantFeatureSettingsNotifier extends StateNotifier<AssistantFeatureSettingsState> {
+class AssistantFeatureSettingsNotifier
+    extends StateNotifier<AssistantFeatureSettingsState> {
   AssistantFeatureSettingsNotifier()
-      : super(AssistantFeatureSettingsState(
+    : super(
+        AssistantFeatureSettingsState(
           const AssistantFeatureSettings(
             maxAssistantItems: 10,
             allowedModels: ['YandexGPT Pro 5.1', 'YandexGPT Lite'],
@@ -25,7 +28,8 @@ class AssistantFeatureSettingsNotifier extends StateNotifier<AssistantFeatureSet
             scripts: ScriptsSettings(maxScriptItems: 10),
             tools: ToolsSettings(maxToolsItems: 10),
           ),
-        ));
+        ),
+      );
 
   void setFromJson(Map<String, dynamic> json) {
     state = state.copyWith(settings: AssistantFeatureSettings.fromJson(json));
@@ -37,6 +41,7 @@ class AssistantFeatureSettingsNotifier extends StateNotifier<AssistantFeatureSet
 }
 
 final assistantFeatureSettingsProvider =
-    StateNotifierProvider<AssistantFeatureSettingsNotifier, AssistantFeatureSettingsState>(
-  (ref) => AssistantFeatureSettingsNotifier(),
-);
+    StateNotifierProvider<
+      AssistantFeatureSettingsNotifier,
+      AssistantFeatureSettingsState
+    >((ref) => AssistantFeatureSettingsNotifier());

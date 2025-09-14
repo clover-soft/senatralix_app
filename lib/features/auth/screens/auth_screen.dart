@@ -25,26 +25,21 @@ class AuthScreen extends ConsumerWidget {
               children: [
                 TextField(
                   autofillHints: const [AutofillHints.email],
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Email'),
                   keyboardType: TextInputType.emailAddress,
-                  onChanged: (v) => ref.read(authFormProvider.notifier).setEmail(v),
+                  onChanged: (v) =>
+                      ref.read(authFormProvider.notifier).setEmail(v),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                  ),
-                  onChanged: (v) => ref.read(authFormProvider.notifier).setPassword(v),
+                  decoration: const InputDecoration(labelText: 'Password'),
+                  onChanged: (v) =>
+                      ref.read(authFormProvider.notifier).setPassword(v),
                 ),
                 const SizedBox(height: 16),
                 if (form.error != null)
-                  Text(
-                    form.error!,
-                    style: const TextStyle(color: Colors.red),
-                  ),
+                  Text(form.error!, style: const TextStyle(color: Colors.red)),
                 const SizedBox(height: 8),
                 SizedBox(
                   height: 48,
@@ -52,7 +47,9 @@ class AuthScreen extends ConsumerWidget {
                     onPressed: form.submitting
                         ? null
                         : () async {
-                            final ok = await ref.read(authFormProvider.notifier).submit();
+                            final ok = await ref
+                                .read(authFormProvider.notifier)
+                                .submit();
                             if (ok) {
                               // After successful login, go to home. Router redirect can handle 'from' if needed.
                               // ignore: use_build_context_synchronously
@@ -63,7 +60,10 @@ class AuthScreen extends ConsumerWidget {
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Text('Sign in'),
                   ),

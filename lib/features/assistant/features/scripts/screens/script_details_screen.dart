@@ -12,13 +12,23 @@ class ScriptDetailsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final assistantId = GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
+    final assistantId =
+        GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
     final scriptId = GoRouterState.of(context).pathParameters['scriptId'];
 
-    final items = ref.watch(scriptsProvider.select((s) => s.byAssistantId[assistantId] ?? const []));
+    final items = ref.watch(
+      scriptsProvider.select((s) => s.byAssistantId[assistantId] ?? const []),
+    );
     final script = items.firstWhere(
       (e) => e.id == scriptId,
-      orElse: () => const Script(id: '', name: '', enabled: false, trigger: ScriptTrigger.onDialogStart, params: {}, steps: []),
+      orElse: () => const Script(
+        id: '',
+        name: '',
+        enabled: false,
+        trigger: ScriptTrigger.onDialogStart,
+        params: {},
+        steps: [],
+      ),
     );
 
     return Scaffold(
@@ -31,7 +41,10 @@ class ScriptDetailsScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(12),
         child: script.id.isEmpty
             ? Center(
-                child: Text('Скрипт не найден', style: Theme.of(context).textTheme.bodyMedium),
+                child: Text(
+                  'Скрипт не найден',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
               )
             : ScriptEditorPanel(assistantId: assistantId, initial: script),
       ),

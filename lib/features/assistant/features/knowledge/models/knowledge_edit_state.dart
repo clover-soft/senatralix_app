@@ -26,15 +26,16 @@ class KnowledgeEditState {
     int? maxChunkSizeTokens,
     int? chunkOverlapTokens,
   }) => KnowledgeEditState(
-        name: name ?? this.name,
-        description: description ?? this.description,
-        externalId: externalId ?? this.externalId,
-        markdown: markdown ?? this.markdown,
-        maxChunkSizeTokens: maxChunkSizeTokens ?? this.maxChunkSizeTokens,
-        chunkOverlapTokens: chunkOverlapTokens ?? this.chunkOverlapTokens,
-      );
+    name: name ?? this.name,
+    description: description ?? this.description,
+    externalId: externalId ?? this.externalId,
+    markdown: markdown ?? this.markdown,
+    maxChunkSizeTokens: maxChunkSizeTokens ?? this.maxChunkSizeTokens,
+    chunkOverlapTokens: chunkOverlapTokens ?? this.chunkOverlapTokens,
+  );
 
-  static KnowledgeEditState fromItem(KnowledgeBaseItem item) => KnowledgeEditState(
+  static KnowledgeEditState fromItem(KnowledgeBaseItem item) =>
+      KnowledgeEditState(
         name: item.name,
         description: item.description,
         externalId: item.externalId,

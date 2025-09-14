@@ -28,7 +28,10 @@ class AssistantListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    final defaultLeading = Icon(RemixIcons.robot_2_line, color: scheme.secondary);
+    final defaultLeading = Icon(
+      RemixIcons.robot_2_line,
+      color: scheme.secondary,
+    );
 
     final defaultTrailing = Row(
       mainAxisSize: MainAxisSize.min,

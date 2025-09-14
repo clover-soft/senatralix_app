@@ -56,7 +56,8 @@ class ConnectorDetailsScreen extends ConsumerWidget {
               const Text('Коннектор не найден'),
               const SizedBox(height: 12),
               FilledButton(
-                onPressed: () => context.go('/assistant/$assistantId/connectors'),
+                onPressed: () =>
+                    context.go('/assistant/$assistantId/connectors'),
                 child: const Text('К списку'),
               ),
             ],
@@ -108,11 +109,15 @@ class ConnectorDetailsScreen extends ConsumerWidget {
         final saved = await api.updateConnector(draft);
         ref.read(connectorsProvider.notifier).update(assistantId, saved);
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Сохранено')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Сохранено')));
         context.go('/assistant/$assistantId/connectors');
       } catch (e) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка сохранения: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Ошибка сохранения: $e')));
       }
     }
 
@@ -139,7 +144,8 @@ class ConnectorDetailsScreen extends ConsumerWidget {
           final double maxContainerWidth = width >= 1200 ? 1040 : width;
           final double containerWidth = maxContainerWidth;
           const double outerPadding = 16; // см. SingleChildScrollView padding
-          final double availableWidth = (containerWidth - outerPadding * 2).clamp(0, double.infinity);
+          final double availableWidth = (containerWidth - outerPadding * 2)
+              .clamp(0, double.infinity);
 
           // Адаптив: 1 или 2 колонки. >680 — две колонки, иначе одна.
           // Минимальная ширина карточки: 340. В одиночной колонке ограничиваем до 600.
@@ -178,7 +184,9 @@ class ConnectorDetailsScreen extends ConsumerWidget {
                   children: [
                     TextFormField(
                       initialValue: st.name,
-                      decoration: const InputDecoration(labelText: 'Имя коннектора'),
+                      decoration: const InputDecoration(
+                        labelText: 'Имя коннектора',
+                      ),
                       onChanged: ctrl.setName,
                     ),
                     SwitchListTile(
@@ -198,31 +206,44 @@ class ConnectorDetailsScreen extends ConsumerWidget {
 
                         // 2) Маппинг известных значений value->label (только для найденных)
                         final known = {
-                          for (final o in DictorOptions.ruOptions()) o.value: o.label,
+                          for (final o in DictorOptions.ruOptions())
+                            o.value: o.label,
                         };
 
                         // 3) Текущее значение используем как есть (если оно пришло с бэка),
                         // даже если его нет в allowed — добавим отдельной опцией для отображения
-                        final String? currentValue = st.dictor.isNotEmpty ? st.dictor : null;
+                        final String? currentValue = st.dictor.isNotEmpty
+                            ? st.dictor
+                            : null;
 
                         // 4) Построить элементы выпадающего списка: сначала текущее значение (если не входит в allowed),
                         // затем все разрешённые значения. Лейблы берём из known, иначе raw value
                         final List<DropdownMenuItem<String>> items = [];
-                        if (currentValue != null && !allowed.contains(currentValue)) {
-                          items.add(DropdownMenuItem<String>(
-                            value: currentValue,
-                            child: Text(known[currentValue] ?? currentValue),
-                          ));
+                        if (currentValue != null &&
+                            !allowed.contains(currentValue)) {
+                          items.add(
+                            DropdownMenuItem<String>(
+                              value: currentValue,
+                              child: Text(known[currentValue] ?? currentValue),
+                            ),
+                          );
                         }
-                        items.addAll(allowed.map((v) => DropdownMenuItem<String>(
+                        items.addAll(
+                          allowed.map(
+                            (v) => DropdownMenuItem<String>(
                               value: v,
                               child: Text(known[v] ?? v),
-                            )));
+                            ),
+                          ),
+                        );
 
                         return DropdownButtonFormField<String>(
-                          value: currentValue ?? (allowed.isNotEmpty ? allowed.first : null),
+                          value:
+                              currentValue ??
+                              (allowed.isNotEmpty ? allowed.first : null),
                           items: items,
-                          onChanged: (v) => ctrl.setDictor(v ?? currentValue ?? st.dictor),
+                          onChanged: (v) =>
+                              ctrl.setDictor(v ?? currentValue ?? st.dictor),
                           decoration: const InputDecoration(labelText: 'Голос'),
                         );
                       },
@@ -253,13 +274,17 @@ class ConnectorDetailsScreen extends ConsumerWidget {
                 footer: DropdownButtonFormField<String>(
                   value: st.greetingSelectionStrategy,
                   items: SelectionStrategyOptions.common
-                      .map((o) => DropdownMenuItem<String>(
-                            value: o.value,
-                            child: Text(o.label),
-                          ))
+                      .map(
+                        (o) => DropdownMenuItem<String>(
+                          value: o.value,
+                          child: Text(o.label),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) => ctrl.setGreetingStrategy(v ?? 'first'),
-                  decoration: const InputDecoration(labelText: 'Стратегия приветствия'),
+                  decoration: const InputDecoration(
+                    labelText: 'Стратегия приветствия',
+                  ),
                 ),
               ),
             ),
@@ -276,13 +301,18 @@ class ConnectorDetailsScreen extends ConsumerWidget {
                 footer: DropdownButtonFormField<String>(
                   value: st.repromptSelectionStrategy,
                   items: SelectionStrategyOptions.common
-                      .map((o) => DropdownMenuItem<String>(
-                            value: o.value,
-                            child: Text(o.label),
-                          ))
+                      .map(
+                        (o) => DropdownMenuItem<String>(
+                          value: o.value,
+                          child: Text(o.label),
+                        ),
+                      )
                       .toList(),
-                  onChanged: (v) => ctrl.setRepromptStrategy(v ?? 'round_robin'),
-                  decoration: const InputDecoration(labelText: 'Стратегия выбора репромта'),
+                  onChanged: (v) =>
+                      ctrl.setRepromptStrategy(v ?? 'round_robin'),
+                  decoration: const InputDecoration(
+                    labelText: 'Стратегия выбора репромта',
+                  ),
                 ),
               ),
             ),
@@ -302,20 +332,27 @@ class ConnectorDetailsScreen extends ConsumerWidget {
                       child: DropdownButtonFormField<String>(
                         value: st.fillerSelectionStrategy,
                         items: SelectionStrategyOptions.common
-                            .map((o) => DropdownMenuItem<String>(
-                                  value: o.value,
-                                  child: Text(o.label),
-                                ))
+                            .map(
+                              (o) => DropdownMenuItem<String>(
+                                value: o.value,
+                                child: Text(o.label),
+                              ),
+                            )
                             .toList(),
-                        onChanged: (v) => ctrl.setFillerStrategy(v ?? 'round_robin'),
-                        decoration: const InputDecoration(labelText: 'Стратегия выбора филлера'),
+                        onChanged: (v) =>
+                            ctrl.setFillerStrategy(v ?? 'round_robin'),
+                        decoration: const InputDecoration(
+                          labelText: 'Стратегия выбора филлера',
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: TextFormField(
                         initialValue: st.softTimeoutMs.toString(),
-                        decoration: const InputDecoration(labelText: 'Таймаут филлера (мс)'),
+                        decoration: const InputDecoration(
+                          labelText: 'Таймаут филлера (мс)',
+                        ),
                         keyboardType: TextInputType.number,
                         onChanged: (v) {
                           final n = int.tryParse(v.trim());
@@ -335,11 +372,7 @@ class ConnectorDetailsScreen extends ConsumerWidget {
               constraints: BoxConstraints(maxWidth: maxContainerWidth),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
-                child: Wrap(
-                  spacing: gap,
-                  runSpacing: gap,
-                  children: sections,
-                ),
+                child: Wrap(spacing: gap, runSpacing: gap, children: sections),
               ),
             ),
           );

@@ -24,12 +24,16 @@ class AssistantApi {
       if (rawSettings is String && rawSettings.isNotEmpty) {
         final parsed = jsonDecode(rawSettings);
         if (parsed is Map && parsed['assistants'] is Map) {
-          final assistants = Map<String, dynamic>.from(parsed['assistants'] as Map);
+          final assistants = Map<String, dynamic>.from(
+            parsed['assistants'] as Map,
+          );
           final s = AssistantFeatureSettings.fromJson(assistants);
           return s;
         }
       } else if (rawSettings is Map && rawSettings['assistants'] is Map) {
-        final assistants = Map<String, dynamic>.from(rawSettings['assistants'] as Map);
+        final assistants = Map<String, dynamic>.from(
+          rawSettings['assistants'] as Map,
+        );
         final s = AssistantFeatureSettings.fromJson(assistants);
         return s;
       }
@@ -40,18 +44,24 @@ class AssistantApi {
       if (rawTop is String && rawTop.isNotEmpty) {
         final parsed = jsonDecode(rawTop);
         if (parsed is Map && parsed['assistants'] is Map) {
-          final assistants = Map<String, dynamic>.from(parsed['assistants'] as Map);
+          final assistants = Map<String, dynamic>.from(
+            parsed['assistants'] as Map,
+          );
           final s = AssistantFeatureSettings.fromJson(assistants);
           return s;
         }
       } else if (rawTop is Map && rawTop['assistants'] is Map) {
-        final assistants = Map<String, dynamic>.from(rawTop['assistants'] as Map);
+        final assistants = Map<String, dynamic>.from(
+          rawTop['assistants'] as Map,
+        );
         final s = AssistantFeatureSettings.fromJson(assistants);
         return s;
       }
     }
     // Fallback: считаем, что data уже имеет нужные поля
-    AssistantFeatureSettings s = AssistantFeatureSettings.fromJson(Map<String, dynamic>.from(data as Map));
+    AssistantFeatureSettings s = AssistantFeatureSettings.fromJson(
+      Map<String, dynamic>.from(data as Map),
+    );
     // Если лимит не пришёл (==0), попробуем достать из /me/context
     if (s.connectors.maxConnectorItems == 0) {
       try {
@@ -64,14 +74,20 @@ class AssistantApi {
           if (raw is String && raw.isNotEmpty) {
             final parsed = jsonDecode(raw);
             if (parsed is Map && parsed['assistants'] is Map) {
-              assistants = Map<String, dynamic>.from(parsed['assistants'] as Map);
+              assistants = Map<String, dynamic>.from(
+                parsed['assistants'] as Map,
+              );
             }
           } else if (raw is Map && raw['assistants'] is Map) {
             assistants = Map<String, dynamic>.from(raw['assistants'] as Map);
           }
           if (assistants != null) {
             final s2 = AssistantFeatureSettings.fromJson(assistants);
-            s = s.copyWith(connectors: s2.connectors, maxAssistantItems: s2.maxAssistantItems, allowedModels: s2.allowedModels);
+            s = s.copyWith(
+              connectors: s2.connectors,
+              maxAssistantItems: s2.maxAssistantItems,
+              allowedModels: s2.allowedModels,
+            );
           }
         }
       } catch (e) {
@@ -82,28 +98,48 @@ class AssistantApi {
   }
 
   /// Список коннекторов ассистента (READ)
-  Future<List<Connector>> fetchConnectorsList({int limit = 100, int offset = 0}) async {
-    final resp = await _client.get<dynamic>('/assistant/connectors/list?limit=$limit&offset=$offset');
+  Future<List<Connector>> fetchConnectorsList({
+    int limit = 100,
+    int offset = 0,
+  }) async {
+    final resp = await _client.get<dynamic>(
+      '/assistant/connectors/list?limit=$limit&offset=$offset',
+    );
     final data = resp.data;
     final list = List<Map<String, dynamic>>.from(data as List);
     return list.map((e) => Connector.fromJson(e)).toList();
   }
 
   /// Привязать базу знаний к ассистенту. Возвращает external_id привязанной БЗ
-  Future<String> bindKnowledgeToAssistant({required String assistantId, required int knowledgeId}) async {
-    final resp = await _client.post<dynamic>('/assistants/$assistantId/knowledge/$knowledgeId/bind', data: {});
+  Future<String> bindKnowledgeToAssistant({
+    required String assistantId,
+    required int knowledgeId,
+  }) async {
+    final resp = await _client.post<dynamic>(
+      '/assistants/$assistantId/knowledge/$knowledgeId/bind',
+      data: {},
+    );
     final data = Map<String, dynamic>.from(resp.data as Map);
     return data['external_id']?.toString() ?? '';
   }
 
   /// Отвязать базу знаний от ассистента
-  Future<void> unbindKnowledgeFromAssistant({required String assistantId, required int knowledgeId}) async {
-    await _client.post<dynamic>('/assistants/$assistantId/knowledge/$knowledgeId/unbind', data: {});
+  Future<void> unbindKnowledgeFromAssistant({
+    required String assistantId,
+    required int knowledgeId,
+  }) async {
+    await _client.post<dynamic>(
+      '/assistants/$assistantId/knowledge/$knowledgeId/unbind',
+      data: {},
+    );
   }
 
   /// Создать новую базу знаний (общую), возвращает заполненный объект
   Future<KnowledgeBaseItem> createKnowledgeBase() async {
-    final resp = await _client.post<dynamic>('/assistants/knowledge/', data: {});
+    final resp = await _client.post<dynamic>(
+      '/assistants/knowledge/',
+      data: {},
+    );
     final data = Map<String, dynamic>.from(resp.data as Map);
     return KnowledgeBaseItem.fromJson(data);
   }
@@ -114,11 +150,15 @@ class AssistantApi {
   }
 
   /// Список коннекторов, подключенных к ассистенту (возвращает external_id)
-  Future<Set<String>> fetchAssistantAttachedConnectors(String assistantId, {int limit = 50, int offset = 0}) async {
-    final resp = await _client.get<dynamic>('/assistants/$assistantId/connectors', query: {
-      'limit': '$limit',
-      'offset': '$offset',
-    });
+  Future<Set<String>> fetchAssistantAttachedConnectors(
+    String assistantId, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final resp = await _client.get<dynamic>(
+      '/assistants/$assistantId/connectors',
+      query: {'limit': '$limit', 'offset': '$offset'},
+    );
     final data = resp.data;
     final list = List<Map<String, dynamic>>.from(data as List);
     return list
@@ -151,10 +191,7 @@ class AssistantApi {
   }) async {
     await _client.post<dynamic>(
       '/assistants/connectors/unassign',
-      data: {
-        'assistant_id': assistantId,
-        'external_id': externalId,
-      },
+      data: {'assistant_id': assistantId, 'external_id': externalId},
     );
   }
 
@@ -195,7 +232,9 @@ class AssistantApi {
             name: (e['name'] ?? '').toString(),
             description: (e['description'] as String?)?.trim(),
             settings: (e['settings'] is Map)
-                ? AssistantSettings.fromBackend(Map<String, dynamic>.from(e['settings'] as Map))
+                ? AssistantSettings.fromBackend(
+                    Map<String, dynamic>.from(e['settings'] as Map),
+                  )
                 : null,
           ),
         )
@@ -215,7 +254,9 @@ class AssistantApi {
     final data = resp.data;
     final list = List<Map<String, dynamic>>.from(data as List);
     return list.map((e) {
-      final settings = Map<String, dynamic>.from(e['settings'] as Map? ?? const {});
+      final settings = Map<String, dynamic>.from(
+        e['settings'] as Map? ?? const {},
+      );
       return KnowledgeBaseItem(
         id: int.tryParse('${e['id']}') ?? 0,
         name: (settings['name'] as String?)?.trim() ?? '',
@@ -224,8 +265,10 @@ class AssistantApi {
         markdown: (e['markdown'] as String?) ?? '',
         status: KnowledgeStatus.ready,
         active: true,
-        maxChunkSizeTokens: int.tryParse('${settings['max_chunk_size_tokens']}') ?? 700,
-        chunkOverlapTokens: int.tryParse('${settings['chunk_overlap_tokens']}') ?? 300,
+        maxChunkSizeTokens:
+            int.tryParse('${settings['max_chunk_size_tokens']}') ?? 700,
+        chunkOverlapTokens:
+            int.tryParse('${settings['chunk_overlap_tokens']}') ?? 300,
         createdAt: DateTime.tryParse('${e['created_at']}') ?? DateTime.now(),
         updatedAt: DateTime.tryParse('${e['updated_at']}') ?? DateTime.now(),
       );
@@ -237,7 +280,10 @@ class AssistantApi {
     required int id,
     required Map<String, dynamic> body,
   }) async {
-    final resp = await _client.patch<dynamic>('/assistants/knowledge/$id', data: body);
+    final resp = await _client.patch<dynamic>(
+      '/assistants/knowledge/$id',
+      data: body,
+    );
     return Map<String, dynamic>.from(resp.data as Map);
   }
 

@@ -60,4 +60,6 @@ class ConnectorsNotifier extends StateNotifier<ConnectorsState> {
 }
 
 final connectorsProvider =
-    StateNotifierProvider<ConnectorsNotifier, ConnectorsState>((ref) => ConnectorsNotifier());
+    StateNotifierProvider<ConnectorsNotifier, ConnectorsState>(
+      (ref) => ConnectorsNotifier(),
+    );

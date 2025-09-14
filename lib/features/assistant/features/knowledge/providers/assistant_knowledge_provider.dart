@@ -4,7 +4,10 @@ import 'package:sentralix_app/features/assistant/features/knowledge/providers/kn
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 
 /// Загрузка списка баз знаний из бэкенда и помещение в состояние текущего ассистента
-final assistantKnowledgeProvider = FutureProvider.family<void, String>((ref, assistantId) async {
+final assistantKnowledgeProvider = FutureProvider.family<void, String>((
+  ref,
+  assistantId,
+) async {
   // Убедимся, что базовый bootstrap прошёл
   await ref.watch(assistantBootstrapProvider.future);
 

@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Набор раскрытых шагов по scriptId (для инлайн-редактирования)
 final expandedStepsProvider = StateNotifierProvider.autoDispose
     .family<ExpandedStepsController, Set<String>, String>((ref, scriptId) {
-  return ExpandedStepsController();
-});
+      return ExpandedStepsController();
+    });
 
 class ExpandedStepsController extends StateNotifier<Set<String>> {
   ExpandedStepsController() : super(<String>{});

@@ -10,12 +10,8 @@ class RegistrationScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Placeholder UI with a red container 🙂
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Registration'),
-      ),
-      body: Container(
-        color: Colors.red,
-      ),
+      appBar: AppBar(title: const Text('Registration')),
+      body: Container(color: Colors.red),
     );
   }
 }

@@ -8,29 +8,39 @@ class AssistantToolsState {
   final Map<String, List<AssistantFunctionTool>> byAssistantId;
   const AssistantToolsState({required this.byAssistantId});
 
-  AssistantToolsState copyWith({Map<String, List<AssistantFunctionTool>>? byAssistantId}) =>
-      AssistantToolsState(byAssistantId: byAssistantId ?? this.byAssistantId);
+  AssistantToolsState copyWith({
+    Map<String, List<AssistantFunctionTool>>? byAssistantId,
+  }) => AssistantToolsState(byAssistantId: byAssistantId ?? this.byAssistantId);
 }
 
 class AssistantToolsNotifier extends StateNotifier<AssistantToolsState> {
   final Ref _ref;
-  AssistantToolsNotifier(this._ref) : super(const AssistantToolsState(byAssistantId: {})) {
+  AssistantToolsNotifier(this._ref)
+    : super(const AssistantToolsState(byAssistantId: {})) {
     // Моки по умолчанию можно инициализировать по требованию (лениво)
   }
 
   List<AssistantFunctionTool> list(String assistantId) {
-    return List<AssistantFunctionTool>.from(state.byAssistantId[assistantId] ?? const []);
+    return List<AssistantFunctionTool>.from(
+      state.byAssistantId[assistantId] ?? const [],
+    );
   }
 
   void _put(String assistantId, List<AssistantFunctionTool> tools) {
-    final map = Map<String, List<AssistantFunctionTool>>.from(state.byAssistantId);
+    final map = Map<String, List<AssistantFunctionTool>>.from(
+      state.byAssistantId,
+    );
     map[assistantId] = tools;
     state = state.copyWith(byAssistantId: map);
   }
 
   void add(String assistantId, AssistantFunctionTool tool) {
     final tools = list(assistantId);
-    final max = _ref.read(assistantFeatureSettingsProvider).settings.tools.maxToolsItems;
+    final max = _ref
+        .read(assistantFeatureSettingsProvider)
+        .settings
+        .tools
+        .maxToolsItems;
     if (max > 0 && tools.length >= max) {
       if (kDebugMode) {
         print('Tools limit reached ($max) for assistant=$assistantId');
@@ -73,12 +83,14 @@ class AssistantToolsNotifier extends StateNotifier<AssistantToolsState> {
   // Утилита: создать из пресета (пример из docs/assistant.json)
   AssistantFunctionTool fromPresetJson(String id, Map<String, dynamic> json) {
     // ожидаем { function: { name, description, parameters } }
-    final fn = FunctionToolDef.fromJson(Map<String, dynamic>.from(json['function'] as Map));
+    final fn = FunctionToolDef.fromJson(
+      Map<String, dynamic>.from(json['function'] as Map),
+    );
     return AssistantFunctionTool(id: id, enabled: true, def: fn);
   }
 }
 
 final assistantToolsProvider =
     StateNotifierProvider<AssistantToolsNotifier, AssistantToolsState>(
-  (ref) => AssistantToolsNotifier(ref),
-);
+      (ref) => AssistantToolsNotifier(ref),
+    );

@@ -10,24 +10,30 @@ class FunctionToolDialog extends ConsumerWidget {
 
   String? _vName(String? v) {
     if (v == null || v.trim().isEmpty) return 'Введите имя';
-    if (v.trim().length < 2 || v.trim().length > 40) return 'Длина 2–40 символов';
+    if (v.trim().length < 2 || v.trim().length > 40) {
+      return 'Длина 2–40 символов';
+    }
     return null;
   }
 
   String? _vDesc(String? v) {
     if (v == null || v.trim().isEmpty) return 'Введите описание';
-    if (v.trim().length > 280) return 'Не более 280 символов';
+    if (v.trim().length > 280) {
+      return 'Не более 280 символов';
+    }
     return null;
   }
 
   void _onSave(BuildContext context, WidgetRef ref) {
     try {
-      final updated = ref.read(functionToolEditProvider(initial).notifier).buildResult(initial);
+      final updated = ref
+          .read(functionToolEditProvider(initial).notifier)
+          .buildResult(initial);
       Navigator.pop(context, updated);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка в parameters: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Ошибка в parameters: $e')));
     }
   }
 
@@ -62,7 +68,8 @@ class FunctionToolDialog extends ConsumerWidget {
                 maxLines: 12,
                 decoration: const InputDecoration(
                   labelText: 'parameters (JSON Schema object)',
-                  helperText: '{ "type": "object", "properties": { ... }, "required": [ ... ] }',
+                  helperText:
+                      '{ "type": "object", "properties": { ... }, "required": [ ... ] }',
                 ),
                 onChanged: ctrl.setParametersJson,
               ),
@@ -71,8 +78,14 @@ class FunctionToolDialog extends ConsumerWidget {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
-        FilledButton(onPressed: () => _onSave(context, ref), child: const Text('Сохранить')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Отмена'),
+        ),
+        FilledButton(
+          onPressed: () => _onSave(context, ref),
+          child: const Text('Сохранить'),
+        ),
       ],
     );
   }

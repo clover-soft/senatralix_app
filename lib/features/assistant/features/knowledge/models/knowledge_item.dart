@@ -48,18 +48,18 @@ class KnowledgeBaseItem {
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => KnowledgeBaseItem(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        description: description ?? this.description,
-        externalId: externalId ?? this.externalId,
-        markdown: markdown ?? this.markdown,
-        status: status ?? this.status,
-        active: active ?? this.active,
-        maxChunkSizeTokens: maxChunkSizeTokens ?? this.maxChunkSizeTokens,
-        chunkOverlapTokens: chunkOverlapTokens ?? this.chunkOverlapTokens,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-      );
+    id: id ?? this.id,
+    name: name ?? this.name,
+    description: description ?? this.description,
+    externalId: externalId ?? this.externalId,
+    markdown: markdown ?? this.markdown,
+    status: status ?? this.status,
+    active: active ?? this.active,
+    maxChunkSizeTokens: maxChunkSizeTokens ?? this.maxChunkSizeTokens,
+    chunkOverlapTokens: chunkOverlapTokens ?? this.chunkOverlapTokens,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
 
   static KnowledgeStatus _statusFromString(String s) {
     switch (s) {
@@ -85,37 +85,45 @@ class KnowledgeBaseItem {
     }
   }
 
-  factory KnowledgeBaseItem.fromJson(Map<String, dynamic> json) => KnowledgeBaseItem(
+  factory KnowledgeBaseItem.fromJson(Map<String, dynamic> json) =>
+      KnowledgeBaseItem(
         id: int.tryParse('${json['id']}') ?? 0,
-        name: (json['settings'] is Map && (json['settings'] as Map).containsKey('name'))
+        name:
+            (json['settings'] is Map &&
+                (json['settings'] as Map).containsKey('name'))
             ? (json['settings']['name'] as String? ?? '')
             : (json['name'] as String? ?? ''),
-        description: (json['settings'] is Map && (json['settings'] as Map).containsKey('description'))
+        description:
+            (json['settings'] is Map &&
+                (json['settings'] as Map).containsKey('description'))
             ? (json['settings']['description'] as String? ?? '')
             : (json['description'] as String? ?? ''),
         externalId: json['external_id'] as String? ?? '',
         markdown: json['markdown'] as String? ?? '',
         status: _statusFromString(json['status'] as String? ?? 'ready'),
         active: json['active'] as bool? ?? true,
-        maxChunkSizeTokens: int.tryParse('${json['settings']?['max_chunk_size_tokens']}') ?? 700,
-        chunkOverlapTokens: int.tryParse('${json['settings']?['chunk_overlap_tokens']}') ?? 300,
+        maxChunkSizeTokens:
+            int.tryParse('${json['settings']?['max_chunk_size_tokens']}') ??
+            700,
+        chunkOverlapTokens:
+            int.tryParse('${json['settings']?['chunk_overlap_tokens']}') ?? 300,
         createdAt: DateTime.tryParse('${json['created_at']}') ?? DateTime.now(),
         updatedAt: DateTime.tryParse('${json['updated_at']}') ?? DateTime.now(),
       );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'external_id': externalId,
-        'markdown': markdown,
-        'status': _statusToString(status),
-        'active': active,
-        'settings': {
-          'max_chunk_size_tokens': maxChunkSizeTokens,
-          'chunk_overlap_tokens': chunkOverlapTokens,
-          'name': name,
-          'description': description,
-        },
-        'created_at': createdAt.toIso8601String(),
-        'updated_at': updatedAt.toIso8601String(),
-      };
+    'id': id,
+    'external_id': externalId,
+    'markdown': markdown,
+    'status': _statusToString(status),
+    'active': active,
+    'settings': {
+      'max_chunk_size_tokens': maxChunkSizeTokens,
+      'chunk_overlap_tokens': chunkOverlapTokens,
+      'name': name,
+      'description': description,
+    },
+    'created_at': createdAt.toIso8601String(),
+    'updated_at': updatedAt.toIso8601String(),
+  };
 }

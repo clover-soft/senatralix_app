@@ -12,7 +12,8 @@ class StepEditorDialog extends ConsumerWidget {
   const StepEditorDialog({super.key, required this.initial});
   final ScriptStep initial;
 
-  String? _req(String? v) => (v == null || v.trim().isEmpty) ? 'Обязательное поле' : null;
+  String? _req(String? v) =>
+      (v == null || v.trim().isEmpty) ? 'Обязательное поле' : null;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -73,7 +74,10 @@ class StepEditorDialog extends ConsumerWidget {
               const SizedBox(height: 8),
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Шаг (JSON spec)', style: Theme.of(context).textTheme.labelLarge),
+                child: Text(
+                  'Шаг (JSON spec)',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
               ),
               const SizedBox(height: 6),
               DecoratedBox(
@@ -92,7 +96,10 @@ class StepEditorDialog extends ConsumerWidget {
                     height: 240,
                     child: CodeField(
                       controller: codeController,
-                      textStyle: const TextStyle(fontFamily: 'SourceCodePro', fontSize: 13),
+                      textStyle: const TextStyle(
+                        fontFamily: 'SourceCodePro',
+                        fontSize: 13,
+                      ),
                       expands: false,
                       lineNumberStyle: const LineNumberStyle(width: 36),
                     ),
@@ -119,12 +126,14 @@ class StepEditorDialog extends ConsumerWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  specError == null ? '{ "when": {"jsonpath": "..."}, "action": { ... } }' : 'Ошибка: $specError',
+                  specError == null
+                      ? '{ "when": {"jsonpath": "..."}, "action": { ... } }'
+                      : 'Ошибка: $specError',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: specError == null
-                            ? Theme.of(context).hintColor
-                            : Theme.of(context).colorScheme.error,
-                      ),
+                    color: specError == null
+                        ? Theme.of(context).hintColor
+                        : Theme.of(context).colorScheme.error,
+                  ),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -134,7 +143,10 @@ class StepEditorDialog extends ConsumerWidget {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Отмена'),
+        ),
         FilledButton(
           onPressed: () {
             if ((title.trim().isEmpty) || (spec.trim().isEmpty)) return;

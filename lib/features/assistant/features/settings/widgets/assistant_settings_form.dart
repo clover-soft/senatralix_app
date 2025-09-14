@@ -11,7 +11,8 @@ class AssistantSettingsForm extends ConsumerStatefulWidget {
   final String assistantId;
 
   @override
-  ConsumerState<AssistantSettingsForm> createState() => _AssistantSettingsFormState();
+  ConsumerState<AssistantSettingsForm> createState() =>
+      _AssistantSettingsFormState();
 }
 
 class _AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
@@ -28,7 +29,9 @@ class _AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
   @override
   void initState() {
     super.initState();
-    final initial = ref.read(assistantSettingsProvider.notifier).getFor(widget.assistantId);
+    final initial = ref
+        .read(assistantSettingsProvider.notifier)
+        .getFor(widget.assistantId);
     _instructionCtrl = TextEditingController(text: initial.instruction);
   }
 
@@ -40,14 +43,20 @@ class _AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
 
   @override
   Widget build(BuildContext context) {
-    final initial = ref.read(assistantSettingsProvider.notifier).getFor(widget.assistantId);
+    final initial = ref
+        .read(assistantSettingsProvider.notifier)
+        .getFor(widget.assistantId);
     final state = ref.watch(settingsEditProvider(initial));
     final ctrl = ref.read(settingsEditProvider(initial).notifier);
 
-    final allowedModels = ref.watch(assistantFeatureSettingsProvider).settings.allowedModels;
+    final allowedModels = ref
+        .watch(assistantFeatureSettingsProvider)
+        .settings
+        .allowedModels;
     // Фолбэк: если список пуст, позволяем текущее значение
     final models = allowedModels.isNotEmpty ? allowedModels : [state.model];
-    final isDirty = state.model != initial.model ||
+    final isDirty =
+        state.model != initial.model ||
         state.instruction != initial.instruction ||
         state.temperature != initial.temperature ||
         state.maxTokens != initial.maxTokens;
@@ -55,10 +64,12 @@ class _AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
     void onSave() {
       if (!_formKey.currentState!.validate()) return;
       final data = ctrl.buildResult();
-      ref.read(assistantSettingsProvider.notifier).save(widget.assistantId, data);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Настройки сохранены')),
-      );
+      ref
+          .read(assistantSettingsProvider.notifier)
+          .save(widget.assistantId, data);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Настройки сохранены')));
     }
 
     void onCancel() {
@@ -75,24 +86,33 @@ class _AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
           // Модель
           DropdownButtonFormField<String>(
             value: models.contains(state.model) ? state.model : models.first,
-            items: models.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+            items: models
+                .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                .toList(),
             onChanged: (val) {
               if (val != null) ctrl.setModel(val);
             },
-            decoration: const InputDecoration(labelText: 'Модель', helperText: 'Выбор из разрешённых моделей'),
+            decoration: const InputDecoration(
+              labelText: 'Модель',
+              helperText: 'Выбор из разрешённых моделей',
+            ),
           ),
 
           const SizedBox(height: 16),
 
           // Температура
-          Text('Температура: ${state.temperature.toStringAsFixed(1)}', style: Theme.of(context).textTheme.labelLarge),
+          Text(
+            'Температура: ${state.temperature.toStringAsFixed(1)}',
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
           Slider(
             value: state.temperature,
             min: 0.0,
             max: 2.0,
             divisions: 20,
             label: state.temperature.toStringAsFixed(1),
-            onChanged: (v) => ctrl.setTemperature(double.parse(v.toStringAsFixed(1))),
+            onChanged: (v) =>
+                ctrl.setTemperature(double.parse(v.toStringAsFixed(1))),
           ),
 
           const SizedBox(height: 8),
@@ -118,7 +138,8 @@ class _AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
               controller: _instructionCtrl,
               decoration: const InputDecoration(
                 labelText: 'Инструкция (system prompt)',
-                helperText: 'Рекомендуется краткость; предупреждение при > 5000 символов',
+                helperText:
+                    'Рекомендуется краткость; предупреждение при > 5000 символов',
                 alignLabelWithHint: true,
               ),
               maxLines: null,
@@ -131,7 +152,9 @@ class _AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 'Предупреждение: очень длинная инструкция (>5000 символов)',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.error),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
             ),
 

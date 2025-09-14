@@ -78,14 +78,16 @@ class _ParamBlockCardState extends State<ParamBlockCard> {
             if (widget.showTitle) ...[
               Text(
                 widget.title,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
             ],
             if (widget.header != null) ...[
-              if (widget.showTitle) const SizedBox(height: 8) else const SizedBox(height: 0),
+              if (widget.showTitle)
+                const SizedBox(height: 8)
+              else
+                const SizedBox(height: 0),
               widget.header!,
             ],
             if (widget.enableList) ...[
@@ -128,7 +130,9 @@ class _ParamBlockCardState extends State<ParamBlockCard> {
                     child: TextFormField(
                       key: ValueKey('${widget.title}-add'),
                       controller: _controller,
-                      decoration: const InputDecoration(labelText: 'Новая фраза'),
+                      decoration: const InputDecoration(
+                        labelText: 'Новая фраза',
+                      ),
                       onFieldSubmitted: (v) {
                         final t = v.trim();
                         if (t.isNotEmpty) {

@@ -83,8 +83,10 @@ class ContextDataProvider with ChangeNotifier {
       );
       // 🙂 Debug: print loaded context summary
       // ignore: avoid_print
-      print('[CTX] loaded: subscription='
-          '${sub != null ? sub['name'] : 'null'}; menuKeys=${menu.map((e) => e['key']).toList()}');
+      print(
+        '[CTX] loaded: subscription='
+        '${sub != null ? sub['name'] : 'null'}; menuKeys=${menu.map((e) => e['key']).toList()}',
+      );
       notifyListeners();
     } catch (e) {
       _state = _state.copyWith(
