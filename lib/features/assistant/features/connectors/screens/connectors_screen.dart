@@ -237,89 +237,52 @@ class _AssistantConnectorsScreenState
               _toggling.contains(it.id) || attachedSet.isLoading;
           return AppListItem(
             onTap: () => _edit(it),
-            leading: SizedBox(
-              width: 120,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    RemixIcons.phone_line,
-                    color: Theme.of(context).colorScheme.secondary,
-                  ),
-                  const SizedBox(width: 6),
-                  if (isBusy)
-                    const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2.4),
-                    )
-                  else
-                    Tooltip(
-                      message: isAttached
-                          ? 'Отключить коннектор от ассистента'
-                          : 'Подключить коннектор к ассистенту',
-                      child: Transform.scale(
-                        scale: 0.85,
-                        child: Switch(
-                          value: isAttached,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          onChanged: (v) async {
-                            setState(() => _toggling.add(it.id));
-                            try {
-                              final api = ref.read(assistantApiProvider);
-                              if (v) {
-                                await api.assignConnectorToAssistant(
-                                  assistantId: _assistantId,
-                                  externalId: it.id,
-                                  type: 'voip',
-                                );
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Коннектор подключён'),
-                                    ),
-                                  );
-                                }
-                              } else {
-                                await api.unassignConnectorFromAssistant(
-                                  assistantId: _assistantId,
-                                  externalId: it.id,
-                                );
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Коннектор отключён'),
-                                    ),
-                                  );
-                                }
-                              }
-                              // Обновим набор подключённых
-                              ref.invalidate(
-                                assistantAttachedConnectorsProvider,
-                              );
-                              await ref.read(
-                                assistantAttachedConnectorsProvider(
-                                  _assistantId,
-                                ).future,
-                              );
-                            } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Ошибка: $e')),
-                                );
-                              }
-                            } finally {
-                              if (mounted)
-                                setState(() => _toggling.remove(it.id));
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+            leadingIcon: Icon(
+              RemixIcons.phone_line,
+              color: Theme.of(context).colorScheme.secondary,
             ),
+            switchValue: isAttached,
+            switchTooltip: isAttached
+                ? 'Отключить коннектор от ассистента'
+                : 'Подключить коннектор к ассистенту',
+            onSwitchChanged: isBusy
+                ? null
+                : (v) async {
+                    setState(() => _toggling.add(it.id));
+                    try {
+                      final api = ref.read(assistantApiProvider);
+                      if (v) {
+                        await api.assignConnectorToAssistant(
+                          assistantId: _assistantId,
+                          externalId: it.id,
+                          type: 'voip',
+                        );
+                        if (mounted) {
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(const SnackBar(content: Text('Коннектор подключён')));
+                        }
+                      } else {
+                        await api.unassignConnectorFromAssistant(
+                          assistantId: _assistantId,
+                          externalId: it.id,
+                        );
+                        if (mounted) {
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(const SnackBar(content: Text('Коннектор отключён')));
+                        }
+                      }
+                      // Обновим набор подключённых
+                      ref.invalidate(assistantAttachedConnectorsProvider);
+                      await ref.read(assistantAttachedConnectorsProvider(_assistantId).future);
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(SnackBar(content: Text('Ошибка: $e')));
+                      }
+                    } finally {
+                      if (mounted) setState(() => _toggling.remove(it.id));
+                    }
+                  },
             title: it.name.isEmpty ? 'Без имени' : it.name,
             subtitle: it.id,
             meta: isAttached ? 'Подключён к ассистенту' : 'Не подключён',

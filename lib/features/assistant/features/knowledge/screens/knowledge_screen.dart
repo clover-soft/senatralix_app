@@ -30,23 +30,20 @@ class _AssistantKnowledgeScreenState
   }
 
   void _addItem() async {
-    final now = DateTime.now();
-    final draft = KnowledgeBaseItem(
-      id: now.millisecondsSinceEpoch,
-      name: 'Новый источник',
-      description: '',
-      externalId: 'kb_${now.millisecondsSinceEpoch}',
-      markdown: '',
-      status: KnowledgeStatus.ready,
-      active: true,
-      maxChunkSizeTokens: 700,
-      chunkOverlapTokens: 300,
-      createdAt: now,
-      updatedAt: now,
-    );
-    // Переходим на экран создания по роуту, прокидываем draft через extra
-    if (!mounted) return;
-    context.go('/assistant/$_assistantId/knowledge/new', extra: draft);
+    try {
+      final api = ref.read(assistantApiProvider);
+      final created = await api.createKnowledgeBase();
+      // Сохраняем созданную БЗ в список для текущего ассистента
+      ref.read(knowledgeProvider.notifier).add(_assistantId, created);
+      if (!mounted) return;
+      // Переходим на экран редактирования новой БЗ
+      context.go('/assistant/$_assistantId/knowledge/${created.id}');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Не удалось создать базу знаний: $e')),
+      );
+    }
   }
 
   void _editItem(KnowledgeBaseItem item) async {
@@ -55,28 +52,7 @@ class _AssistantKnowledgeScreenState
     context.go('/assistant/$_assistantId/knowledge/${item.id}');
   }
 
-  void _removeItem(int id) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Удалить источник?'),
-        content: const Text('Действие необратимо'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Отмена'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Удалить'),
-          ),
-        ],
-      ),
-    );
-    if (ok == true) {
-      ref.read(knowledgeProvider.notifier).remove(_assistantId, id);
-    }
-  }
+  // удаление вынесено inline в onPressed у кнопки удаления
 
   String _titleFromMarkdown(String md) {
     final lines = md.split('\n');
@@ -167,72 +143,57 @@ class _AssistantKnowledgeScreenState
           final subtitle = it.description.trim().isNotEmpty ? it.description : '';
           final meta = '${it.externalId} • ${it.updatedAt.toLocal()}';
 
+          final linked = ref.watch(assistantSettingsProvider.select((s) =>
+              s.byId[_assistantId]?.knowledgeExternalIds.contains(it.externalId) ?? false));
+
           return AppListItem(
             onTap: () => _editItem(it),
-            leading: SizedBox(
-              width: 120,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(RemixIcons.git_repository_line, color: Theme.of(context).colorScheme.secondary),
-                  const SizedBox(width: 6),
-                  Consumer(builder: (context, ref, _) {
-                    final linked = ref.watch(assistantSettingsProvider.select((s) =>
-                        s.byId[_assistantId]?.knowledgeExternalIds.contains(it.externalId) ?? false));
-                    return Tooltip(
-                      message: linked ? 'Отключить источник от ассистента' : 'Подключить источник к ассистенту',
-                      child: Transform.scale(
-                        scale: 0.85,
-                        child: Switch(
-                          value: linked,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          onChanged: (v) async {
-                            try {
-                              final api = ref.read(assistantApiProvider);
-                              if (v) {
-                                // bind: получаем новый external_id и обновляем модель
-                                final newExt = await api.bindKnowledgeToAssistant(
-                                  assistantId: _assistantId,
-                                  knowledgeId: it.id,
-                                );
-                                // Обновим сам элемент (externalId) в списке знаний
-                                final updated = it.copyWith(externalId: newExt);
-                                ref.read(knowledgeProvider.notifier).update(_assistantId, updated);
-                                // Установим единственный external_id у ассистента
-                                ref.read(assistantSettingsProvider.notifier).setSingleKnowledge(_assistantId, newExt);
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Источник привязан к ассистенту')),
-                                  );
-                                }
-                              } else {
-                                // unbind: очистить связи у ассистента
-                                await api.unbindKnowledgeFromAssistant(
-                                  assistantId: _assistantId,
-                                  knowledgeId: it.id,
-                                );
-                                ref.read(assistantSettingsProvider.notifier).clearKnowledge(_assistantId);
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Источник отвязан от ассистента')),
-                                  );
-                                }
-                              }
-                            } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Ошибка: $e')),
-                                );
-                              }
-                            }
-                          },
-                        ),
-                      ),
+            leadingIcon: Icon(RemixIcons.git_repository_line, color: Theme.of(context).colorScheme.secondary),
+            // состояние и обработчик свитча
+            switchValue: linked,
+            switchTooltip: linked
+                ? 'Отключить источник от ассистента'
+                : 'Подключить источник к ассистенту',
+            onSwitchChanged: (v) async {
+              try {
+                final api = ref.read(assistantApiProvider);
+                if (v) {
+                  // bind: получаем новый external_id и обновляем модель
+                  final newExt = await api.bindKnowledgeToAssistant(
+                    assistantId: _assistantId,
+                    knowledgeId: it.id,
+                  );
+                  // Обновим сам элемент (externalId) в списке знаний
+                  final updated = it.copyWith(externalId: newExt);
+                  ref.read(knowledgeProvider.notifier).update(_assistantId, updated);
+                  // Установим единственный external_id у ассистента
+                  ref.read(assistantSettingsProvider.notifier).setSingleKnowledge(_assistantId, newExt);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Источник привязан к ассистенту')),
                     );
-                  }),
-                ],
-              ),
-            ),
+                  }
+                } else {
+                  // unbind: очистить связи у ассистента
+                  await api.unbindKnowledgeFromAssistant(
+                    assistantId: _assistantId,
+                    knowledgeId: it.id,
+                  );
+                  ref.read(assistantSettingsProvider.notifier).clearKnowledge(_assistantId);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Источник отвязан от ассистента')),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Ошибка: $e')),
+                  );
+                }
+              }
+            },
             title: title,
             subtitle: subtitle,
             meta: meta,
@@ -247,7 +208,42 @@ class _AssistantKnowledgeScreenState
                 IconButton(
                   tooltip: 'Удалить',
                   icon: const Icon(Icons.delete_outline),
-                  onPressed: () => _removeItem(it.id),
+                  onPressed: () async {
+                    final ok = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Удалить источник?'),
+                        content: const Text('Действие необратимо'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Отмена'),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Удалить'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (ok != true) return;
+                    try {
+                      final api = ref.read(assistantApiProvider);
+                      await api.deleteKnowledgeBase(it.id);
+                      ref.read(knowledgeProvider.notifier).remove(_assistantId, it.id);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Источник удалён')),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Ошибка удаления: $e')),
+                        );
+                      }
+                    }
+                  },
                 ),
               ],
             ),

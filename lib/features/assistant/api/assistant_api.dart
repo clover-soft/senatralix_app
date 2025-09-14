@@ -101,6 +101,18 @@ class AssistantApi {
     await _client.post<dynamic>('/assistants/$assistantId/knowledge/$knowledgeId/unbind', data: {});
   }
 
+  /// Создать новую базу знаний (общую), возвращает заполненный объект
+  Future<KnowledgeBaseItem> createKnowledgeBase() async {
+    final resp = await _client.post<dynamic>('/assistants/knowledge/', data: {});
+    final data = Map<String, dynamic>.from(resp.data as Map);
+    return KnowledgeBaseItem.fromJson(data);
+  }
+
+  /// Удалить базу знаний по id (204 без контента при успехе)
+  Future<void> deleteKnowledgeBase(int id) async {
+    await _client.delete<void>('/assistants/knowledge/$id');
+  }
+
   /// Список коннекторов, подключенных к ассистенту (возвращает external_id)
   Future<Set<String>> fetchAssistantAttachedConnectors(String assistantId, {int limit = 50, int offset = 0}) async {
     final resp = await _client.get<dynamic>('/assistants/$assistantId/connectors', query: {

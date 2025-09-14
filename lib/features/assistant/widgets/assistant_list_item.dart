@@ -56,7 +56,7 @@ class AssistantListItem extends StatelessWidget {
         : null;
 
     return AppListItem(
-      leading: leading ?? defaultLeading,
+      leadingIcon: leading ?? defaultLeading,
       trailing: trailing ?? defaultTrailing,
       title: assistant.name,
       subtitle: subtitle,
