@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: [ self-hosted, Linux, X64, tardis1 ]
+    runs-on: [ self-hosted, Linux, X64, tardis ]
 
     steps:
     - name: Checkout Repository
