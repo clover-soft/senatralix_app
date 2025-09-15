@@ -13,7 +13,7 @@ class AuthScreen extends ConsumerWidget {
     final auth = ref.watch(authDataProvider).state;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Вход в sentralix')),
+      appBar: AppBar(title: const Text('Вход в Sentralix')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),

@@ -94349,7 +94349,8 @@ q=r.p0(r,new A.aFK(),new A.aFL())
 p=q==null?null:q.b
 if(p==null)p=J.r4(B.cD.gef(B.cD)).b}else p="/"
 if(s&&n.c&&h){o=m.gt6().i(0,"from")
-return o==null?p:o}if(s&&n.c&&j==="/"&&p!=="/")return p
+if(o==null||o.length===0||o==="/")return p
+return o}if(s&&n.c&&j==="/"&&p!=="/")return p
 return null},
 $S:587}
 A.aFK.prototype={

@@ -62,7 +62,11 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
     // Если залогинен и мы на auth-роуте -> возвращаемся на from или на defaultRoute
     if (auth.ready && auth.loggedIn && isAuthRoute) {
       final from = state.uri.queryParameters['from'];
-      return from ?? defaultRoute;
+      // Если from пустой или это корень '/', направляем на первую фичу меню
+      if (from == null || from.isEmpty || from == '/') {
+        return defaultRoute;
+      }
+      return from;
     }
 
     // Если залогинен и мы на корне '/', но первая фича не '/' — редиректим на неё
