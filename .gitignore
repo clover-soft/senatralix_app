@@ -31,10 +31,10 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/*
+/build/
 # Allow committing built web artifacts
-!/build/web/
-!/build/web/**
+#!/build/web/
+#!/build/web/**
 
 # Symbolication related
 app.*.symbols
