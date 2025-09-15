@@ -48,10 +48,16 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
       return '/auth/login?from=$from';
     }
 
-    // Маршрут по умолчанию: первая фича из меню (если вдруг будет не '/')
-    final String defaultRoute =
-        (kMenuRegistry.values.isNotEmpty ? kMenuRegistry.values.first.route : '/')
-            .toString();
+    // Маршрут по умолчанию: первая фича из меню, у которой route != '/'
+    String defaultRoute = '/';
+    if (kMenuRegistry.values.isNotEmpty) {
+      final firstNonRoot = kMenuRegistry.values.cast<MenuDef?>().firstWhere(
+            (m) => m != null && m.route != '/',
+            orElse: () => null,
+          );
+      defaultRoute = (firstNonRoot?.route ?? kMenuRegistry.values.first.route)
+          .toString();
+    }
 
     // Если залогинен и мы на auth-роуте -> возвращаемся на from или на defaultRoute
     if (auth.ready && auth.loggedIn && isAuthRoute) {
