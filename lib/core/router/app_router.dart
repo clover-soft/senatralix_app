@@ -48,9 +48,12 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
       return '/auth/login?from=$from';
     }
 
-    // Маршрут по умолчанию: первая фича из меню, у которой route != '/'
+    // Маршрут по умолчанию: приоритет фиче assistant, затем первая с route != '/'
     String defaultRoute = '/';
-    if (kMenuRegistry.values.isNotEmpty) {
+    final assistantDef = kMenuRegistry['assistant'];
+    if (assistantDef != null && assistantDef.route != '/') {
+      defaultRoute = assistantDef.route;
+    } else if (kMenuRegistry.values.isNotEmpty) {
       final firstNonRoot = kMenuRegistry.values.cast<MenuDef?>().firstWhere(
             (m) => m != null && m.route != '/',
             orElse: () => null,
@@ -62,11 +65,19 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
     // Если залогинен и мы на auth-роуте -> возвращаемся на from или на defaultRoute
     if (auth.ready && auth.loggedIn && isAuthRoute) {
       final from = state.uri.queryParameters['from'];
-      // Если from пустой или это корень '/', направляем на первую фичу меню
-      if (from == null || from.isEmpty || from == '/') {
-        return defaultRoute;
-      }
-      return from;
+      // Куда идём после логина
+      final String target = (from == null || from.isEmpty || from == '/')
+          ? defaultRoute
+          : from;
+      // Лог доступных маршрутов меню и выбранной цели
+      final menuRoutes = kMenuRegistry.entries
+          .map((e) => '${e.key}:${e.value.route}')
+          .join(', ');
+      AppLogger.d(
+        'post-auth redirect: from=$from -> target=$target; default=$defaultRoute; menu=[$menuRoutes]',
+        tag: 'Router',
+      );
+      return target;
     }
 
     // Если залогинен и мы на корне '/', но первая фича не '/' — редиректим на неё
