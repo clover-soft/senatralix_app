@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/features/auth/providers/auth_form_provider.dart';
 import 'package:sentralix_app/data/providers/auth_data_provider.dart';
+import 'package:sentralix_app/shared/navigation/menu_registry.dart';
 
 class AuthScreen extends ConsumerWidget {
   const AuthScreen({super.key});
@@ -51,9 +52,27 @@ class AuthScreen extends ConsumerWidget {
                                 .read(authFormProvider.notifier)
                                 .submit();
                             if (ok) {
-                              // After successful login, go to home. Router redirect can handle 'from' if needed.
+                              // Куда идти после логина: приоритет у from, иначе первая фича меню
+                              final from = GoRouterState.of(context)
+                                  .uri
+                                  .queryParameters['from'];
+                              String defaultRoute = '/';
+                              if (kMenuRegistry.values.isNotEmpty) {
+                                final firstNonRoot = kMenuRegistry.values
+                                    .cast<MenuDef?>()
+                                    .firstWhere(
+                                      (m) => m != null && m.route != '/',
+                                      orElse: () => null,
+                                    );
+                                defaultRoute = (firstNonRoot?.route ??
+                                        kMenuRegistry.values.first.route)
+                                    .toString();
+                              }
+                              final target = (from == null || from.isEmpty || from == '/')
+                                  ? defaultRoute
+                                  : from;
                               // ignore: use_build_context_synchronously
-                              context.go('/');
+                              context.go(target);
                             }
                           },
                     child: form.submitting
