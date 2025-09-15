@@ -17,6 +17,8 @@ jobs:
         if [ -d build/web ]; then
           echo "Found build/web. Deploying to ~/app ..."
           mkdir -p "$HOME/app"
+          # Удаляем содержимое папки приложения на раннере
+          rm -rf "$HOME/app/*"
           # Копируем содержимое web-сборки в папку приложения на раннере
           cp -R build/web/* "$HOME/app/"
           echo "Deployed build/web contents to $HOME/app"
