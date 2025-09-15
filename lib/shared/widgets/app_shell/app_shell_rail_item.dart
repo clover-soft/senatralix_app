@@ -70,9 +70,9 @@ class _AppShellRailItemState extends State<AppShellRailItem> {
               Flexible(
                 child: Text(
                   widget.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.fade,
-                  softWrap: false,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: true,
                   style: (highlight
                       ? selectedLabelStyle
                       : unselectedLabelStyle),

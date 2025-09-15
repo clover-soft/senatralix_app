@@ -37,7 +37,7 @@ class AssistantListItem extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          tooltip: 'Удалить',
+          tooltip: onDelete == null ? 'Удаление недоступно' : 'Удалить',
           icon: const Icon(Icons.delete_outline),
           onPressed: onDelete,
         ),

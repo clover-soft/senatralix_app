@@ -7,6 +7,8 @@ import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart'
 import 'package:sentralix_app/features/assistant/features/tools/widgets/function_tool_dialog.dart';
 import 'package:sentralix_app/features/assistant/features/tools/data/tool_presets.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
+import 'package:sentralix_app/features/assistant/shared/widgets/assistant_fab.dart';
+import 'package:sentralix_app/features/assistant/shared/widgets/assistant_feature_list_item.dart';
 
 class AssistantToolsScreen extends ConsumerStatefulWidget {
   const AssistantToolsScreen({super.key});
@@ -44,29 +46,6 @@ class _AssistantToolsScreenState extends ConsumerState<AssistantToolsScreen> {
     );
     if (result != null) {
       ref.read(assistantToolsProvider.notifier).update(_assistantId, result);
-    }
-  }
-
-  void _removeTool(String id) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Удалить инструмент?'),
-        content: const Text('Действие необратимо'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Отмена'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Удалить'),
-          ),
-        ],
-      ),
-    );
-    if (ok == true) {
-      ref.read(assistantToolsProvider.notifier).remove(_assistantId, id);
     }
   }
 
@@ -113,9 +92,9 @@ class _AssistantToolsScreenState extends ConsumerState<AssistantToolsScreen> {
         assistantId: _assistantId,
         subfeatureTitle: 'Инструменты',
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: AssistantActionFab(
+        icon: Icons.add,
         tooltip: 'Добавить инструмент',
-        child: const Icon(Icons.add),
         onPressed: () async {
           final choice = await showModalBottomSheet<String>(
             context: context,
@@ -151,36 +130,22 @@ class _AssistantToolsScreenState extends ConsumerState<AssistantToolsScreen> {
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           final t = tools[index];
-          return Card(
-            child: ListTile(
-              leading: Switch(
-                value: t.enabled,
-                onChanged: (v) => ref
-                    .read(assistantToolsProvider.notifier)
-                    .toggleEnabled(_assistantId, t.id, v),
-              ),
-              title: Text(t.def.name),
-              subtitle: Text(
-                t.def.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: Wrap(
-                spacing: 8,
-                children: [
-                  IconButton(
-                    tooltip: 'Редактировать',
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: () => _editTool(t),
-                  ),
-                  IconButton(
-                    tooltip: 'Удалить',
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () => _removeTool(t.id),
-                  ),
-                ],
-              ),
-            ),
+          final String fnName = t.def.name;
+          final IconData toolIcon = fnName == 'transferCall'
+              ? Icons.phone_forwarded
+              : (fnName == 'hangupCall'
+                  ? Icons.call_end
+                  : Icons.extension);
+          return AssistantFeatureListItem(
+            onTap: () => _editTool(t),
+            leadingIcon:
+                Icon(toolIcon, color: Theme.of(context).colorScheme.secondary),
+            title: t.def.name,
+            subtitle: t.def.description,
+            meta: 'id: ${t.id}',
+            showDelete: true,
+            deleteEnabled: false,
+            showChevron: true,
           );
         },
       ),

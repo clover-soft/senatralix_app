@@ -220,6 +220,50 @@ class AssistantApi {
     await _client.delete<dynamic>('/assistant/connectors/$id');
   }
 
+  /// Обновление ядра ассистента (имя/описание и ключевые настройки)
+  /// PATCH /assistants/{assistantId}/core
+  /// Тело запроса (по спецификации бэкенда):
+  /// {
+  ///   "name": "...",
+  ///   "description": "...",
+  ///   "model": "...",
+  ///   "maxTokens": 150,
+  ///   "instruction": "...",
+  ///   "temperature": 0.5
+  /// }
+  Future<Assistant> updateAssistantCore({
+    required String assistantId,
+    required String name,
+    String? description,
+    required AssistantSettings settings,
+  }) async {
+    final body = <String, dynamic>{
+      'name': name,
+      'description': (description?.trim().isEmpty ?? true)
+          ? null
+          : description!.trim(),
+      'model': settings.model,
+      'maxTokens': settings.maxTokens,
+      'instruction': settings.instruction,
+      'temperature': settings.temperature,
+    };
+    final resp = await _client.patch<dynamic>(
+      '/assistants/$assistantId/core',
+      data: body,
+    );
+    final data = Map<String, dynamic>.from(resp.data as Map);
+    return Assistant(
+      id: '${data['id']}',
+      name: (data['name'] ?? '').toString(),
+      description: (data['description'] as String?)?.trim(),
+      settings: (data['settings'] is Map)
+          ? AssistantSettings.fromBackend(
+              Map<String, dynamic>.from(data['settings'] as Map),
+            )
+          : null,
+    );
+  }
+
   /// Список ассистентов (минимальный маппинг под текущую модель)
   Future<List<Assistant>> fetchAssistants() async {
     final resp = await _client.get<dynamic>('/assistants/list/');

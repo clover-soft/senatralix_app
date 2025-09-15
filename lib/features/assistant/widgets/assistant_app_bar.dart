@@ -35,11 +35,12 @@ class AssistantAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Если имя ещё не подгрузилось, временно показываем сам assistantId
     final name =
-        ref.watch(assistantListProvider).byId(assistantId)?.name ?? 'Unknown';
+        ref.watch(assistantListProvider).byId(assistantId)?.name ?? assistantId;
     final title = subfeatureTitle == null
-        ? 'Assistant ($name)'
-        : 'Assistant • ${subfeatureTitle!} ($name)';
+        ? 'AI Асистенты ($name)'
+        : 'AI Асистенты • ${subfeatureTitle!} ($name)';
 
     return AppBar(
       leading: IconButton(
