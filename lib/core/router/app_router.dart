@@ -10,6 +10,7 @@ import 'package:sentralix_app/features/dashboard/screens/dashboard_screen.dart';
 import 'package:sentralix_app/shared/widgets/app_shell/app_shell.dart';
 import 'package:sentralix_app/features/profile/screens/profile_screen.dart';
 import 'package:sentralix_app/features/assistant/assistant_routes.dart';
+import 'package:sentralix_app/shared/navigation/menu_registry.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -47,10 +48,20 @@ GoRouter createAppRouter(ProviderContainer container) => GoRouter(
       return '/auth/login?from=$from';
     }
 
-    // If logged in and on auth route -> go back to original location or home
+    // Маршрут по умолчанию: первая фича из меню (если вдруг будет не '/')
+    final String defaultRoute =
+        (kMenuRegistry.values.isNotEmpty ? kMenuRegistry.values.first.route : '/')
+            .toString();
+
+    // Если залогинен и мы на auth-роуте -> возвращаемся на from или на defaultRoute
     if (auth.ready && auth.loggedIn && isAuthRoute) {
       final from = state.uri.queryParameters['from'];
-      return from ?? '/';
+      return from ?? defaultRoute;
+    }
+
+    // Если залогинен и мы на корне '/', но первая фича не '/' — редиректим на неё
+    if (auth.ready && auth.loggedIn && path == '/' && defaultRoute != '/') {
+      return defaultRoute;
     }
 
     // Splash не используем в redirect, чтобы избежать прыжков URL на deep-link
