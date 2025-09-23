@@ -261,7 +261,44 @@ class ScriptCommandEditorScreen extends ConsumerWidget {
                   children: [
                     const Text('Активен'),
                     const SizedBox(width: 8),
-                    Switch(value: st.isActive, onChanged: ctrl.setActive),
+                    Switch(
+                      value: st.isActive,
+                      onChanged: (v) async {
+                        // Всегда меняем локально состояние формы
+                        ctrl.setActive(v);
+                        // Если это существующий скрипт — шлём PATCH сразу
+                        if (existingItem != null && existingItem.id != 0) {
+                          final api = ref.read(assistantApiProvider);
+                          try {
+                            final resp = await api.updateThreadCommandRaw(
+                              id: existingItem.id,
+                              assistantId:
+                                  int.tryParse(assistantId) ?? existingItem.assistantId,
+                              order: st.order,
+                              name: st.name.trim(),
+                              description: st.description.trim(),
+                              filterExpression: st.filterExpression.trim(),
+                              isActive: v,
+                            );
+                            // Обновим глобальный список по ответу
+                            final updated = ScriptListItem.fromJson(resp);
+                            ref
+                                .read(scriptListProvider.notifier)
+                                .update(assistantId, updated);
+                          } catch (e) {
+                            // Откат локального состояния при ошибке
+                            ctrl.setActive(!v);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Не удалось обновить статус: $e'),
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      },
+                    ),
                   ],
                 ),
               ],
