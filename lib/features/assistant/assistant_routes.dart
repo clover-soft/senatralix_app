@@ -10,7 +10,7 @@ import 'package:sentralix_app/features/assistant/features/knowledge/screens/know
 import 'package:sentralix_app/features/assistant/features/connectors/screens/connectors_screen.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/screens/connector_details_screen.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/screens/scripts_screen.dart';
-import 'package:sentralix_app/features/assistant/features/scripts/screens/script_details_screen.dart';
+import 'package:sentralix_app/features/assistant/features/scripts/screens/script_command_editor_screen.dart';
 import 'package:sentralix_app/features/assistant/features/chat/screens/chat_screen.dart';
 import 'package:sentralix_app/features/assistant/features/sessions/screens/sessions_screen.dart';
 
@@ -67,9 +67,14 @@ List<RouteBase> assistantRoutes() => [
         const MaterialPage(child: AssistantScriptsScreen()),
   ),
   GoRoute(
+    path: '/assistant/:assistantId/scripts/new',
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: ScriptCommandEditorScreen()),
+  ),
+  GoRoute(
     path: '/assistant/:assistantId/scripts/:scriptId',
     pageBuilder: (context, state) =>
-        const MaterialPage(child: ScriptDetailsScreen()),
+        const MaterialPage(child: ScriptCommandEditorScreen()),
   ),
   GoRoute(
     path: '/assistant/:assistantId/chat',

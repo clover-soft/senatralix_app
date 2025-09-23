@@ -345,4 +345,100 @@ class AssistantApi {
     };
     return updateKnowledgeRaw(id: item.id, body: body);
   }
+
+  /// Список скриптов (thread-commands) для ассистента
+  /// GET `/assistants/thread-commands/?assistant_id=<id>&limit=<limit>&offset=<offset>`
+  Future<List<Map<String, dynamic>>> fetchScriptCommands({
+    required String assistantId,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final resp = await _client.get<dynamic>(
+      '/assistants/thread-commands/',
+      query: {
+        'assistant_id': assistantId,
+        'limit': '$limit',
+        'offset': '$offset',
+      },
+    );
+    final data = resp.data;
+    return List<Map<String, dynamic>>.from(data as List);
+  }
+
+  /// Создать новую команду (thread-command)
+  Future<Map<String, dynamic>> createThreadCommand({
+    required int assistantId,
+    required int order,
+    required String name,
+    required String description,
+    required String filterExpression,
+    required bool isActive,
+  }) async {
+    final body = <String, dynamic>{
+      'assistant_id': assistantId,
+      'order': order,
+      'name': name,
+      'description': description,
+      'filter_expression': filterExpression,
+      'is_active': isActive,
+    };
+    final resp = await _client.post<dynamic>(
+      '/assistants/thread-commands/',
+      data: body,
+    );
+    return Map<String, dynamic>.from(resp.data as Map);
+  }
+
+  /// Обновить команду (thread-command) по id (PATCH)
+  /// Требуется полный набор полей, как в ответе бэкенда
+  Future<Map<String, dynamic>> updateThreadCommandRaw({
+    required int id,
+    required int assistantId,
+    required int order,
+    required String name,
+    required String description,
+    required String filterExpression,
+    required bool isActive,
+  }) async {
+    final body = <String, dynamic>{
+      'assistant_id': assistantId,
+      'order': order,
+      'name': name,
+      'description': description,
+      'filter_expression': filterExpression,
+      'is_active': isActive,
+      'id': id,
+    };
+    final resp = await _client.patch<dynamic>(
+      '/assistants/thread-commands/$id',
+      data: body,
+    );
+    return Map<String, dynamic>.from(resp.data as Map);
+  }
+
+  /// Удобный метод: обновить команду из JSON (если где-то имеется сырая модель)
+  Future<Map<String, dynamic>> updateThreadCommandFromItem(
+      Map<String, dynamic> itemJson) async {
+    final id = int.tryParse('${itemJson['id']}') ?? 0;
+    final assistantId = int.tryParse('${itemJson['assistant_id']}') ?? 0;
+    final order = int.tryParse('${itemJson['order']}') ?? 0;
+    final name = (itemJson['name'] ?? '').toString();
+    final description = (itemJson['description'] ?? '').toString();
+    final filterExpression = (itemJson['filter_expression'] ?? '').toString();
+    final isActive = (itemJson['is_active'] as bool?) ?? true;
+    return updateThreadCommandRaw(
+      id: id,
+      assistantId: assistantId,
+      order: order,
+      name: name,
+      description: description,
+      filterExpression: filterExpression,
+      isActive: isActive,
+    );
+  }
+
+  /// Удалить команду (thread-command) по id (204 No Content при успехе)
+  Future<void> deleteThreadCommand(int id) async {
+    await _client.delete<void>('/assistants/thread-commands/$id');
+  }
 }

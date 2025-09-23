@@ -52,6 +52,7 @@ class AuthScreen extends ConsumerWidget {
                                 .read(authFormProvider.notifier)
                                 .submit();
                             if (ok) {
+                              if (!context.mounted) return;
                               // Куда идти после логина: приоритет у from, иначе первая фича меню
                               final from = GoRouterState.of(context)
                                   .uri
@@ -71,7 +72,6 @@ class AuthScreen extends ConsumerWidget {
                               final target = (from == null || from.isEmpty || from == '/')
                                   ? defaultRoute
                                   : from;
-                              // ignore: use_build_context_synchronously
                               context.go(target);
                             }
                           },

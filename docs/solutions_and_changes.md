@@ -108,3 +108,22 @@
 - Интеграция в приложение:
   - Роутер: `lib/core/router/app_router.dart` добавлены `...assistantRoutes()` внутри `ShellRoute`.
   - Меню: `lib/shared/navigation/menu_registry.dart` добавлен пункт `assistant`.
+
+## Последние изменения (Шаг 11 — Assistant Scripts: пресеты и обратный рендер)
+
+- Добавлены пресеты `filter_expression` для команд ассистента: «Начало звонка», «Конец звонка», «Сообщение», а также режим `custom` для ручного JSON.
+- Реализована подформа для сценария «Сообщение» с выбором ролей (Пользователь/Ассистент/Система), типа фильтрации (точное соответствие/вхождение/без регистра/регэксп) и поля ввода.
+- Реализован «обратный рендер»: парсер JSON фильтра определяет пресет и восстанавливает состояние UI при открытии существующей команды.
+
+Ключевые файлы:
+- `lib/features/assistant/features/scripts/data/script_filter_presets.dart` — перечисления пресетов/типов, заголовки.
+- `lib/features/assistant/features/scripts/models/message_filter_form_state.dart` — состояние подформы «Сообщение».
+- `lib/features/assistant/features/scripts/utils/filter_expression_builder.dart` — сборка JSON из состояния UI.
+- `lib/features/assistant/features/scripts/utils/filter_expression_parser.dart` — парсинг JSON в состояние UI.
+- `lib/features/assistant/features/scripts/providers/script_command_edit_provider.dart` — провайдеры пресета и подформы, контроллер формы команды.
+- `lib/features/assistant/features/scripts/widgets/message_filter_form.dart` — UI подформы.
+- `lib/features/assistant/features/scripts/screens/script_command_editor_screen.dart` — интеграция пресетов/подформы, пересборка/парсинг.
+
+Принципы:
+- Пресеты — «мастера»: генерируют и поддерживают `filter_expression`, при ручном редактировании пресет переключается в `custom`.
+- Билдер/Парсер изолированы в `utils/`, экран опирается на провайдер и чистые функции.

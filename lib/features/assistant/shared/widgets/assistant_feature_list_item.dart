@@ -21,13 +21,29 @@ class AssistantFeatureListItem extends StatelessWidget {
   final String title;
   final String? subtitle;
   final String? meta;
+  final Widget? metaWidget;
   final VoidCallback? onTap;
+  final EdgeInsetsGeometry? tilePadding;
+
+  /// Показать ручку перетаскивания элемента (для ReorderableListView)
+  /// Важно: используйте вместе с ReorderableListView(buildDefaultDragHandles: false)
+  final bool showReorderHandle;
+
+  /// Индекс элемента в ReorderableListView (обязателен при включённой ручке)
+  final int? reorderIndex;
+
+  /// Подсказка при наведении на ручку
+  final String? reorderTooltip;
+
+  /// Разместить ручку перед остальными trailing-элементами (иначе в конце)
+  final bool reorderHandleFirst;
 
   const AssistantFeatureListItem({
     super.key,
     required this.title,
     this.subtitle,
     this.meta,
+    this.metaWidget,
     this.leadingIcon,
     this.onSwitchChanged,
     this.switchValue,
@@ -38,6 +54,11 @@ class AssistantFeatureListItem extends StatelessWidget {
     this.deleteEnabled = true,
     this.showChevron = true,
     this.onDeletePressed,
+    this.showReorderHandle = false,
+    this.reorderIndex,
+    this.reorderTooltip,
+    this.reorderHandleFirst = false,
+    this.tilePadding,
   });
 
   Widget? _buildLeading(BuildContext context) {
@@ -75,9 +96,28 @@ class AssistantFeatureListItem extends StatelessWidget {
     );
   }
 
-  /// Собирает trailing-часть: удаление (при наличии) и стрелка вправо (при наличии)
+  /// Собирает trailing-часть: ручка перетаскивания (опционально), удаление (при наличии) и стрелка вправо (при наличии)
   Widget? _buildTrailing(BuildContext context) {
     final widgets = <Widget>[];
+
+    // Опциональная ручка перетаскивания
+    Widget? dragHandle;
+    if (showReorderHandle && reorderIndex != null) {
+      final handleIcon = const Icon(Icons.drag_handle);
+      final handle = ReorderableDragStartListener(
+        index: reorderIndex!,
+        child: handleIcon,
+      );
+      // Без Tooltip: на Web tooltip в сочетании с Reorderable может приводить к падению при перестроении
+      dragHandle = handle;
+    }
+
+    // Если ручку нужно отрисовать первой
+    if (dragHandle != null && reorderHandleFirst) {
+      widgets.add(dragHandle);
+      widgets.add(const SizedBox(width: 4));
+    }
+
     if (showDelete) {
       widgets.add(
         IconButton(
@@ -95,6 +135,13 @@ class AssistantFeatureListItem extends StatelessWidget {
     if (showChevron) {
       widgets.add(const Icon(Icons.chevron_right));
     }
+
+    // Если ручку нужно отрисовать в конце
+    if (dragHandle != null && !reorderHandleFirst) {
+      if (widgets.isNotEmpty) widgets.add(const SizedBox(width: 4));
+      widgets.add(dragHandle);
+    }
+
     if (widgets.isEmpty) return null;
     return Row(mainAxisSize: MainAxisSize.min, children: widgets);
   }
@@ -103,6 +150,7 @@ class AssistantFeatureListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      contentPadding: tilePadding,
       leading: _buildLeading(context),
       title: Text(title),
       subtitle: Column(
@@ -111,10 +159,16 @@ class AssistantFeatureListItem extends StatelessWidget {
         children: [
           if (subtitle != null && subtitle!.isNotEmpty)
             Text(subtitle!, style: Theme.of(context).textTheme.labelSmall),
-          if (meta != null && meta!.isNotEmpty)
+          if (metaWidget != null)
             Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Text(meta!, style: Theme.of(context).textTheme.bodySmall),
+              child: metaWidget!,
+            )
+          else if (meta != null && meta!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child:
+                  Text(meta!, style: Theme.of(context).textTheme.bodySmall),
             ),
         ],
       ),
