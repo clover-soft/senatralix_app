@@ -178,10 +178,34 @@ class AssistantScriptsScreen extends ConsumerWidget {
                 switchTooltip: it.isActive
                     ? 'Выключить скрипт'
                     : 'Включить скрипт',
-                onSwitchChanged: (v) {
+                onSwitchChanged: (v) async {
+                  // Оптимистично переключаем локально
                   ref
                       .read(scriptListProvider.notifier)
                       .toggleActive(assistantId, it.id, v);
+                  // Отправляем PATCH
+                  final api = ref.read(assistantApiProvider);
+                  try {
+                    await api.updateThreadCommandRaw(
+                      id: it.id,
+                      assistantId: it.assistantId,
+                      order: it.order,
+                      name: it.name,
+                      description: it.description,
+                      filterExpression: it.filterExpression,
+                      isActive: v,
+                    );
+                  } catch (e) {
+                    // Откат при ошибке
+                    ref
+                        .read(scriptListProvider.notifier)
+                        .toggleActive(assistantId, it.id, !v);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Не удалось обновить статус: $e')),
+                      );
+                    }
+                  }
                 },
                 title: it.name.isEmpty ? 'Без имени' : it.name,
                 subtitle: subtitle,

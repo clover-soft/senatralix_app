@@ -9,6 +9,9 @@ import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart'
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_list_provider.dart';
 import 'package:sentralix_app/features/assistant/shared/widgets/assistant_fab.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:code_text_field/code_text_field.dart';
+import 'package:highlight/languages/markdown.dart' as hl;
 
 /// Экран редактирования источника знаний (вместо модалки)
 class KnowledgeEditorScreen extends ConsumerStatefulWidget {
@@ -21,6 +24,8 @@ class KnowledgeEditorScreen extends ConsumerStatefulWidget {
 
 class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
   bool _saving = false;
+  bool _preview = true;
+  CodeController? _codeCtrl;
 
   String? _req(String? v) =>
       (v == null || v.trim().isEmpty) ? 'Обязательное поле' : null;
@@ -83,6 +88,12 @@ class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
   }
 
   @override
+  void dispose() {
+    _codeCtrl?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final route = GoRouterState.of(context);
     final assistantId = route.pathParameters['assistantId'] ?? 'unknown';
@@ -132,6 +143,25 @@ class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
     final item = initial; // not null после проверки выше
     final st = ref.watch(knowledgeEditProvider(item));
     final ctrl = ref.read(knowledgeEditProvider(item).notifier);
+
+    // Инициализируем/синхронизируем CodeController для markdown
+    _codeCtrl ??= CodeController(
+      text: st.markdown,
+      language: hl.markdown,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_codeCtrl!.text != st.markdown) {
+        _codeCtrl!.value = _codeCtrl!.value.copyWith(
+          text: st.markdown,
+          selection: TextSelection.collapsed(offset: st.markdown.length),
+        );
+      }
+    });
+
+    // Цвет фона редактора в соответствии с темой (приближен к дефолтным темам редакторов)
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final editorBg = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF6F8FA);
+    final editorTextColor = isDark ? Colors.white : Colors.black;
 
     return Scaffold(
       appBar: AssistantAppBar(
@@ -195,18 +225,7 @@ class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
               onChanged: ctrl.setDescription,
             ),
             const SizedBox(height: 8),
-            TextFormField(
-              initialValue: st.markdown,
-              maxLines: 12,
-              decoration: const InputDecoration(
-                labelText: 'Текст в формате Markdown',
-                helperText:
-                    'Текст в формате Markdown. Рекомендуется не слишком большие тексты.',
-              ),
-              validator: _req,
-              onChanged: ctrl.setMarkdown,
-            ),
-            const SizedBox(height: 8),
+            // Настройки чанков (перемещены выше, ближе к описанию)
             Row(
               children: [
                 Expanded(
@@ -240,6 +259,86 @@ class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            // Переключатель предпросмотра Markdown
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: _preview,
+              onChanged: (v) => setState(() => _preview = v),
+              title: const Text('Предпросмотр Markdown'),
+            ),
+            const SizedBox(height: 8),
+            if (_preview)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: editorBg,
+                  border: Border.all(
+                    color: Theme.of(context).dividerColor.withOpacity(0.6),
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: SelectionArea(
+                  child: DefaultTextStyle(
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      color: editorTextColor,
+                    ),
+                    child: GptMarkdown(
+                      st.markdown,
+                      style: TextStyle(
+                        fontFamily: 'monospace',
+                        color: editorTextColor,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            else
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Текст в формате Markdown'),
+                  const SizedBox(height: 6),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: editorBg,
+                      border: Border.all(
+                        color: Theme.of(context).dividerColor.withOpacity(0.6),
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: CodeTheme(
+                      data: CodeThemeData(styles: {
+                        'root': TextStyle(backgroundColor: editorBg),
+                      }),
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.7,
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: CodeField(
+                            controller: _codeCtrl!,
+                            textStyle: TextStyle(
+                              fontFamily: 'monospace',
+                              color: editorTextColor,
+                            ),
+                            expands: true,
+                            wrap: true,
+                            lineNumberStyle: const LineNumberStyle(width: 0),
+                            onChanged: ctrl.setMarkdown,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Текст в формате Markdown. Рекомендуется не слишком большие тексты.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
           ],
         ),
       ),
