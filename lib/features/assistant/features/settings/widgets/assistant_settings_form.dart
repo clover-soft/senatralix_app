@@ -199,7 +199,8 @@ class AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
 
           // Модель
           DropdownButtonFormField<String>(
-            value: models.contains(state.model) ? state.model : models.first,
+            initialValue:
+                models.contains(state.model) ? state.model : models.first,
             items: models
                 .map((m) => DropdownMenuItem(value: m, child: Text(m)))
                 .toList(),

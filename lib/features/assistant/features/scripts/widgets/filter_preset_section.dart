@@ -6,7 +6,7 @@ import 'package:sentralix_app/features/assistant/features/scripts/utils/filter_e
 import 'package:sentralix_app/features/assistant/features/scripts/widgets/message_filter_form.dart';
 import 'dart:convert';
 import 'package:code_text_field/code_text_field.dart';
-import 'package:sentralix_app/features/assistant/features/connectors/widgets/param_block_card.dart';
+import 'package:sentralix_app/features/assistant/shared/widgets/param_block_card.dart';
 
 /// Секция выбора пресета фильтра, подформы "Сообщение" и (опционально) поля raw JSON
 class FilterPresetSection extends ConsumerWidget {
@@ -36,7 +36,7 @@ class FilterPresetSection extends ConsumerWidget {
             final isNarrow = constraints.maxWidth < 600;
 
             final presetDropdown = DropdownButtonFormField<ScriptFilterPreset>(
-              value: preset,
+              initialValue: preset,
               decoration: const InputDecoration(labelText: 'Пресет фильтра'),
               items: ScriptFilterPreset.values
                   .map(

@@ -8,7 +8,7 @@ import 'package:sentralix_app/features/assistant/features/connectors/providers/a
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_feature_settings_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
-import 'package:sentralix_app/features/assistant/features/connectors/widgets/param_block_card.dart';
+import 'package:sentralix_app/features/assistant/shared/widgets/param_block_card.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/models/selection_options.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/models/dictor_options.dart';
 import 'package:sentralix_app/features/assistant/shared/widgets/assistant_fab.dart';
@@ -239,8 +239,7 @@ class ConnectorDetailsScreen extends ConsumerWidget {
                         );
 
                         return DropdownButtonFormField<String>(
-                          value:
-                              currentValue ??
+                          initialValue: currentValue ??
                               (allowed.isNotEmpty ? allowed.first : null),
                           items: items,
                           onChanged: (v) =>
@@ -273,7 +272,7 @@ class ConnectorDetailsScreen extends ConsumerWidget {
                 items: st.greetingTexts,
                 onChanged: ctrl.setGreetingTexts,
                 footer: DropdownButtonFormField<String>(
-                  value: st.greetingSelectionStrategy,
+                  initialValue: st.greetingSelectionStrategy,
                   items: SelectionStrategyOptions.common
                       .map(
                         (o) => DropdownMenuItem<String>(
@@ -300,7 +299,7 @@ class ConnectorDetailsScreen extends ConsumerWidget {
                 items: st.repromptTexts,
                 onChanged: ctrl.setRepromptTexts,
                 footer: DropdownButtonFormField<String>(
-                  value: st.repromptSelectionStrategy,
+                  initialValue: st.repromptSelectionStrategy,
                   items: SelectionStrategyOptions.common
                       .map(
                         (o) => DropdownMenuItem<String>(
@@ -331,7 +330,7 @@ class ConnectorDetailsScreen extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: st.fillerSelectionStrategy,
+                        initialValue: st.fillerSelectionStrategy,
                         items: SelectionStrategyOptions.common
                             .map(
                               (o) => DropdownMenuItem<String>(

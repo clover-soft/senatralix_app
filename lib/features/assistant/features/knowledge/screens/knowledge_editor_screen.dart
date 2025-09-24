@@ -275,7 +275,9 @@ class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
                 decoration: BoxDecoration(
                   color: editorBg,
                   border: Border.all(
-                    color: Theme.of(context).dividerColor.withOpacity(0.6),
+                    color: Theme.of(context)
+                        .dividerColor
+                        .withValues(alpha: 0.6),
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -305,7 +307,9 @@ class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
                     decoration: BoxDecoration(
                       color: editorBg,
                       border: Border.all(
-                        color: Theme.of(context).dividerColor.withOpacity(0.6),
+                        color: Theme.of(context)
+                            .dividerColor
+                            .withValues(alpha: 0.6),
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),

@@ -3,18 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/models/script_command_edit_state.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/models/script_list_item.dart';
+import 'package:sentralix_app/features/assistant/features/scripts/models/message_filter_form_state.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/providers/assistant_scripts_provider.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/providers/script_command_edit_provider.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/providers/script_list_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 import 'package:sentralix_app/features/assistant/shared/widgets/assistant_fab.dart';
-import 'package:sentralix_app/features/assistant/features/scripts/models/message_filter_form_state.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/utils/filter_expression_builder.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/utils/filter_expression_parser.dart';
-// import removed: message_filter_form not used directly here
 import 'package:sentralix_app/features/assistant/features/scripts/widgets/filter_preset_section.dart';
-// logger removed
+import 'package:sentralix_app/features/assistant/features/scripts/widgets/script_steps_list.dart';
 
 /// Экран создания/редактирования команды (thread-command)
 /// По нажатию Сохранить вызывает POST и добавляет элемент в список ассистента
@@ -336,6 +335,8 @@ class ScriptCommandEditorScreen extends ConsumerWidget {
             }),
             const SizedBox(height: 8),
             FilterPresetSection(familyKey: familyKey),
+            const SizedBox(height: 16),
+            ScriptStepsList(existingItem: existingItem),
           ],
         ),
       ),

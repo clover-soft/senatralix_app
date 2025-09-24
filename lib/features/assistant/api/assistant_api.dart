@@ -30,6 +30,7 @@ class AssistantApi {
           final s = AssistantFeatureSettings.fromJson(assistants);
           return s;
         }
+
       } else if (rawSettings is Map && rawSettings['assistants'] is Map) {
         final assistants = Map<String, dynamic>.from(
           rawSettings['assistants'] as Map,
@@ -290,6 +291,41 @@ class AssistantApi {
     final resp = await _client.get<dynamic>('/assistants/list/');
     final data = resp.data;
     return List<Map<String, dynamic>>.from(data as List);
+  }
+
+  /// Список шагов команды (thread-command steps)
+  Future<List<Map<String, dynamic>>> fetchThreadCommandSteps({
+    required int commandId,
+  }) async {
+    final resp = await _client.get<dynamic>(
+      '/assistants/thread-commands/$commandId/steps',
+    );
+    final data = resp.data;
+    return List<Map<String, dynamic>>.from(data as List);
+  }
+
+  /// Заглушка: перестановка шагов скрипта
+  Future<void> reorderThreadCommandSteps({
+    required int commandId,
+    required List<int> orderedStepIds,
+  }) async {
+    // TODO: реализовать обращение к API перестановки шагов
+    await Future<void>.value();
+  }
+
+  /// Заглушка: обновление активности шага скрипта
+  Future<void> setThreadCommandStepActive({
+    required int stepId,
+    required bool isActive,
+  }) async {
+    // TODO: реализовать обращение к API обновления активности шага
+    await Future<void>.value();
+  }
+
+  /// Заглушка: удаление шага скрипта
+  Future<void> deleteThreadCommandStep(int stepId) async {
+    // TODO: реализовать обращение к API удаления шага
+    await Future<void>.value();
   }
 
   /// Список баз знаний (READ)

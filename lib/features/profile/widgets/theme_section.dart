@@ -24,7 +24,7 @@ class ThemeSection extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<AppThemeMode>(
-              value: themeState.mode,
+              initialValue: themeState.mode,
               items: const [
                 DropdownMenuItem(
                   value: AppThemeMode.system,

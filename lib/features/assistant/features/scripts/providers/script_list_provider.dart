@@ -101,7 +101,7 @@ class ScriptListNotifier extends StateNotifier<ScriptListState> {
       items[i] = items[i].copyWith(order: i + 1);
     }
     // ignore: avoid_print
-    print('[DnD][prov] new order: ' + items.map((e) => '${e.id}:${e.order}').join(','));
+    print('[DnD][prov] new order: ${items.map((e) => '${e.id}:${e.order}').join(',')}');
     _put(assistantId, items);
   }
 }

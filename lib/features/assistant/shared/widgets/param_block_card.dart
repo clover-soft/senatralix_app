@@ -102,19 +102,28 @@ class _ParamBlockCardState extends State<ParamBlockCard> {
                     final it = _list.removeAt(oldIndex);
                     _list.insert(newIndex, it);
                   });
-                  _notify();
                 },
                 children: [
                   for (int i = 0; i < _list.length; i++)
                     ListTile(
                       key: ValueKey('${widget.title}-$i-${_list[i]}'),
                       title: Text(_list[i]),
-                      leading: ReorderableDragStartListener(
-                        index: i,
-                        child: const Icon(Icons.drag_handle),
+                      leading: MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: Tooltip(
+                          message: 'Переместить',
+                          child: ReorderableDragStartListener(
+                            index: i,
+                            child: const Padding(
+                              padding: EdgeInsets.all(4),
+                              child: Icon(Icons.drag_indicator),
+                            ),
+                          ),
+                        ),
                       ),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline),
+                        color: Theme.of(context).colorScheme.error,
                         onPressed: () {
                           setState(() => _list.removeAt(i));
                           _notify();

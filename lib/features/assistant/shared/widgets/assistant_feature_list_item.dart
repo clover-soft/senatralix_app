@@ -103,13 +103,22 @@ class AssistantFeatureListItem extends StatelessWidget {
     // Опциональная ручка перетаскивания
     Widget? dragHandle;
     if (showReorderHandle && reorderIndex != null) {
-      final handleIcon = const Icon(Icons.drag_handle);
-      final handle = ReorderableDragStartListener(
-        index: reorderIndex!,
-        child: handleIcon,
+      final handleChild = Tooltip(
+        message: reorderTooltip?.isNotEmpty == true
+            ? reorderTooltip!
+            : 'Переместить',
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: const Padding(
+            padding: EdgeInsets.all(4),
+            child: Icon(Icons.drag_indicator),
+          ),
+        ),
       );
-      // Без Tooltip: на Web tooltip в сочетании с Reorderable может приводить к падению при перестроении
-      dragHandle = handle;
+      dragHandle = ReorderableDragStartListener(
+        index: reorderIndex!,
+        child: handleChild,
+      );
     }
 
     // Если ручку нужно отрисовать первой
@@ -123,6 +132,7 @@ class AssistantFeatureListItem extends StatelessWidget {
         IconButton(
           tooltip: deleteEnabled ? 'Удалить' : 'Удаление запрещено',
           icon: const Icon(Icons.delete_outline),
+          color: Theme.of(context).colorScheme.error,
           onPressed: deleteEnabled
               ? () {
                   // Вызов без ожидания; обработчик может быть async
