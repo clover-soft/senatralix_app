@@ -3,19 +3,32 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sentralix_app/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
-/// Доступные seed‑цвета (10 вариантов)
+/// Доступные seed‑цвета (12 вариантов)
 const kSeedPalette = <Color>[
-  Color(0xFF0B4E7A), // синий тёмный
-  Color(0xFFE6E3DD), // теплый светлый
-  Color(0xFF20A114), // зелёный
-  Color(0xFF8E24AA), // фиолетовый
-  Color(0xFFFF7043), // оранжевый
-  Color(0xFF00897B), // бирюзовый
-  Color(0xFF3949AB), // индиго
-  Color(0xFF6D4C41), // коричневый
-  Color(0xFFFFB300), // янтарный
-  Color(0xFF546E7A), // сине‑серый
+  Colors.deepPurple,
+  Colors.indigo,
+  Colors.blue,
+  Colors.teal,
+  Colors.lightGreen,
+  Colors.lime,
+  Colors.amber,
+  Colors.deepOrange,
+  Colors.pink,
+  Colors.brown,
+  Colors.grey,
+  Colors.blueGrey,
 ];
+
+// Color(0xFF0B4E7A), // синий тёмный
+// Color(0xFFE6E3DD), // теплый светлый
+// Color(0xFF20A114), // зелёный
+// Color(0xFF8E24AA), // фиолетовый
+// Color(0xFFFF7043), // оранжевый
+// Color(0xFF00897B), // бирюзовый
+// Color(0xFF3949AB), // индиго
+// Color(0xFF6D4C41), // коричневый
+// Color(0xFFFFB300), // янтарный
+// Color(0xFF546E7A), // сине‑серый
 
 class ThemeState {
   const ThemeState({required this.mode, required this.seedIndex});

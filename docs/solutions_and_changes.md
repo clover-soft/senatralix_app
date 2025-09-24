@@ -106,19 +106,6 @@
   - Экран надфичи: `lib/features/assistant/screens/assistant_screen.dart` (список переходов на подфичи).
 - Подфичи (заглушечные экраны): `settings`, `tools`, `knowledge`, `connectors`, `scripts`, `chat`, `sessions`.
 - Интеграция в приложение:
-  - Роутер: `lib/core/router/app_router.dart` добавлены `...assistantRoutes()` внутри `ShellRoute`.
-  - Меню: `lib/shared/navigation/menu_registry.dart` добавлен пункт `assistant`.
-
-## Последние изменения (Шаг 11 — Assistant Scripts: пресеты и обратный рендер)
-
-- Добавлены пресеты `filter_expression` для команд ассистента: «Начало звонка», «Конец звонка», «Сообщение», а также режим `custom` для ручного JSON.
-- Реализована подформа для сценария «Сообщение» с выбором ролей (Пользователь/Ассистент/Система), типа фильтрации (точное соответствие/вхождение/без регистра/регэксп) и поля ввода.
-- Реализован «обратный рендер»: парсер JSON фильтра определяет пресет и восстанавливает состояние UI при открытии существующей команды.
-
-Ключевые файлы:
-- `lib/features/assistant/features/scripts/data/script_filter_presets.dart` — перечисления пресетов/типов, заголовки.
-- `lib/features/assistant/features/scripts/models/message_filter_form_state.dart` — состояние подформы «Сообщение».
-- `lib/features/assistant/features/scripts/utils/filter_expression_builder.dart` — сборка JSON из состояния UI.
 - `lib/features/assistant/features/scripts/utils/filter_expression_parser.dart` — парсинг JSON в состояние UI.
 - `lib/features/assistant/features/scripts/providers/script_command_edit_provider.dart` — провайдеры пресета и подформы, контроллер формы команды.
 - `lib/features/assistant/features/scripts/widgets/message_filter_form.dart` — UI подформы.
@@ -127,3 +114,18 @@
 Принципы:
 - Пресеты — «мастера»: генерируют и поддерживают `filter_expression`, при ручном редактировании пресет переключается в `custom`.
 - Билдер/Парсер изолированы в `utils/`, экран опирается на провайдер и чистые функции.
+
+## Последние изменения (Шаг 12 — Assistant Scripts: синхронизация и стабильность)
+
+- `lib/features/assistant/api/assistant_api.dart`: добавлены реальные запросы PATCH/POST/DELETE для шагов команд (обновление, reorder, активация, удаление, создание).
+- `lib/features/assistant/features/scripts/widgets/script_steps_list.dart`:
+  - drag&drop стабилизирован на web (убраны анимированные контейнеры и tooltip на ручке перетаскивания, побочные эффекты вынесены в `WidgetsBinding.instance.addPostFrameCallback`).
+  - операции удаления/создания/перестановки оптимистично обновляют локальный список и инвалидируют провайдер после ответа.
+- `lib/core/providers/build_info_provider.dart` + `lib/shared/widgets/app_shell/app_shell_version_info.dart`: внедрён отображаемый в `NavigationRail` центровый виджет версии с fallback `PackageInfo` и поддержкой `--dart-define` (`APP_VERSION`, `APP_BUILD_NUMBER`).
+- `lib/core/theme/theme_provider.dart`: палитра `kSeedPalette` заменена на 12 фирменных оттенков (Pink → Blue Grey), связанные виджеты профиля автоматически отрисовывают новые цвета.
+
+Особенности/решения:
+- Все операции над шагами теперь синхронизируются с бэкендом без временных заглушек; ошибки отображаются через snackbar и откатывают локальное состояние.
+- ReorderableListView больше не изменяет layout во время перетаскивания → пропали краши при переносе вниз и повторные перестройки.
+- Версия приложения доступна прямо в боковой навигации даже в сборках Web/Prod, где `PackageInfo.fromPlatform()` может возвращать пустые данные.
+- Обновлённая палитра seed‑цветов позволяет быстро подбирать визуальную тему профиля без ручных правок кода.

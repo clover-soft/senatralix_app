@@ -14,6 +14,7 @@ import 'package:sentralix_app/features/assistant/features/scripts/utils/filter_e
 import 'package:sentralix_app/features/assistant/features/scripts/utils/filter_expression_parser.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/widgets/filter_preset_section.dart';
 import 'package:sentralix_app/features/assistant/features/scripts/widgets/script_steps_list.dart';
+import 'package:sentralix_app/features/assistant/features/scripts/widgets/script_action_presets_panel.dart';
 
 /// Экран создания/редактирования команды (thread-command)
 /// По нажатию Сохранить вызывает POST и добавляет элемент в список ассистента
@@ -336,7 +337,35 @@ class ScriptCommandEditorScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             FilterPresetSection(familyKey: familyKey),
             const SizedBox(height: 16),
-            ScriptStepsList(existingItem: existingItem),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth >= 900;
+                final stepsWidget = ScriptStepsList(existingItem: existingItem);
+                final presetsWidget = ScriptActionPresetsPanel(
+                  enabled: existingItem != null && existingItem.id != 0,
+                );
+
+                if (isWide) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: stepsWidget),
+                      const SizedBox(width: 16),
+                      SizedBox(width: 300, child: presetsWidget),
+                    ],
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    stepsWidget,
+                    const SizedBox(height: 16),
+                    presetsWidget,
+                  ],
+                );
+              },
+            ),
           ],
         ),
       ),

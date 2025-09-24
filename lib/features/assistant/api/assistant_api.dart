@@ -309,8 +309,17 @@ class AssistantApi {
     required int commandId,
     required List<int> orderedStepIds,
   }) async {
-    // TODO: реализовать обращение к API перестановки шагов
-    await Future<void>.value();
+    // Перебираем шаги и обновляем их priority через PATCH
+    int pr = 1;
+    for (final stepId in orderedStepIds) {
+      await updateThreadCommandStep(
+        stepId: stepId,
+        body: {
+          'priority': pr,
+        },
+      );
+      pr++;
+    }
   }
 
   /// Заглушка: обновление активности шага скрипта
@@ -318,14 +327,47 @@ class AssistantApi {
     required int stepId,
     required bool isActive,
   }) async {
-    // TODO: реализовать обращение к API обновления активности шага
-    await Future<void>.value();
+    await updateThreadCommandStep(
+      stepId: stepId,
+      body: {
+        'is_active': isActive,
+      },
+    );
   }
 
   /// Заглушка: удаление шага скрипта
   Future<void> deleteThreadCommandStep(int stepId) async {
-    // TODO: реализовать обращение к API удаления шага
-    await Future<void>.value();
+    await _client.delete<dynamic>(
+      '/assistants/thread-commands/steps/$stepId',
+    );
+  }
+
+  /// Создать шаг команды (thread-command step)
+  /// POST /assistants/thread-commands/{commandId}/steps
+  /// Возвращает созданный шаг (сырой JSON)
+  Future<Map<String, dynamic>> createThreadCommandStep({
+    required int commandId,
+    required Map<String, dynamic> body,
+  }) async {
+    final resp = await _client.post<dynamic>(
+      '/assistants/thread-commands/$commandId/steps',
+      data: body,
+    );
+    return Map<String, dynamic>.from(resp.data as Map);
+  }
+
+  /// Обновить шаг команды (PATCH)
+  /// PATCH /assistants/thread-commands/steps/{stepId}
+  /// Возвращает обновлённый шаг (сырой JSON)
+  Future<Map<String, dynamic>> updateThreadCommandStep({
+    required int stepId,
+    required Map<String, dynamic> body,
+  }) async {
+    final resp = await _client.patch<dynamic>(
+      '/assistants/thread-commands/steps/$stepId',
+      data: body,
+    );
+    return Map<String, dynamic>.from(resp.data as Map);
   }
 
   /// Список баз знаний (READ)

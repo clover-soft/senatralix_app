@@ -223,7 +223,10 @@ class _ScriptStepEditorDialogState extends State<ScriptStepEditorDialog> {
             else if (hasSelect)
               DropdownButtonFormField<String>(
                 initialValue: value.literal?.toString(),
-                decoration: const InputDecoration(labelText: 'Literal'),
+                decoration: InputDecoration(
+                  labelText:
+                      field.key == 'method' ? 'Метод' : 'Literal',
+                ),
                 items: [
                   for (final option in field.allowedValues!)
                     DropdownMenuItem<String>(

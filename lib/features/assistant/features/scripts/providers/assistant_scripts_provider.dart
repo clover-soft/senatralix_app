@@ -55,3 +55,37 @@ final scriptStepActiveProvider = FutureProvider.family
     isActive: payload.isActive,
   );
 });
+
+/// Создание шага скрипта (POST)
+final scriptStepCreateProvider = FutureProvider.family
+    .autoDispose<ScriptCommandStep, ({int commandId, ScriptCommandStep step})>(
+  (ref, payload) async {
+    final api = ref.read(assistantApiProvider);
+    final body = <String, dynamic>{
+      'command_id': payload.commandId,
+      'name': payload.step.name,
+      'priority': payload.step.priority,
+      'is_active': payload.step.isActive,
+      'action_config': payload.step.actionConfig?.toJson(),
+    };
+    final json = await api.createThreadCommandStep(
+      commandId: payload.commandId,
+      body: body,
+    );
+    return ScriptCommandStep.fromJson(json);
+  },
+);
+
+/// Обновление шага скрипта (PATCH)
+final scriptStepUpdateProvider = FutureProvider.family
+    .autoDispose<ScriptCommandStep, ScriptCommandStep>((ref, step) async {
+  final api = ref.read(assistantApiProvider);
+  final body = <String, dynamic>{
+    'name': step.name,
+    'priority': step.priority,
+    'is_active': step.isActive,
+    'action_config': step.actionConfig?.toJson(),
+  };
+  final json = await api.updateThreadCommandStep(stepId: step.id, body: body);
+  return ScriptCommandStep.fromJson(json);
+});

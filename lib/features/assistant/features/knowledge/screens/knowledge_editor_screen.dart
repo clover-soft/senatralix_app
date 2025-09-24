@@ -260,8 +260,8 @@ class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            // Переключатель предпросмотра Markdown
-            SwitchListTile.adaptive(
+            // Переключатель предпросмотра Markdown (материал)
+            SwitchListTile(
               contentPadding: EdgeInsets.zero,
               value: _preview,
               onChanged: (v) => setState(() => _preview = v),

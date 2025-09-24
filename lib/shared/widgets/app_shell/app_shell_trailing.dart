@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/data/providers/profile_data_provider.dart';
-import 'app_shell_rail_item.dart';
+import 'package:sentralix_app/shared/widgets/app_shell/app_shell_rail_item.dart';
+import 'package:sentralix_app/shared/widgets/app_shell/app_shell_version_info.dart';
 
 class AppShellTrailing extends ConsumerWidget {
   final double width;
@@ -20,9 +21,11 @@ class AppShellTrailing extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final String currentPath = GoRouterState.of(context).uri.path;
     final bool isProfile = currentPath.startsWith('/profile');
-    final me = ref.watch(profileDataProvider).state.profile;
-    final String username = (me?['username'] ?? '').toString().trim();
-    final String email = (me?['email'] ?? '').toString().trim();
+    final profileController = ref.watch(profileDataProvider);
+    final profileState = profileController.state;
+    final me = profileState.profile ?? const <String, dynamic>{};
+    final String username = (me['username'] ?? '').toString().trim();
+    final String email = (me['email'] ?? '').toString().trim();
     final String label = username.isNotEmpty
         ? username
         : (email.isNotEmpty ? email : 'Profile');
@@ -40,6 +43,10 @@ class AppShellTrailing extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            SizedBox(
+              width: expanded ? expandedWidth : width,
+              child: const Center(child: AppShellVersionInfo()),
+            ),
             const Divider(),
             AppShellRailItem(
               icon: Icons.person_outline,
