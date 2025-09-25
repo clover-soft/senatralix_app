@@ -9,8 +9,6 @@ class AssistantSettings {
   final double temperature; // 0.0–2.0
   final int maxTokens; // > 0
   final List<AssistantFunctionTool> tools;
-  // Список external_id баз знаний, подключённых к ассистенту (из tools.searchIndex)
-  final Set<String> knowledgeExternalIds;
 
   const AssistantSettings({
     required this.model,
@@ -18,7 +16,6 @@ class AssistantSettings {
     required this.temperature,
     required this.maxTokens,
     this.tools = const [],
-    this.knowledgeExternalIds = const {},
   });
 
   factory AssistantSettings.defaults() => const AssistantSettings(
@@ -27,7 +24,6 @@ class AssistantSettings {
     temperature: 0.7,
     maxTokens: 512,
     tools: [],
-    knowledgeExternalIds: {},
   );
 
   AssistantSettings copyWith({
@@ -36,14 +32,12 @@ class AssistantSettings {
     double? temperature,
     int? maxTokens,
     List<AssistantFunctionTool>? tools,
-    Set<String>? knowledgeExternalIds,
   }) => AssistantSettings(
     model: model ?? this.model,
     instruction: instruction ?? this.instruction,
     temperature: temperature ?? this.temperature,
     maxTokens: maxTokens ?? this.maxTokens,
     tools: tools ?? this.tools,
-    knowledgeExternalIds: knowledgeExternalIds ?? this.knowledgeExternalIds,
   );
 
   Map<String, dynamic> toJson() => {
@@ -52,7 +46,6 @@ class AssistantSettings {
     'temperature': temperature,
     'maxTokens': maxTokens,
     'tools': tools.map((t) => t.toJson()).toList(),
-    'knowledgeExternalIds': knowledgeExternalIds.toList(),
   };
 
   factory AssistantSettings.fromJson(
@@ -71,9 +64,6 @@ class AssistantSettings {
             )
             .toList() ??
         const [],
-    knowledgeExternalIds: ((json['knowledgeExternalIds'] as List?) ?? const [])
-        .map((e) => e.toString())
-        .toSet(),
   );
 
   /// Фабрика для маппинга вложенного JSON из бэкенда в списке ассистентов
@@ -91,7 +81,6 @@ class AssistantSettings {
     final maxT = completion['maxTokens'];
     final rawTools = (json['tools'] as List?) ?? const [];
     final tools = <AssistantFunctionTool>[];
-    final knowledge = <String>{};
     for (var i = 0; i < rawTools.length; i++) {
       final item = rawTools[i];
       if (item is Map && item['function'] is Map) {
@@ -101,9 +90,6 @@ class AssistantSettings {
         tools.add(
           AssistantFunctionTool(id: 'fn-$i-$name', enabled: true, def: def),
         );
-      } else if (item is Map && item['searchIndex'] is List) {
-        final ids = (item['searchIndex'] as List).map((e) => e.toString());
-        knowledge.addAll(ids);
       }
       // иные типы (searchIndex и т.п.) пропускаем на этом этапе
     }
@@ -113,7 +99,6 @@ class AssistantSettings {
       temperature: temp ?? 0.7,
       maxTokens: int.tryParse('$maxT') ?? 512,
       tools: tools,
-      knowledgeExternalIds: knowledge,
     );
   }
 }

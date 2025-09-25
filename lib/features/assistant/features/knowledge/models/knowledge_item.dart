@@ -6,6 +6,7 @@ enum KnowledgeStatus { processing, ready, error }
 /// Модель элемента базы знаний
 @immutable
 class KnowledgeBaseItem {
+  static const Object _unset = Object();
   final int id;
   final String name;
   final String description;
@@ -13,6 +14,7 @@ class KnowledgeBaseItem {
   final String markdown;
   final KnowledgeStatus status;
   final bool active; // активирован для ассистента
+  final int? assistantId; // какой ассистент привязан (null если общий)
 
   // Настройки индексации
   final int maxChunkSizeTokens;
@@ -29,6 +31,7 @@ class KnowledgeBaseItem {
     required this.markdown,
     required this.status,
     required this.active,
+    this.assistantId,
     required this.maxChunkSizeTokens,
     required this.chunkOverlapTokens,
     required this.createdAt,
@@ -43,6 +46,7 @@ class KnowledgeBaseItem {
     String? markdown,
     KnowledgeStatus? status,
     bool? active,
+    Object? assistantId = _unset,
     int? maxChunkSizeTokens,
     int? chunkOverlapTokens,
     DateTime? createdAt,
@@ -55,6 +59,9 @@ class KnowledgeBaseItem {
     markdown: markdown ?? this.markdown,
     status: status ?? this.status,
     active: active ?? this.active,
+    assistantId: identical(assistantId, _unset)
+        ? this.assistantId
+        : assistantId as int?,
     maxChunkSizeTokens: maxChunkSizeTokens ?? this.maxChunkSizeTokens,
     chunkOverlapTokens: chunkOverlapTokens ?? this.chunkOverlapTokens,
     createdAt: createdAt ?? this.createdAt,
@@ -102,6 +109,7 @@ class KnowledgeBaseItem {
         markdown: json['markdown'] as String? ?? '',
         status: _statusFromString(json['status'] as String? ?? 'ready'),
         active: json['active'] as bool? ?? true,
+        assistantId: int.tryParse('${json['assistant_id']}'),
         maxChunkSizeTokens:
             int.tryParse('${json['settings']?['max_chunk_size_tokens']}') ??
             700,
@@ -117,6 +125,7 @@ class KnowledgeBaseItem {
     'markdown': markdown,
     'status': _statusToString(status),
     'active': active,
+    'assistant_id': assistantId,
     'settings': {
       'max_chunk_size_tokens': maxChunkSizeTokens,
       'chunk_overlap_tokens': chunkOverlapTokens,

@@ -6,7 +6,6 @@ import 'package:sentralix_app/features/assistant/features/knowledge/providers/kn
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/assistant_knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
-import 'package:sentralix_app/features/assistant/providers/assistant_settings_provider.dart';
 import 'package:sentralix_app/features/assistant/shared/widgets/assistant_feature_list_item.dart';
 import 'package:sentralix_app/features/assistant/shared/widgets/assistant_fab.dart';
 import 'package:remixicon/remixicon.dart';
@@ -161,15 +160,7 @@ class _AssistantKnowledgeScreenState
               : '';
           final meta = '${it.externalId} • ${it.updatedAt.toLocal()}';
 
-          final linked = ref.watch(
-            assistantSettingsProvider.select(
-              (s) =>
-                  s.byId[_assistantId]?.knowledgeExternalIds.contains(
-                    it.externalId,
-                  ) ??
-                  false,
-            ),
-          );
+          final linked = it.assistantId?.toString() == _assistantId;
 
           return AssistantFeatureListItem(
             onTap: () => _editItem(it),
@@ -192,15 +183,14 @@ class _AssistantKnowledgeScreenState
                     assistantId: _assistantId,
                     knowledgeId: it.id,
                   );
-                  // Обновим сам элемент (externalId) в списке знаний
-                  final updated = it.copyWith(externalId: newExt);
+                  // Обновим сам элемент (assistantId + externalId) в списке знаний
+                  final updated = it.copyWith(
+                    externalId: newExt,
+                    assistantId: int.tryParse(_assistantId),
+                  );
                   ref
                       .read(knowledgeProvider.notifier)
-                      .update(_assistantId, updated);
-                  // Установим единственный external_id у ассистента
-                  ref
-                      .read(assistantSettingsProvider.notifier)
-                      .setSingleKnowledge(_assistantId, newExt);
+                      .bindExclusive(_assistantId, updated);
                   messenger.showSnackBar(
                     const SnackBar(
                       content: Text('Источник привязан к ассистенту'),
@@ -213,8 +203,8 @@ class _AssistantKnowledgeScreenState
                     knowledgeId: it.id,
                   );
                   ref
-                      .read(assistantSettingsProvider.notifier)
-                      .clearKnowledge(_assistantId);
+                      .read(knowledgeProvider.notifier)
+                      .unbind(_assistantId, it.id);
                   messenger.showSnackBar(
                     const SnackBar(
                       content: Text('Источник отвязан от ассистента'),

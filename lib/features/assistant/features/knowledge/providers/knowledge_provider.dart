@@ -42,6 +42,37 @@ class KnowledgeNotifier extends StateNotifier<KnowledgeState> {
     }
   }
 
+  /// Привязать базу знаний к ассистенту и гарантировать эксклюзивность
+  void bindExclusive(String assistantId, KnowledgeBaseItem updated) {
+    final items = list(assistantId);
+    bool changed = false;
+    for (var i = 0; i < items.length; i++) {
+      final item = items[i];
+      if (item.id == updated.id) {
+        if (item != updated) {
+          items[i] = updated;
+          changed = true;
+        }
+      } else if (item.assistantId?.toString() == assistantId) {
+        items[i] = item.copyWith(assistantId: null);
+        changed = true;
+      }
+    }
+    if (changed) {
+      _put(assistantId, items);
+    }
+  }
+
+  /// Сбросить привязку базы знаний у ассистента
+  void unbind(String assistantId, int knowledgeId) {
+    final items = list(assistantId);
+    final idx = items.indexWhere((e) => e.id == knowledgeId);
+    if (idx >= 0) {
+      items[idx] = items[idx].copyWith(assistantId: null);
+      _put(assistantId, items);
+    }
+  }
+
   /// Полная замена списка источников знаний для ассистента
   void replaceAll(String assistantId, List<KnowledgeBaseItem> items) {
     _put(assistantId, List<KnowledgeBaseItem>.from(items));
