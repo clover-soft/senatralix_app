@@ -45,6 +45,7 @@ dependencies:
   code_text_field: ^1.1.0
   highlight: ^0.7.0
   gpt_markdown: ^1.1.4
+  graphview: ^1.2.0
   package_info_plus: ^8.0.0
 
 dev_dependencies:

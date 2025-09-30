@@ -382,6 +382,19 @@ class AssistantApi {
     return List<Map<String, dynamic>>.from(data as List);
   }
 
+  /// Список конфигураций диалогов (READ)
+  Future<List<Map<String, dynamic>>> fetchDialogConfigs() async {
+    final resp = await _client.get<dynamic>('/assistants/dialog-configs/');
+    final data = resp.data;
+    return List<Map<String, dynamic>>.from(data as List);
+  }
+
+  /// Детали конфигурации диалога по id (READ)
+  Future<Map<String, dynamic>> fetchDialogConfig(int id) async {
+    final resp = await _client.get<dynamic>('/assistants/dialog-configs/$id');
+    return Map<String, dynamic>.from(resp.data as Map);
+  }
+
   /// Создать слот диалога (POST)
   Future<DialogSlot> createDialogSlot({
     required Map<String, dynamic> body,
