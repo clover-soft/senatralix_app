@@ -13,6 +13,8 @@ import 'package:sentralix_app/features/assistant/features/scripts/screens/script
 import 'package:sentralix_app/features/assistant/features/scripts/screens/script_command_editor_screen.dart';
 import 'package:sentralix_app/features/assistant/features/chat/screens/chat_screen.dart';
 import 'package:sentralix_app/features/assistant/features/sessions/screens/sessions_screen.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/screens/dialogs_screen.dart';
+import 'package:sentralix_app/features/assistant/features/slots/screens/slots_screen.dart';
 
 List<RouteBase> assistantRoutes() => [
   GoRoute(
@@ -77,7 +79,7 @@ List<RouteBase> assistantRoutes() => [
         const MaterialPage(child: ScriptCommandEditorScreen()),
   ),
   GoRoute(
-    path: '/assistant/:assistantId/chat',
+    path: '/assistant/:assistantId/playground',
     pageBuilder: (context, state) =>
         const MaterialPage(child: AssistantChatScreen()),
   ),
@@ -85,5 +87,16 @@ List<RouteBase> assistantRoutes() => [
     path: '/assistant/:assistantId/sessions',
     pageBuilder: (context, state) =>
         const MaterialPage(child: AssistantSessionsScreen()),
+  ),
+  // Новые подфичи: сценарии и данные клиента (слоты)
+  GoRoute(
+    path: '/assistant/:assistantId/dialogs',
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: AssistantDialogsScreen()),
+  ),
+  GoRoute(
+    path: '/assistant/:assistantId/slots',
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: AssistantSlotsScreen()),
   ),
 ];

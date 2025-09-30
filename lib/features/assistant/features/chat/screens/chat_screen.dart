@@ -10,8 +10,9 @@ class AssistantChatScreen extends StatelessWidget {
     final id =
         GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
     return Scaffold(
-      appBar: AssistantAppBar(assistantId: id, subfeatureTitle: 'Чат'),
-      body: const Center(child: Text('Чат с ассистентом в разработке')),
+      appBar:
+          AssistantAppBar(assistantId: id, subfeatureTitle: 'Эксперименты (Playground)'),
+      body: const Center(child: Text('Playground в разработке')),
     );
   }
 }

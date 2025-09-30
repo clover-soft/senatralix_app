@@ -1,6 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:sentralix_app/features/assistant/models/assistant_tool.dart';
-
 /// Модель настроек ассистента (упрощённая)
 @immutable
 class AssistantSettings {
@@ -8,14 +6,12 @@ class AssistantSettings {
   final String instruction;
   final double temperature; // 0.0–2.0
   final int maxTokens; // > 0
-  final List<AssistantFunctionTool> tools;
 
   const AssistantSettings({
     required this.model,
     required this.instruction,
     required this.temperature,
     required this.maxTokens,
-    this.tools = const [],
   });
 
   factory AssistantSettings.defaults() => const AssistantSettings(
@@ -23,7 +19,6 @@ class AssistantSettings {
     instruction: '',
     temperature: 0.7,
     maxTokens: 512,
-    tools: [],
   );
 
   AssistantSettings copyWith({
@@ -31,13 +26,11 @@ class AssistantSettings {
     String? instruction,
     double? temperature,
     int? maxTokens,
-    List<AssistantFunctionTool>? tools,
   }) => AssistantSettings(
     model: model ?? this.model,
     instruction: instruction ?? this.instruction,
     temperature: temperature ?? this.temperature,
     maxTokens: maxTokens ?? this.maxTokens,
-    tools: tools ?? this.tools,
   );
 
   Map<String, dynamic> toJson() => {
@@ -45,7 +38,6 @@ class AssistantSettings {
     'instruction': instruction,
     'temperature': temperature,
     'maxTokens': maxTokens,
-    'tools': tools.map((t) => t.toJson()).toList(),
   };
 
   factory AssistantSettings.fromJson(
@@ -55,15 +47,6 @@ class AssistantSettings {
     instruction: json['instruction'] as String? ?? '',
     temperature: (json['temperature'] as num?)?.toDouble() ?? 0.7,
     maxTokens: int.tryParse('${json['maxTokens']}') ?? 512,
-    tools:
-        (json['tools'] as List?)
-            ?.whereType<Map>()
-            .map(
-              (e) =>
-                  AssistantFunctionTool.fromJson(Map<String, dynamic>.from(e)),
-            )
-            .toList() ??
-        const [],
   );
 
   /// Фабрика для маппинга вложенного JSON из бэкенда в списке ассистентов
@@ -79,26 +62,11 @@ class AssistantSettings {
     );
     final temp = (completion['temperature'] as num?)?.toDouble();
     final maxT = completion['maxTokens'];
-    final rawTools = (json['tools'] as List?) ?? const [];
-    final tools = <AssistantFunctionTool>[];
-    for (var i = 0; i < rawTools.length; i++) {
-      final item = rawTools[i];
-      if (item is Map && item['function'] is Map) {
-        final fnMap = Map<String, dynamic>.from(item['function'] as Map);
-        final def = FunctionToolDef.fromJson(fnMap);
-        final name = def.name.isNotEmpty ? def.name : 'tool_$i';
-        tools.add(
-          AssistantFunctionTool(id: 'fn-$i-$name', enabled: true, def: def),
-        );
-      }
-      // иные типы (searchIndex и т.п.) пропускаем на этом этапе
-    }
     return AssistantSettings(
       model: json['model'] as String? ?? 'yandexgpt',
       instruction: json['instruction'] as String? ?? '',
       temperature: temp ?? 0.7,
       maxTokens: int.tryParse('$maxT') ?? 512,
-      tools: tools,
     );
   }
 }

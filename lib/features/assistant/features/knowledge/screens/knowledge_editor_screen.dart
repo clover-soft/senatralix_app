@@ -145,10 +145,7 @@ class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
     final ctrl = ref.read(knowledgeEditProvider(item).notifier);
 
     // Инициализируем/синхронизируем CodeController для markdown
-    _codeCtrl ??= CodeController(
-      text: st.markdown,
-      language: hl.markdown,
-    );
+    _codeCtrl ??= CodeController(text: st.markdown, language: hl.markdown);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_codeCtrl!.text != st.markdown) {
         _codeCtrl!.value = _codeCtrl!.value.copyWith(
@@ -275,9 +272,9 @@ class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
                 decoration: BoxDecoration(
                   color: editorBg,
                   border: Border.all(
-                    color: Theme.of(context)
-                        .dividerColor
-                        .withValues(alpha: 0.6),
+                    color: Theme.of(
+                      context,
+                    ).dividerColor.withValues(alpha: 0.6),
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -307,30 +304,45 @@ class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
                     decoration: BoxDecoration(
                       color: editorBg,
                       border: Border.all(
-                        color: Theme.of(context)
-                            .dividerColor
-                            .withValues(alpha: 0.6),
+                        color: Theme.of(
+                          context,
+                        ).dividerColor.withValues(alpha: 0.6),
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: CodeTheme(
-                      data: CodeThemeData(styles: {
-                        'root': TextStyle(backgroundColor: editorBg),
-                      }),
+                      data: CodeThemeData(
+                        styles: {'root': TextStyle(backgroundColor: editorBg)},
+                      ),
                       child: SizedBox(
                         height: MediaQuery.of(context).size.height * 0.7,
                         child: Padding(
                           padding: const EdgeInsets.all(12),
-                          child: CodeField(
-                            controller: _codeCtrl!,
-                            textStyle: TextStyle(
-                              fontFamily: 'monospace',
-                              color: editorTextColor,
+                          child: Theme(
+                            data: Theme.of(context).copyWith(
+                              textSelectionTheme: TextSelectionThemeData(
+                                selectionColor:
+                                    (isDark ? Colors.white : Colors.black87)
+                                        .withValues(alpha: 0.25),
+                                selectionHandleColor: isDark
+                                    ? Colors.white70
+                                    : Colors.black87,
+                              ),
                             ),
-                            expands: true,
-                            wrap: true,
-                            lineNumberStyle: const LineNumberStyle(width: 0),
-                            onChanged: ctrl.setMarkdown,
+                            child: CodeField(
+                              controller: _codeCtrl!,
+                              textStyle: TextStyle(
+                                fontFamily: 'monospace',
+                                color: editorTextColor,
+                              ),
+                              cursorColor: isDark
+                                  ? Colors.white
+                                  : Colors.black87,
+                              expands: true,
+                              wrap: true,
+                              lineNumberStyle: const LineNumberStyle(width: 0),
+                              onChanged: ctrl.setMarkdown,
+                            ),
                           ),
                         ),
                       ),

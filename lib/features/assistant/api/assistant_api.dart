@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:sentralix_app/data/api/api_client.dart';
 import 'package:sentralix_app/features/assistant/models/assistant.dart';
 import 'package:sentralix_app/features/assistant/models/assistant_feature_settings.dart';
+import 'package:sentralix_app/features/assistant/features/slots/models/dialog_slot.dart';
 import 'package:sentralix_app/features/assistant/models/assistant_settings.dart';
+import 'package:sentralix_app/features/assistant/models/assistant_tool.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/models/knowledge_item.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/models/connector.dart';
 
@@ -30,7 +32,6 @@ class AssistantApi {
           final s = AssistantFeatureSettings.fromJson(assistants);
           return s;
         }
-
       } else if (rawSettings is Map && rawSettings['assistants'] is Map) {
         final assistants = Map<String, dynamic>.from(
           rawSettings['assistants'] as Map,
@@ -196,6 +197,87 @@ class AssistantApi {
     );
   }
 
+  /// Список тулсов ассистента (READ)
+  Future<List<AssistantTool>> fetchAssistantTools({
+    required String assistantId,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final resp = await _client.get<dynamic>(
+      '/assistants/tools/',
+      query: {
+        'assistant_id': assistantId,
+        'limit': '$limit',
+        'offset': '$offset',
+      },
+    );
+    final data = resp.data;
+    final list = List<Map<String, dynamic>>.from(data as List);
+    return list
+        .map((e) => AssistantTool.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  /// Создание function-tool для ассистента
+  Future<AssistantTool> createAssistantTool({
+    required String assistantId,
+    required String type,
+    required String name,
+    required String displayName,
+    required String description,
+    required Map<String, dynamic> parameters,
+    bool isActive = true,
+  }) async {
+    final resp = await _client.post<dynamic>(
+      '/assistants/tools/',
+      data: {
+        'assistant_id': assistantId,
+        'type': type,
+        'name': name,
+        'display_name': displayName,
+        'description': description,
+        'parameters': parameters,
+        'is_active': isActive,
+      },
+    );
+    return AssistantTool.fromJson(
+      Map<String, dynamic>.from(resp.data as Map),
+    );
+  }
+
+  /// Частичное обновление инструмента
+  Future<AssistantTool> updateAssistantTool({
+    required int toolId,
+    required Map<String, dynamic> body,
+  }) async {
+    final resp = await _client.patch<dynamic>(
+      '/assistants/tools/$toolId/',
+      data: body,
+    );
+    return AssistantTool.fromJson(
+      Map<String, dynamic>.from(resp.data as Map),
+    );
+  }
+
+  /// Удаление инструмента
+  Future<void> deleteAssistantTool(int toolId) async {
+    await _client.delete<dynamic>('/assistants/tools/$toolId/');
+  }
+
+  /// Перестановка инструментов ассистента
+  Future<void> reorderAssistantTools({
+    required String assistantId,
+    required List<int> orderedIds,
+  }) async {
+    await _client.post<dynamic>(
+      '/assistants/tools/reorder/',
+      data: {
+        'assistant_id': assistantId,
+        'tool_ids': orderedIds,
+      },
+    );
+  }
+
   /// Создание нового коннектора на бэкенде. Возвращает созданный объект с дефолтными значениями.
   Future<Connector> createConnector({required String name}) async {
     final resp = await _client.post<dynamic>(
@@ -291,6 +373,43 @@ class AssistantApi {
     final resp = await _client.get<dynamic>('/assistants/list/');
     final data = resp.data;
     return List<Map<String, dynamic>>.from(data as List);
+  }
+
+  /// Слоты диалога (READ)
+  Future<List<Map<String, dynamic>>> fetchDialogSlots() async {
+    final resp = await _client.get<dynamic>('/assistants/dialog-slots/');
+    final data = resp.data;
+    return List<Map<String, dynamic>>.from(data as List);
+  }
+
+  /// Создать слот диалога (POST)
+  Future<DialogSlot> createDialogSlot({
+    required Map<String, dynamic> body,
+  }) async {
+    final resp = await _client.post<dynamic>(
+      '/assistants/dialog-slots/',
+      data: body,
+    );
+    final data = Map<String, dynamic>.from(resp.data as Map);
+    return DialogSlot.fromJson(data);
+  }
+
+  /// Удалить слот диалога (DELETE). Возвращает 204 No Content.
+  Future<void> deleteDialogSlot(int id) async {
+    await _client.delete<void>('/assistants/dialog-slots/$id');
+  }
+
+  /// Обновить слот диалога (PATCH)
+  Future<DialogSlot> updateDialogSlot({
+    required int id,
+    required Map<String, dynamic> body,
+  }) async {
+    final resp = await _client.patch<dynamic>(
+      '/assistants/dialog-slots/$id',
+      data: body,
+    );
+    final data = Map<String, dynamic>.from(resp.data as Map);
+    return DialogSlot.fromJson(data);
   }
 
   /// Список шагов команды (thread-command steps)

@@ -46,10 +46,22 @@ class AssistantHomeScreen extends ConsumerWidget {
         '/assistant/$id/scripts',
       ),
       _SubItem(
-        'Чат',
-        'Тестовый диалог с ассистентом',
-        RemixIcons.chat_voice_line,
-        '/assistant/$id/chat',
+        'Сценарии',
+        'Здесь создаются и настраиваются сценарии общения с клиентом: шаги, вопросы, варианты ответов и логика переходов. Вы определяете, как именно ассистент будет вести диалог — от приветствия до оформления заявки.',
+        RemixIcons.flow_chart,
+        '/assistant/$id/dialogs',
+      ),
+      _SubItem(
+        'Память ассистента',
+        'Здесь вы задаёте, какую информацию должен собирать ассистент во время разговора: имя, адрес, тип услуги, описание проблемы и т. д. Эти данные заполняются автоматически в процессе диалога и используются для заявок и отчётов.',
+        RemixIcons.brain_line,
+        '/assistant/$id/slots',
+      ),
+      _SubItem(
+        'Эксперименты',
+        'Эксперименты для быстрой проверки работы ассистента: после изменения настроек можно смоделировать нужный диалог и посмотреть, как ассистент отрабатывает шаги, вопросы и логику.',
+        RemixIcons.flask_line,
+        '/assistant/$id/playground',
       ),
       _SubItem(
         'История чатов',
@@ -85,6 +97,10 @@ class AssistantHomeScreen extends ConsumerWidget {
             // увеличиваем aspectRatio на 1.5x (чем больше ratio, тем ниже карточка),
             // но оставляем разумные ограничения.
             childAspectRatio *= 1.5;
+            // Для 2 колонок добавим небольшой запас по высоте, чтобы не было переполнения
+            if (crossAxisCount == 2) {
+              childAspectRatio -= 0.08;
+            }
             if (childAspectRatio > 3.2) {
               childAspectRatio =
                   3.2; // верхняя граница (слишком плоские карточки не нужны)
@@ -141,7 +157,7 @@ class AssistantHomeScreen extends ConsumerWidget {
                                           context,
                                         ).colorScheme.onSurfaceVariant,
                                       ),
-                                  maxLines: 2,
+                                  maxLines: 3,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ],

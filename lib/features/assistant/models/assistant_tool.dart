@@ -17,7 +17,7 @@ class JsonSchemaObject {
   };
 
   factory JsonSchemaObject.fromJson(Map<String, dynamic> json) {
-    if (json['type'] != 'object') {
+    if ((json['type'] ?? 'object') != 'object') {
       throw ArgumentError('schema.type must be "object"');
     }
     final props = <String, Map<String, dynamic>>{};
@@ -33,7 +33,6 @@ class JsonSchemaObject {
     }
     final rawReq = (json['required'] as List?) ?? const [];
     final req = rawReq.map((e) => e.toString()).toList();
-    // ensure required subset
     for (final k in req) {
       if (!props.containsKey(k)) {
         throw ArgumentError('required "$k" is not present in properties');
@@ -44,76 +43,82 @@ class JsonSchemaObject {
 }
 
 @immutable
-class FunctionToolDef {
+class AssistantTool {
+  final int id;
+  final String assistantId;
+  final String type;
   final String name;
+  final String displayName;
   final String description;
-  final JsonSchemaObject? parameters; // optional for mvp
+  final JsonSchemaObject? parameters;
+  final bool isActive;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
-  const FunctionToolDef({
+  const AssistantTool({
+    required this.id,
+    required this.assistantId,
+    required this.type,
     required this.name,
+    required this.displayName,
     required this.description,
-    this.parameters,
+    required this.parameters,
+    required this.isActive,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
-  FunctionToolDef copyWith({
+  AssistantTool copyWith({
+    String? assistantId,
+    String? type,
     String? name,
+    String? displayName,
     String? description,
     JsonSchemaObject? parameters,
-  }) => FunctionToolDef(
+    bool? isActive,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => AssistantTool(
+    id: id,
+    assistantId: assistantId ?? this.assistantId,
+    type: type ?? this.type,
     name: name ?? this.name,
+    displayName: displayName ?? this.displayName,
     description: description ?? this.description,
     parameters: parameters ?? this.parameters,
+    isActive: isActive ?? this.isActive,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
 
-  Map<String, dynamic> toJson() => {
-    'name': name,
-    'description': description,
-    if (parameters != null) 'parameters': parameters!.toJson(),
-  };
-
-  factory FunctionToolDef.fromJson(Map<String, dynamic> json) =>
-      FunctionToolDef(
-        name: json['name'] as String,
-        description: json['description'] as String? ?? '',
-        parameters: json['parameters'] == null
-            ? null
-            : JsonSchemaObject.fromJson(
-                Map<String, dynamic>.from(json['parameters'] as Map),
-              ),
-      );
-}
-
-@immutable
-class AssistantFunctionTool {
-  final String id; // uuid or generated key
-  final bool enabled;
-  final FunctionToolDef def;
-
-  const AssistantFunctionTool({
-    required this.id,
-    required this.enabled,
-    required this.def,
-  });
-
-  AssistantFunctionTool copyWith({bool? enabled, FunctionToolDef? def}) =>
-      AssistantFunctionTool(
-        id: id,
-        enabled: enabled ?? this.enabled,
-        def: def ?? this.def,
-      );
+  factory AssistantTool.fromJson(Map<String, dynamic> json) {
+    final params = json['parameters'];
+    return AssistantTool(
+      id: int.tryParse('${json['id']}') ?? 0,
+      assistantId: '${json['assistant_id'] ?? ''}',
+      type: (json['type'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      displayName: (json['display_name'] ?? '').toString(),
+      description: (json['description'] ?? '').toString(),
+      parameters: params is Map<String, dynamic>
+          ? JsonSchemaObject.fromJson(Map<String, dynamic>.from(params))
+          : null,
+      isActive: json['is_active'] as bool? ?? true,
+      createdAt: DateTime.tryParse('${json['created_at']}') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse('${json['updated_at']}') ?? DateTime.now(),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
-    'enabled': enabled,
-    'function': def.toJson(),
+    'assistant_id': assistantId,
+    'type': type,
+    'name': name,
+    'display_name': displayName,
+    'description': description,
+    if (parameters != null) 'parameters': parameters!.toJson(),
+    'is_active': isActive,
+    'created_at': createdAt.toIso8601String(),
+    'updated_at': updatedAt.toIso8601String(),
   };
-
-  factory AssistantFunctionTool.fromJson(Map<String, dynamic> json) =>
-      AssistantFunctionTool(
-        id: json['id'] as String,
-        enabled: json['enabled'] as bool? ?? true,
-        def: FunctionToolDef.fromJson(
-          Map<String, dynamic>.from(json['function'] as Map),
-        ),
-      );
 }

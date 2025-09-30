@@ -5,7 +5,6 @@ import 'package:sentralix_app/features/assistant/models/assistant.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_feature_settings_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_list_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_settings_provider.dart';
-import 'package:sentralix_app/features/assistant/providers/assistant_tools_provider.dart';
 
 /// DI: API клиента надфичи Assistant
 final assistantApiProvider = Provider<AssistantApi>((ref) {
@@ -30,14 +29,9 @@ final assistantBootstrapProvider = FutureProvider<void>((ref) async {
 
   // Прокинуть индивидуальные настройки ассистентов (если пришли)
   final settingsNotifier = ref.read(assistantSettingsProvider.notifier);
-  final toolsNotifier = ref.read(assistantToolsProvider.notifier);
   for (final a in assistants) {
     if (a.settings != null) {
       settingsNotifier.save(a.id, a.settings!);
-      // Синхронизация инструментов в отдельный провайдер для UI
-      if (a.settings!.tools.isNotEmpty) {
-        toolsNotifier.replaceAll(a.id, a.settings!.tools);
-      }
     }
   }
 });
