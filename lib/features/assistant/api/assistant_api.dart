@@ -395,6 +395,25 @@ class AssistantApi {
     return Map<String, dynamic>.from(resp.data as Map);
   }
 
+  /// Создать конфигурацию диалога (CREATE)
+  /// POST /assistants/dialog-configs/
+  /// Возвращает созданный объект (сырой JSON)
+  Future<Map<String, dynamic>> createDialogConfig({
+    required String name,
+    String? description,
+  }) async {
+    final body = <String, dynamic>{
+      'name': name,
+      if (description != null && description.trim().isNotEmpty)
+        'description': description.trim(),
+    };
+    final resp = await _client.post<dynamic>(
+      '/assistants/dialog-configs/',
+      data: body,
+    );
+    return Map<String, dynamic>.from(resp.data as Map);
+  }
+
   /// Создать слот диалога (POST)
   Future<DialogSlot> createDialogSlot({
     required Map<String, dynamic> body,

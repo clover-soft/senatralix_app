@@ -61,7 +61,10 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
 
     // Центрируем прямоугольник графа
     final rectCenter = nodesBounds.center;
-    final viewportCenter = Offset(viewportSize.width / 2, viewportSize.height / 2);
+    final viewportCenter = Offset(
+      viewportSize.width / 2,
+      viewportSize.height / 2,
+    );
     final tx = viewportCenter.dx - rectCenter.dx * scale;
     final ty = viewportCenter.dy - rectCenter.dy * scale;
 
@@ -90,7 +93,10 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
 
     // Центруем прямоугольник графа
     final rectCenter = nodesBounds.center;
-    final viewportCenter = Offset(viewportSize.width / 2, viewportSize.height / 2);
+    final viewportCenter = Offset(
+      viewportSize.width / 2,
+      viewportSize.height / 2,
+    );
     final tx = viewportCenter.dx - rectCenter.dx * targetScale;
     final ty = viewportCenter.dy - rectCenter.dy * targetScale;
 
@@ -152,197 +158,178 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
     ).buildAlgorithm();
     final editor = ref.watch(dialogsEditorControllerProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Верхняя панель управления холстом
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: Theme.of(context).colorScheme.outlineVariant,
-              ),
-            ),
-          ),
-          child: Row(
-            children: [
-              Text('Граф', style: Theme.of(context).textTheme.titleSmall),
-              const Spacer(),
-              Tooltip(
-                message: 'Вписать и центрировать',
-                child: Builder(
-                  builder: (toolbarCtx) => IconButton(
-                    icon: const Icon(Icons.center_focus_strong),
-                    onPressed: () {
-                      // Получаем фактический размер доступной области под холст
-                      final renderBox =
-                          context.findRenderObject() as RenderBox?;
-                      if (renderBox == null || !renderBox.hasSize) return;
-                      // Высота панели инструментов уже вычтена, т.к. мы ниже в Expanded
-                      final viewportSize = renderBox.size;
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _fitAndCenter(viewportSize);
-                      });
+    return Expanded(
+      child: ClipRect(
+        child: LayoutBuilder(
+          builder: (ctx, constraints) {
+            // Авто-вписывание: один раз после первой загрузки и при заметном ресайзе
+            final viewportSize = Size(
+              constraints.maxWidth,
+              constraints.maxHeight,
+            );
+            final hasSteps = ref
+                .read(dialogsEditorControllerProvider)
+                .steps
+                .isNotEmpty;
+            final sizeChanged =
+                _lastViewportSize == null ||
+                (viewportSize.width - (_lastViewportSize!.width)).abs() > 8 ||
+                (viewportSize.height - (_lastViewportSize!.height)).abs() > 8;
+            if (hasSteps && (!_didAutoFit || sizeChanged)) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _fitAndCenter(viewportSize);
+                _didAutoFit = true;
+                _lastViewportSize = viewportSize;
+              });
+            }
+            return Padding(
+              padding: const EdgeInsets.all(12),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Статичный фон/сетка, привязанная к окну, а не графу
+                  CustomPaint(
+                    painter: _StaticDotsPainter(
+                      dotSpacing: 34, // было 24
+                      dotRadius: 1, // было 1.2
+                      dotColor: Theme.of(
+                        context,
+                      ).colorScheme.outlineVariant.withValues(alpha: 0.9),
+                      bgColor: Theme.of(
+                        context,
+                      ).colorScheme.surface.withValues(alpha: 0.08),
+                      veilOpacity:
+                          Theme.of(context).brightness == Brightness.dark
+                          ? 0.08
+                          : 0.5,
+                    ),
+                  ),
+                  // Сам холст с графом
+                  DialogsTreeCanvas(
+                    graph: graph,
+                    algorithm: algorithm,
+                    transformationController: _tc,
+                    contentKey: _contentKey,
+                    nodeBuilder: (Node n) {
+                      final id = n.key!.value as int;
+                      final step = editor.steps.firstWhere((e) => e.id == id);
+                      final isSelected =
+                          editor.selectedStepId == id ||
+                          editor.linkStartStepId == id;
+                      final key = _nodeKeys.putIfAbsent(id, () => GlobalKey());
+                      return Material(
+                        key: key,
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => ref
+                              .read(dialogsEditorControllerProvider.notifier)
+                              .onNodeTap(id),
+                          onDoubleTap: () => _centerOnNode(id),
+                          child: StepNode(step: step, selected: isSelected),
+                        ),
+                      );
                     },
                   ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        // Холст (с обрезкой по рамке панели)
-        Expanded(
-          child: ClipRect(
-            child: LayoutBuilder(
-              builder: (ctx, constraints) {
-                // Авто-вписывание: один раз после первой загрузки и при заметном ресайзе
-                final viewportSize = Size(
-                  constraints.maxWidth,
-                  constraints.maxHeight,
-                );
-                final hasSteps = ref
-                    .read(dialogsEditorControllerProvider)
-                    .steps
-                    .isNotEmpty;
-                final sizeChanged =
-                    _lastViewportSize == null ||
-                    (viewportSize.width - (_lastViewportSize!.width)).abs() >
-                        8 ||
-                    (viewportSize.height - (_lastViewportSize!.height)).abs() >
-                        8;
-                if (hasSteps && (!_didAutoFit || sizeChanged)) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _fitAndCenter(viewportSize);
-                    _didAutoFit = true;
-                    _lastViewportSize = viewportSize;
-                  });
-                }
-                return Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // Статичный фон/сетка, привязанная к окну, а не графу
-                      CustomPaint(
-                        painter: _StaticDotsPainter(
-                          dotSpacing: 34, // было 24
-                          dotRadius: 1, // было 1.2
-                          dotColor: Theme.of(
-                            context,
-                          ).colorScheme.outlineVariant.withValues(alpha: 0.9),
-                          bgColor: Theme.of(
-                            context,
-                          ).colorScheme.surface.withValues(alpha: 0.08),
-                          veilOpacity:
-                              Theme.of(context).brightness == Brightness.dark
-                              ? 0.08
-                              : 0.5,
+                  // Панель управления справа
+                  Positioned(
+                    right: 20,
+                    top: 20,
+                    child: Card(
+                      elevation: 6,
+                      color: Theme.of(context).colorScheme.surface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.outlineVariant,
                         ),
                       ),
-                      // Сам холст с графом
-                      DialogsTreeCanvas(
-                        graph: graph,
-                        algorithm: algorithm,
-                        transformationController: _tc,
-                        contentKey: _contentKey,
-                        nodeBuilder: (Node n) {
-                          final id = n.key!.value as int;
-                          final step = editor.steps.firstWhere(
-                            (e) => e.id == id,
-                          );
-                          final isSelected =
-                              editor.selectedStepId == id ||
-                              editor.linkStartStepId == id;
-                          final key = _nodeKeys.putIfAbsent(
-                            id,
-                            () => GlobalKey(),
-                          );
-                          return Material(
-                            key: key,
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () => ref
-                                  .read(
-                                    dialogsEditorControllerProvider.notifier,
-                                  )
-                                  .onNodeTap(id),
-                              onDoubleTap: () => _centerOnNode(id),
-                              child: StepNode(step: step, selected: isSelected),
-                            ),
-                          );
-                        },
-                      ),
-                      // Панель управления справа
-                      Positioned(
-                        right: 20,
-                        top: 20,
-                        child: Card(
-                          elevation: 4,
-                          child: SizedBox(
-                            width: 64,
-                            height: 320,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: Column(
-                                children: [
-                                  // Вписать
-                                  IconButton(
-                                    tooltip: 'Вписать',
-                                    icon: const Icon(Icons.center_focus_strong),
-                                    onPressed: () {
-                                      final rb = context.findRenderObject() as RenderBox?;
-                                      if (rb == null || !rb.hasSize) return;
-                                      final viewportSize = rb.size;
-                                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                                        _fitAndCenter(viewportSize);
-                                      });
-                                    },
-                                  ),
-                                  const SizedBox(height: 6),
-                                  // Вертикальный слайдер масштаба (занимает всё доступное пространство между кнопками)
-                                  Expanded(
-                                    child: RotatedBox(
-                                      quarterTurns: 3,
-                                      child: SliderTheme(
-                                        data: SliderTheme.of(context).copyWith(
-                                          trackHeight: 3,
-                                          overlayShape: SliderComponentShape.noOverlay,
-                                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-                                          tickMarkShape: SliderTickMarkShape.noTickMark,
-                                          trackShape: const _FullWidthTrackShape(),
-                                        ),
-                                        child: Slider(
-                                          min: 0.5,
-                                          max: 2.5,
-                                          divisions: 20,
-                                          value: _tc.value.getMaxScaleOnAxis().clamp(0.5, 2.5),
-                                          onChanged: (v) => _setScale(v),
-                                        ),
+                      child: SizedBox(
+                        width: 64,
+                        height: 320,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Column(
+                            children: [
+                              // Вписать
+                              IconButton(
+                                tooltip: 'Вписать',
+                                icon: const Icon(Icons.center_focus_strong),
+                                onPressed: () {
+                                  final rb =
+                                      context.findRenderObject() as RenderBox?;
+                                  if (rb == null || !rb.hasSize) return;
+                                  final viewportSize = rb.size;
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
+                                    _fitAndCenter(viewportSize);
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 6),
+                              // Вертикальный слайдер масштаба (занимает всё доступное пространство между кнопками)
+                              Expanded(
+                                child: RotatedBox(
+                                  quarterTurns: 3,
+                                  child: SliderTheme(
+                                    data: SliderTheme.of(context).copyWith(
+                                      trackHeight: 3,
+                                      overlayShape:
+                                          SliderComponentShape.noOverlay,
+                                      thumbShape: const RoundSliderThumbShape(
+                                        enabledThumbRadius: 8,
                                       ),
+                                      tickMarkShape:
+                                          SliderTickMarkShape.noTickMark,
+                                      trackShape: const _FullWidthTrackShape(),
+                                    ),
+                                    child: Slider(
+                                      min: 0.5,
+                                      max: 2.5,
+                                      divisions: 20,
+                                      value: _tc.value
+                                          .getMaxScaleOnAxis()
+                                          .clamp(0.5, 2.5),
+                                      onChanged: (v) => _setScale(v),
                                     ),
                                   ),
-                                  const SizedBox(height: 6),
-                                  // Обновить
-                                  IconButton(
-                                    tooltip: 'Обновить',
-                                    icon: const Icon(Icons.refresh),
-                                    onPressed: () => ref.invalidate(dialogConfigsProvider),
-                                  ),
-                                ],
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 6),
+                              // Обновить
+                              IconButton(
+                                tooltip: 'Обновить',
+                                icon: const Icon(Icons.refresh),
+                                onPressed: () {
+                                  final selectedId = ref.read(
+                                    selectedDialogConfigIdProvider,
+                                  );
+                                  if (selectedId != null) {
+                                    ref.invalidate(
+                                      dialogConfigDetailsProvider(selectedId),
+                                    );
+                                  } else {
+                                    ref.invalidate(dialogConfigsProvider);
+                                  }
+                                  // Форсируем автодовписывание после обновления
+                                  setState(() {
+                                    _didAutoFit = false;
+                                    _lastViewportSize = null;
+                                  });
+                                },
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                );
-              },
-            ),
-          ),
+                ],
+              ),
+            );
+          },
         ),
-      ],
+      ),
     );
   }
 }
@@ -355,7 +342,7 @@ class _StaticDotsPainter extends CustomPainter {
     required this.dotColor,
     required this.bgColor,
     required this.veilOpacity,
-  });
+  }) : super();
 
   final double dotSpacing;
   final double dotRadius;

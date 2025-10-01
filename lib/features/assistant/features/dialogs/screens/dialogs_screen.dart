@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_providers.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_tree_panel.dart';
@@ -19,7 +20,10 @@ class AssistantDialogsScreen extends ConsumerWidget {
     final selectedId = ref.watch(selectedDialogConfigIdProvider);
 
     return Scaffold(
-      appBar: AssistantAppBar(assistantId: id),
+      appBar: AssistantAppBar(
+        assistantId: id,
+        subfeatureTitle: 'Сценарии',
+      ),
       body: Padding(
         padding: const EdgeInsets.all(12),
         child: configsAsync.when(
@@ -76,18 +80,87 @@ class AssistantDialogsScreen extends ConsumerWidget {
                         child: TabBar(
                           isScrollable: true,
                           tabAlignment: TabAlignment.start,
-                          onTap: (i) =>
-                              ref
-                                  .read(selectedDialogConfigIdProvider.notifier)
-                                  .state = configs[i]
-                                  .id,
+                          onTap: (i) => ref
+                              .read(selectedDialogConfigIdProvider.notifier)
+                              .state = configs[i].id,
                           tabs: [for (final c in configs) Tab(text: c.name)],
                         ),
                       ),
-                      IconButton(
-                        tooltip: 'Обновить',
-                        onPressed: () => ref.invalidate(dialogConfigsProvider),
-                        icon: const Icon(Icons.refresh),
+                      const SizedBox(width: 8),
+                      Tooltip(
+                        message: 'Добавить диалог',
+                        child: IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: () async {
+                            final nameCtrl = TextEditingController();
+                            final descCtrl = TextEditingController();
+                            final formKey = GlobalKey<FormState>();
+
+                            final createdId = await showDialog<int?>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Новая конфигурация диалога'),
+                                content: Form(
+                                  key: formKey,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      TextFormField(
+                                        controller: nameCtrl,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Название',
+                                        ),
+                                        autofocus: true,
+                                        validator: (v) {
+                                          final s = (v ?? '').trim();
+                                          if (s.length < 2) return 'Минимум 2 символа';
+                                          if (s.length > 64) return 'Максимум 64 символа';
+                                          return null;
+                                        },
+                                      ),
+                                      const SizedBox(height: 12),
+                                      TextFormField(
+                                        controller: descCtrl,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Описание (необязательно)'
+                                        ),
+                                        maxLines: 3,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(null),
+                                    child: const Text('Отмена'),
+                                  ),
+                                  FilledButton.icon(
+                                    icon: const Icon(Icons.add),
+                                    label: const Text('Добавить'),
+                                    onPressed: () async {
+                                      if (!(formKey.currentState?.validate() ?? false)) return;
+                                      final api = ref.read(assistantApiProvider);
+                                      final json = await api.createDialogConfig(
+                                        name: nameCtrl.text.trim(),
+                                        description: descCtrl.text.trim(),
+                                      );
+                                      final id = int.tryParse('${json['id']}');
+                                      Navigator.of(ctx).pop(id);
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (createdId != null) {
+                              // Обновляем список вкладок и выбираем новую
+                              ref.invalidate(dialogConfigsProvider);
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                ref.read(selectedDialogConfigIdProvider.notifier).state = createdId;
+                              });
+                            }
+                          },
+                        ),
                       ),
                     ],
                   ),
