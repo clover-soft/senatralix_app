@@ -44,21 +44,16 @@ class DialogsTreeCanvas extends StatelessWidget {
               transformationController: transformationController,
               child: LayoutBuilder(
                 builder: (ctx, constraints) {
-                  // contentSize не меньше viewport и не меньше canvasSize
-                  final contentSize = Size(
-                    constraints.maxWidth > canvasSize.width
-                        ? constraints.maxWidth
-                        : canvasSize.width,
-                    constraints.maxHeight > canvasSize.height
-                        ? constraints.maxHeight
-                        : canvasSize.height,
-                  );
                   return RepaintBoundary(
                     key: contentKey,
                     child: Align(
                       alignment: Alignment.topLeft,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints.loose(contentSize),
+                      child: OverflowBox(
+                        alignment: Alignment.topLeft,
+                        minWidth: 0,
+                        minHeight: 0,
+                        maxWidth: double.infinity,
+                        maxHeight: double.infinity,
                         child: GraphView(
                           graph: graph,
                           algorithm: algorithm,

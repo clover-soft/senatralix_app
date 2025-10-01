@@ -10,6 +10,13 @@ class StepNode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // База для тени: темнее в тёмной теме, мягче в светлой
+    final shadowColor = (isDark ? Colors.black : Colors.black)
+        .withOpacity(isDark ? 0.28 : 0.14);
+    final shadowBlur = selected ? 12.0 : 9.0;
+    final shadowOffset = selected ? const Offset(0, 3) : const Offset(0, 2);
+    final shadowSpread = selected ? 0.4 : 0.2;
     return Container(
       constraints: const BoxConstraints(minWidth: 180, maxWidth: 240),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -21,11 +28,20 @@ class StepNode extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
+          // Основная мягкая тень
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: shadowColor,
+            blurRadius: shadowBlur,
+            spreadRadius: shadowSpread,
+            offset: shadowOffset,
           ),
+          // Лёгкая подсветка снизу для лучшего отделения на тёмной теме
+          if (isDark)
+            BoxShadow(
+              color: Colors.white.withOpacity(0.03),
+              blurRadius: 2,
+              offset: const Offset(0, 1),
+            ),
         ],
       ),
       child: Column(
