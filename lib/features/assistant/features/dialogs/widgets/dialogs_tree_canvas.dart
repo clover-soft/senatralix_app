@@ -39,6 +39,7 @@ class DialogsTreeCanvas extends StatelessWidget {
       child: hasNodes
           ? InteractiveViewer(
               minScale: 0.5,
+              maxScale: 2.5,
               boundaryMargin: const EdgeInsets.all(1000),
               clipBehavior: Clip.hardEdge,
               transformationController: transformationController,
