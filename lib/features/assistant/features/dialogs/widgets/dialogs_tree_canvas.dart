@@ -10,6 +10,8 @@ class DialogsTreeCanvas extends StatelessWidget {
     required this.algorithm,
     required this.nodeBuilder,
     this.canvasSize = const Size(2400, 1800),
+    this.transformationController,
+    this.contentKey,
   });
 
   /// Граф для отображения
@@ -24,27 +26,56 @@ class DialogsTreeCanvas extends StatelessWidget {
   /// Размер «холста» (верхняя граница, не жёсткая) — подстраивается через loose-constraints
   final Size canvasSize;
 
+  /// Внешний контроллер трансформаций (для центрирования/вписывания)
+  final TransformationController? transformationController;
+
+  /// Ключ обёртки контента (для измерения размеров графа)
+  final Key? contentKey;
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.vertical,
-        child: ConstrainedBox(
-          constraints: BoxConstraints.loose(canvasSize),
-          child: InteractiveViewer(
-            minScale: 0.5,
-            maxScale: 2.5,
-            boundaryMargin: const EdgeInsets.all(1000),
-            clipBehavior: Clip.none,
-            child: GraphView(
-              graph: graph,
-              algorithm: algorithm,
-              builder: nodeBuilder,
+    final hasNodes = graph.nodes.isNotEmpty;
+    return SizedBox.expand(
+      child: hasNodes
+          ? InteractiveViewer(
+              minScale: 0.5,
+              boundaryMargin: const EdgeInsets.all(1000),
+              clipBehavior: Clip.hardEdge,
+              transformationController: transformationController,
+              child: LayoutBuilder(
+                builder: (ctx, constraints) {
+                  // contentSize не меньше viewport и не меньше canvasSize
+                  final contentSize = Size(
+                    constraints.maxWidth > canvasSize.width
+                        ? constraints.maxWidth
+                        : canvasSize.width,
+                    constraints.maxHeight > canvasSize.height
+                        ? constraints.maxHeight
+                        : canvasSize.height,
+                  );
+                  return RepaintBoundary(
+                    key: contentKey,
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints.loose(contentSize),
+                        child: GraphView(
+                          graph: graph,
+                          algorithm: algorithm,
+                          builder: nodeBuilder,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            )
+          : const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Граф ещё не загружен'),
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }

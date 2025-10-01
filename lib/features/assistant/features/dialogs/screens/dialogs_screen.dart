@@ -5,7 +5,6 @@ import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart'
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_providers.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_tree_panel.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_props_panel.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_editor_providers.dart';
 
 /// Экран-заготовка подфичи "Сценарии" (dialogs)
@@ -144,35 +143,14 @@ class _DialogEditor extends ConsumerStatefulWidget {
 class _DialogEditorState extends ConsumerState<_DialogEditor> {
   @override
   Widget build(BuildContext context) {
-    final rightPanelW = 340.0;
     final outline = Theme.of(context).colorScheme.outlineVariant;
-    return Row(
-      children: [
-        // Левая панель: холст в рамке
-        Expanded(
-          child: Container(
-            height: double.infinity,
-            margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
-              border: Border.all(color: outline),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const DialogsTreePanel(),
-          ),
-        ),
-        // Правая панель: свойства в рамке
-        SizedBox(
-          width: rightPanelW,
-          child: Container(
-            height: double.infinity,
-            decoration: BoxDecoration(
-              border: Border.all(color: outline),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const DialogsPropsPanel(),
-          ),
-        ),
-      ],
+    return Container(
+      height: double.infinity,
+      decoration: BoxDecoration(
+        border: Border.all(color: outline),
+        // без скруглений
+      ),
+      child: const DialogsTreePanel(),
     );
   }
 }
