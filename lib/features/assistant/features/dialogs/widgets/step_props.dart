@@ -1,253 +1,205 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentralix_app/core/logger.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_editor_providers.dart';
+import 'package:sentralix_app/features/assistant/features/slots/providers/slots_providers.dart';
+import 'package:sentralix_app/features/assistant/features/slots/models/dialog_slot.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_simple_props.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_router_props.dart';
 
-/// Панель свойств шага с редактированием ветвлений
-class StepProps extends StatefulWidget {
-  const StepProps({super.key, required this.step, required this.allSteps, required this.onUpdate});
-  final DialogStep step;
-  final List<DialogStep> allSteps;
-  final ValueChanged<DialogStep> onUpdate;
+class StepProps extends ConsumerWidget {
+  const StepProps({super.key, required this.stepId});
 
-  @override
-  State<StepProps> createState() => _StepPropsState();
-}
-
-class _StepPropsState extends State<StepProps> {
-  late DialogStep _current;
-  String? _selectedSlotKey;
+  final int stepId;
 
   @override
-  void initState() {
-    super.initState();
-    _current = widget.step;
-    _selectedSlotKey = _current.branchLogic.keys.isEmpty ? null : _current.branchLogic.keys.first;
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final editor = ref.watch(dialogsEditorControllerProvider);
+    final steps = editor.steps;
+    final current = steps.firstWhere((e) => e.id == stepId);
 
-  @override
-  void didUpdateWidget(covariant StepProps oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.step.id != widget.step.id || oldWidget.step.branchLogic != widget.step.branchLogic) {
-      _current = widget.step;
-      if (_current.branchLogic.containsKey(_selectedSlotKey) == false) {
-        _selectedSlotKey = _current.branchLogic.keys.isEmpty ? null : _current.branchLogic.keys.first;
-      }
-      setState(() {});
-    }
-  }
-
-  void _apply(VoidCallback fn) {
-    setState(() {
-      fn();
-      widget.onUpdate(_current);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final steps = widget.allSteps;
-    final slotKeys = _current.branchLogic.keys.toList();
-    final rows = (_selectedSlotKey != null)
-        ? _current.branchLogic[_selectedSlotKey!]!.entries.toList()
-        : <MapEntry<String, int>>[];
-
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: ListView(
-        children: [
-          Text('ID: ${_current.id}', style: theme.textTheme.bodySmall),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Text('Ветвления', style: theme.textTheme.titleSmall),
-              const Spacer(),
-              IconButton(
-                tooltip: 'Добавить ключ (slot_id) ветвления',
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) {
-                      final ctrl = TextEditingController();
-                      return AlertDialog(
-                        title: const Text('Новый slot_id'),
-                        content: TextField(controller: ctrl, decoration: const InputDecoration(hintText: 'например: 26')),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
-                          FilledButton(
-                            onPressed: () {
-                              final key = ctrl.text.trim();
-                              if (key.isNotEmpty && !_current.branchLogic.containsKey(key)) {
-                                _apply(() {
-                                  final map = Map<String, Map<String, int>>.from(_current.branchLogic);
-                                  map[key] = <String, int>{};
-                                  _current = DialogStep(
-                                    id: _current.id,
-                                    name: _current.name,
-                                    label: _current.label,
-                                    instructions: _current.instructions,
-                                    requiredSlotsIds: _current.requiredSlotsIds,
-                                    optionalSlotsIds: _current.optionalSlotsIds,
-                                    next: _current.next,
-                                    branchLogic: map,
-                                  );
-                                  _selectedSlotKey = key;
-                                });
-                              }
-                              Navigator.pop(ctx);
-                            },
-                            child: const Text('Добавить'),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-                icon: const Icon(Icons.add),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            value: _selectedSlotKey,
-            items: [
-              for (final k in slotKeys) DropdownMenuItem(value: k, child: Text('slot: $k')),
-            ],
-            onChanged: (v) => setState(() => _selectedSlotKey = v),
-            decoration: const InputDecoration(isDense: true, labelText: 'Ключ ветвления (slot_id)'),
-          ),
-          if (_selectedSlotKey != null) ...[
-            const SizedBox(height: 12),
-            Text('Правила для slot=$_selectedSlotKey', style: theme.textTheme.labelLarge),
-            const SizedBox(height: 8),
-            for (int i = 0; i < rows.length; i++)
-              _BranchRow(
-                valueText: rows[i].key,
-                nextId: rows[i].value,
-                allSteps: steps,
-                onChanged: (newValue, newNext) {
-                  _apply(() {
-                    final m = Map<String, Map<String, int>>.from(_current.branchLogic);
-                    final inner = Map<String, int>.from(m[_selectedSlotKey!]!);
-                    inner.remove(rows[i].key);
-                    inner[newValue] = newNext;
-                    m[_selectedSlotKey!] = inner;
-                    _current = DialogStep(
-                      id: _current.id,
-                      name: _current.name,
-                      label: _current.label,
-                      instructions: _current.instructions,
-                      requiredSlotsIds: _current.requiredSlotsIds,
-                      optionalSlotsIds: _current.optionalSlotsIds,
-                      next: _current.next,
-                      branchLogic: m,
-                    );
-                  });
-                },
-                onDelete: () {
-                  _apply(() {
-                    final m = Map<String, Map<String, int>>.from(_current.branchLogic);
-                    final inner = Map<String, int>.from(m[_selectedSlotKey!]!);
-                    inner.remove(rows[i].key);
-                    m[_selectedSlotKey!] = inner;
-                    _current = DialogStep(
-                      id: _current.id,
-                      name: _current.name,
-                      label: _current.label,
-                      instructions: _current.instructions,
-                      requiredSlotsIds: _current.requiredSlotsIds,
-                      optionalSlotsIds: _current.optionalSlotsIds,
-                      next: _current.next,
-                      branchLogic: m,
-                    );
-                  });
-                },
-              ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Добавить правило'),
-                onPressed: () {
-                  _apply(() {
-                    final m = Map<String, Map<String, int>>.from(_current.branchLogic);
-                    final inner = Map<String, int>.from(m[_selectedSlotKey!]!);
-                    inner['значение'] = 0; // нет перехода по умолчанию
-                    m[_selectedSlotKey!] = inner;
-                    _current = DialogStep(
-                      id: _current.id,
-                      name: _current.name,
-                      label: _current.label,
-                      instructions: _current.instructions,
-                      requiredSlotsIds: _current.requiredSlotsIds,
-                      optionalSlotsIds: _current.optionalSlotsIds,
-                      next: _current.next,
-                      branchLogic: m,
-                    );
-                  });
-                },
-              ),
-            ),
-          ],
-        ],
-      ),
+    // Доступные ячейки памяти (слоты)
+    final slotsAsync = ref.watch(dialogSlotsProvider);
+    final List<DialogSlot> availableSlots = slotsAsync.maybeWhen(
+      data: (slots) => slots,
+      orElse: () => const <DialogSlot>[],
     );
-  }
-}
 
-class _BranchRow extends StatelessWidget {
-  const _BranchRow({
-    required this.valueText,
-    required this.nextId,
-    required this.allSteps,
-    required this.onChanged,
-    required this.onDelete,
-  });
-  final String valueText;
-  final int nextId;
-  final List<DialogStep> allSteps;
-  final void Function(String value, int next) onChanged;
-  final VoidCallback onDelete;
+    final formKey = GlobalKey<FormState>();
+    final nameCtrl = TextEditingController(text: current.name);
+    final labelCtrl = TextEditingController(text: current.label);
+    final instrCtrl = TextEditingController(text: current.instructions);
+    int? nextId = current.next;
+    // Локальные наборы выбранных ячеек памяти
+    final Set<int> selectedOptional = {...current.optionalSlotsIds};
+    final Set<int> selectedRequired = {...current.requiredSlotsIds};
+    // Выбранная для добавления ячейка (для Dropdown)
+    int? slotToAdd;
+    // Тип шага: по branchLogic
+    bool isRouter = current.branchLogic.isNotEmpty;
+    // Редактируемая копия логики ветвления
+    final Map<String, Map<String, int>> branchMap = {
+      for (final entry in current.branchLogic.entries)
+        entry.key: Map<String, int>.from(entry.value),
+    };
 
-  @override
-  Widget build(BuildContext context) {
-    final valueCtrl = TextEditingController(text: valueText);
-    int currentNext = nextId;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: TextField(
-              controller: valueCtrl,
-              decoration: const InputDecoration(isDense: true, labelText: 'Значение'),
-              onChanged: (v) => onChanged(v, currentNext),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 2,
-            child: DropdownButtonFormField<int>(
-              value: currentNext,
-              isDense: true,
-              items: [
-                for (final s in allSteps)
-                  DropdownMenuItem(value: s.id, child: Text('${s.id}: ${s.label.isNotEmpty ? s.label : s.name}')),
+    void save() {
+      if (!(formKey.currentState?.validate() ?? false)) return;
+      // Если это маршрутизатор — игнорируем next и обнуляем
+      if (isRouter) {
+        nextId = null;
+      }
+      // Сформируем итоговые списки: обязательные и опциональные (без пересечений)
+      final allSelected = <int>{...selectedOptional, ...selectedRequired};
+      final requiredIds = selectedRequired.intersection(allSelected).toList();
+      final optionalIds = allSelected.difference(selectedRequired).toList();
+
+      final updated = DialogStep(
+        id: current.id,
+        name: nameCtrl.text.trim(),
+        label: labelCtrl.text.trim(),
+        instructions: instrCtrl.text,
+        requiredSlotsIds: requiredIds,
+        optionalSlotsIds: optionalIds,
+        next: nextId,
+        branchLogic: isRouter ? branchMap : <String, Map<String, int>>{},
+      );
+      ref.read(dialogsEditorControllerProvider.notifier).updateStep(updated);
+      AppLogger.i('[StepProps] Saved step id=${current.id}', tag: 'Dialogs');
+      Navigator.of(context).pop(true);
+    }
+
+    return AlertDialog(
+      title: Text('Настройки шага ${current.label}'),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextFormField(
+                  controller: labelCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Заголовок (label)',
+                  ),
+                  validator: (v) {
+                    final s = (v ?? '').trim();
+                    if (s.isEmpty) return 'Заполните заголовок';
+                    if (s.length > 64) return 'Максимум 64 символа';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Системное имя (name)',
+                  ),
+                  validator: (v) {
+                    final s = (v ?? '').trim();
+                    if (s.isEmpty) return 'Заполните имя';
+                    if (s.length > 64) return 'Максимум 64 символа';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: instrCtrl,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    labelText: 'Инструкции / описание',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Переключатель типа шага
+                StatefulBuilder(
+                  builder: (context, setState) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SegmentedButton<bool>(
+                          segments: const [
+                            ButtonSegment<bool>(
+                              value: false,
+                              label: Text('Простой шаг'),
+                              icon: Icon(Icons.edit_note),
+                            ),
+                            ButtonSegment<bool>(
+                              value: true,
+                              label: Text('Маршрутизатор'),
+                              icon: Icon(Icons.alt_route),
+                            ),
+                          ],
+                          selected: {isRouter},
+                          onSelectionChanged: (set) {
+                            setState(() => isRouter = set.contains(true));
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        if (!isRouter)
+                          StepSimpleProps(
+                            current: current,
+                            steps: steps,
+                            availableSlots: availableSlots,
+                            selectedOptional: selectedOptional,
+                            selectedRequired: selectedRequired,
+                            slotToAdd: slotToAdd,
+                            onSetSlotToAdd: (v) =>
+                                setState(() => slotToAdd = v),
+                            nextId: nextId,
+                            onNextChanged: (v) => setState(() => nextId = v),
+                          )
+                        else
+                          StepRouterProps(
+                            current: current,
+                            steps: steps,
+                            availableSlots: availableSlots,
+                            branchMap: branchMap,
+                            onSelectSlot: (slotId) {
+                              setState(() {
+                                final key = slotId.toString();
+                                final existing = Map<String, int>.from(branchMap[key] ?? <String, int>{});
+                                branchMap
+                                  ..clear()
+                                  ..[key] = existing;
+                              });
+                            },
+                            onSetOptionNext: (slotId, value, next) {
+                              setState(() {
+                                final key = slotId.toString();
+                                final map = branchMap.putIfAbsent(key, () => <String, int>{});
+                                if (next == null) {
+                                  map.remove(value);
+                                } else {
+                                  map[value] = next;
+                                }
+                              });
+                            },
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ],
-              onChanged: (v) {
-                if (v != null) {
-                  currentNext = v;
-                  onChanged(valueCtrl.text, v);
-                }
-              },
-              decoration: const InputDecoration(labelText: 'Переход к шагу'),
             ),
           ),
-          const SizedBox(width: 8),
-          IconButton(onPressed: onDelete, icon: const Icon(Icons.delete_outline)),
-        ],
+        ),
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Отмена'),
+        ),
+        FilledButton.icon(
+          onPressed: save,
+          icon: const Icon(Icons.save),
+          label: const Text('Сохранить'),
+        ),
+      ],
     );
   }
 }

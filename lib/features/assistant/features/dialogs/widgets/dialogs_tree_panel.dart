@@ -9,6 +9,7 @@ import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialog
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_node.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_toolbar_panel.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_props.dart';
 import 'package:sentralix_app/core/logger.dart';
 
 /// Левая панель: дерево сценария
@@ -393,13 +394,17 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                               _centerOnNode(newId);
                             });
                           },
-                          onSettings: () {
+                          onSettings: () async {
                             ref
                                 .read(dialogsEditorControllerProvider.notifier)
                                 .selectStep(id);
                             AppLogger.d(
-                              '[TreePanel] Node action: settings for id=$id (selected)',
+                              '[TreePanel] Node action: opening settings for id=$id',
                               tag: 'DialogsTree',
+                            );
+                            await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => StepProps(stepId: id),
                             );
                           },
                           onDelete: () {

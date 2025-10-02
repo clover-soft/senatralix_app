@@ -47,10 +47,18 @@ class DialogsPropsPanel extends ConsumerWidget {
         Expanded(
           child: editor.selectedStepId == null
               ? const Center(child: Text('Выберите шаг на графе'))
-              : StepProps(
-                  step: editor.steps.firstWhere((e) => e.id == editor.selectedStepId),
-                  allSteps: editor.steps,
-                  onUpdate: (updated) => ref.read(dialogsEditorControllerProvider.notifier).updateStep(updated),
+              : Center(
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.settings),
+                    label: const Text('Открыть настройки шага'),
+                    onPressed: () async {
+                      final id = editor.selectedStepId!;
+                      await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => StepProps(stepId: id),
+                      );
+                    },
+                  ),
                 ),
         ),
       ],
