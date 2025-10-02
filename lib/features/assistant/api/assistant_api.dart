@@ -186,6 +186,27 @@ class AssistantApi {
     return Map<String, dynamic>.from(resp.data as Map);
   }
 
+  /// Обновить конфигурацию диалога (PATCH)
+  /// PATCH /assistants/dialog-configs/{id}
+  /// Возвращает обновлённый объект (сырой JSON)
+  Future<Map<String, dynamic>> updateDialogConfig({
+    required int id,
+    required String name,
+    String? description,
+  }) async {
+    final body = <String, dynamic>{
+      'name': name,
+      'description': (description?.trim().isEmpty ?? true)
+          ? null
+          : description!.trim(),
+    };
+    final resp = await _client.patch<dynamic>(
+      '/assistants/dialog-configs/$id',
+      data: body,
+    );
+    return Map<String, dynamic>.from(resp.data as Map);
+  }
+
   /// Разназначить коннектор от ассистента
   Future<void> unassignConnectorFromAssistant({
     required String assistantId,

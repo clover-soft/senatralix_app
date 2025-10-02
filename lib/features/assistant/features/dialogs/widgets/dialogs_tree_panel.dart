@@ -7,6 +7,8 @@ import 'package:sentralix_app/features/assistant/features/dialogs/providers/dial
 import 'package:sentralix_app/features/assistant/features/dialogs/graph/graph_style.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_tree_canvas.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_node.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_toolbar_panel.dart';
 
 /// Левая панель: дерево сценария
 class DialogsTreePanel extends ConsumerStatefulWidget {
@@ -22,6 +24,97 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   final Map<int, GlobalKey> _nodeKeys = {};
   bool _didAutoFit = false;
   Size? _lastViewportSize;
+
+  @override
+  void initState() {
+    super.initState();
+    _tc.addListener(_onTcChanged);
+  }
+
+  void _onTcChanged() {
+    if (!mounted) return;
+    // Обновляем UI (в частности, положение слайдера) при изменении масштаба/матрицы
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _tc.removeListener(_onTcChanged);
+    _tc.dispose();
+    super.dispose();
+  }
+
+  /// Открыть модалку настроек диалога (редактирование имени и описания)
+  Future<void> _openDialogSettings() async {
+    final id = ref.read(selectedDialogConfigIdProvider);
+    if (id == null) return;
+    final details = await ref.read(dialogConfigDetailsProvider(id).future);
+    final nameCtrl = TextEditingController(text: details.name);
+    final descCtrl = TextEditingController(text: details.description);
+    final formKey = GlobalKey<FormState>();
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Настройки диалога'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Название'),
+                autofocus: true,
+                validator: (v) {
+                  final s = (v ?? '').trim();
+                  if (s.length < 2) return 'Минимум 2 символа';
+                  if (s.length > 64) return 'Максимум 64 символа';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: descCtrl,
+                decoration:
+                    const InputDecoration(labelText: 'Описание (необязательно)'),
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton.icon(
+            icon: const Icon(Icons.save),
+            label: const Text('Сохранить'),
+            onPressed: () async {
+              if (!(formKey.currentState?.validate() ?? false)) return;
+              final api = ref.read(assistantApiProvider);
+              await api.updateDialogConfig(
+                id: id,
+                name: nameCtrl.text.trim(),
+                description: descCtrl.text.trim(),
+              );
+              Navigator.of(ctx).pop(true);
+            },
+          ),
+        ],
+      ),
+    );
+
+    if (saved == true) {
+      ref.invalidate(dialogConfigsProvider);
+      ref.invalidate(dialogConfigDetailsProvider(id));
+      setState(() {
+        _didAutoFit = false;
+        _lastViewportSize = null;
+      });
+    }
+  }
 
   /// Расчёт реальных границ графа по позициям нод в системе координат контента
   Rect? _computeNodesBounds() {
@@ -234,94 +327,35 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                   Positioned(
                     right: 20,
                     top: 20,
-                    child: Card(
-                      elevation: 6,
-                      color: Theme.of(context).colorScheme.surface,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(
-                          color: Theme.of(context).colorScheme.outlineVariant,
-                        ),
-                      ),
-                      child: SizedBox(
-                        width: 64,
-                        height: 320,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Column(
-                            children: [
-                              // Вписать
-                              IconButton(
-                                tooltip: 'Вписать',
-                                icon: const Icon(Icons.center_focus_strong),
-                                onPressed: () {
-                                  final rb =
-                                      context.findRenderObject() as RenderBox?;
-                                  if (rb == null || !rb.hasSize) return;
-                                  final viewportSize = rb.size;
-                                  WidgetsBinding.instance.addPostFrameCallback((
-                                    _,
-                                  ) {
-                                    _fitAndCenter(viewportSize);
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: 6),
-                              // Вертикальный слайдер масштаба (занимает всё доступное пространство между кнопками)
-                              Expanded(
-                                child: RotatedBox(
-                                  quarterTurns: 3,
-                                  child: SliderTheme(
-                                    data: SliderTheme.of(context).copyWith(
-                                      trackHeight: 3,
-                                      overlayShape:
-                                          SliderComponentShape.noOverlay,
-                                      thumbShape: const RoundSliderThumbShape(
-                                        enabledThumbRadius: 8,
-                                      ),
-                                      tickMarkShape:
-                                          SliderTickMarkShape.noTickMark,
-                                      trackShape: const _FullWidthTrackShape(),
-                                    ),
-                                    child: Slider(
-                                      min: 0.5,
-                                      max: 2.5,
-                                      divisions: 20,
-                                      value: _tc.value
-                                          .getMaxScaleOnAxis()
-                                          .clamp(0.5, 2.5),
-                                      onChanged: (v) => _setScale(v),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              // Обновить
-                              IconButton(
-                                tooltip: 'Обновить',
-                                icon: const Icon(Icons.refresh),
-                                onPressed: () {
-                                  final selectedId = ref.read(
-                                    selectedDialogConfigIdProvider,
-                                  );
-                                  if (selectedId != null) {
-                                    ref.invalidate(
-                                      dialogConfigDetailsProvider(selectedId),
-                                    );
-                                  } else {
-                                    ref.invalidate(dialogConfigsProvider);
-                                  }
-                                  // Форсируем автодовписывание после обновления
-                                  setState(() {
-                                    _didAutoFit = false;
-                                    _lastViewportSize = null;
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    child: DialogsToolbarPanel(
+                      onFitPressed: () {
+                        final rb = context.findRenderObject() as RenderBox?;
+                        if (rb == null || !rb.hasSize) return;
+                        final viewportSize = rb.size;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _fitAndCenter(viewportSize);
+                        });
+                      },
+                      currentScale:
+                          _tc.value.getMaxScaleOnAxis().clamp(0.5, 2.5),
+                      onScaleChanged: (v) => _setScale(v),
+                      onSettingsPressed: _openDialogSettings,
+                      onRefreshPressed: () {
+                        final selectedId = ref.read(
+                          selectedDialogConfigIdProvider,
+                        );
+                        if (selectedId != null) {
+                          ref.invalidate(
+                            dialogConfigDetailsProvider(selectedId),
+                          );
+                        } else {
+                          ref.invalidate(dialogConfigsProvider);
+                        }
+                        setState(() {
+                          _didAutoFit = false;
+                          _lastViewportSize = null;
+                        });
+                      },
                     ),
                   ),
                 ],
@@ -378,22 +412,4 @@ class _StaticDotsPainter extends CustomPainter {
   }
 }
 
-/// Кастомная форма трека слайдера без внутренних отступов — трек на всю ширину
-class _FullWidthTrackShape extends RoundedRectSliderTrackShape {
-  const _FullWidthTrackShape();
-
-  @override
-  Rect getPreferredRect({
-    required RenderBox parentBox,
-    Offset offset = Offset.zero,
-    required SliderThemeData sliderTheme,
-    bool isEnabled = false,
-    bool isDiscrete = false,
-  }) {
-    final trackHeight = sliderTheme.trackHeight ?? 2.0;
-    final trackLeft = offset.dx;
-    final trackTop = offset.dy + (parentBox.size.height - trackHeight) / 2;
-    final trackWidth = parentBox.size.width;
-    return Rect.fromLTWH(trackLeft, trackTop, trackWidth, trackHeight);
-  }
-}
+ 
