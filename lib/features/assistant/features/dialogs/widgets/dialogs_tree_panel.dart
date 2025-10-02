@@ -76,8 +76,9 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: descCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Описание (необязательно)'),
+                decoration: const InputDecoration(
+                  labelText: 'Описание (необязательно)',
+                ),
                 maxLines: 3,
               ),
             ],
@@ -251,118 +252,112 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
     ).buildAlgorithm();
     final editor = ref.watch(dialogsEditorControllerProvider);
 
-    return Expanded(
-      child: ClipRect(
-        child: LayoutBuilder(
-          builder: (ctx, constraints) {
-            // Авто-вписывание: один раз после первой загрузки и при заметном ресайзе
-            final viewportSize = Size(
-              constraints.maxWidth,
-              constraints.maxHeight,
-            );
-            final hasSteps = ref
-                .read(dialogsEditorControllerProvider)
-                .steps
-                .isNotEmpty;
-            final sizeChanged =
-                _lastViewportSize == null ||
-                (viewportSize.width - (_lastViewportSize!.width)).abs() > 8 ||
-                (viewportSize.height - (_lastViewportSize!.height)).abs() > 8;
-            if (hasSteps && (!_didAutoFit || sizeChanged)) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _fitAndCenter(viewportSize);
-                _didAutoFit = true;
-                _lastViewportSize = viewportSize;
-              });
-            }
-            return Padding(
-              padding: const EdgeInsets.all(12),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Статичный фон/сетка, привязанная к окну, а не графу
-                  CustomPaint(
-                    painter: _StaticDotsPainter(
-                      dotSpacing: 34, // было 24
-                      dotRadius: 1, // было 1.2
-                      dotColor: Theme.of(
-                        context,
-                      ).colorScheme.outlineVariant.withValues(alpha: 0.9),
-                      bgColor: Theme.of(
-                        context,
-                      ).colorScheme.surface.withValues(alpha: 0.08),
-                      veilOpacity:
-                          Theme.of(context).brightness == Brightness.dark
-                          ? 0.08
-                          : 0.5,
-                    ),
+    return ClipRect(
+      child: LayoutBuilder(
+        builder: (ctx, constraints) {
+          // Авто-вписывание: один раз после первой загрузки и при заметном ресайзе
+          final viewportSize = Size(
+            constraints.maxWidth,
+            constraints.maxHeight,
+          );
+          final hasSteps = ref
+              .read(dialogsEditorControllerProvider)
+              .steps
+              .isNotEmpty;
+          final sizeChanged =
+              _lastViewportSize == null ||
+              (viewportSize.width - (_lastViewportSize!.width)).abs() > 8 ||
+              (viewportSize.height - (_lastViewportSize!.height)).abs() > 8;
+          if (hasSteps && (!_didAutoFit || sizeChanged)) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _fitAndCenter(viewportSize);
+              _didAutoFit = true;
+              _lastViewportSize = viewportSize;
+            });
+          }
+          return Padding(
+            padding: const EdgeInsets.all(12),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Статичный фон/сетка, привязанная к окну, а не графу
+                CustomPaint(
+                  painter: _StaticDotsPainter(
+                    dotSpacing: 34, // было 24
+                    dotRadius: 1, // было 1.2
+                    dotColor: Theme.of(
+                      context,
+                    ).colorScheme.outlineVariant.withValues(alpha: 0.9),
+                    bgColor: Theme.of(
+                      context,
+                    ).colorScheme.surface.withValues(alpha: 0.08),
+                    veilOpacity: Theme.of(context).brightness == Brightness.dark
+                        ? 0.08
+                        : 0.5,
                   ),
-                  // Сам холст с графом
-                  DialogsTreeCanvas(
-                    graph: graph,
-                    algorithm: algorithm,
-                    transformationController: _tc,
-                    contentKey: _contentKey,
-                    nodeBuilder: (Node n) {
-                      final id = n.key!.value as int;
-                      final step = editor.steps.firstWhere((e) => e.id == id);
-                      final isSelected =
-                          editor.selectedStepId == id ||
-                          editor.linkStartStepId == id;
-                      final key = _nodeKeys.putIfAbsent(id, () => GlobalKey());
-                      return Material(
-                        key: key,
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () => ref
-                              .read(dialogsEditorControllerProvider.notifier)
-                              .onNodeTap(id),
-                          onDoubleTap: () => _centerOnNode(id),
-                          child: StepNode(step: step, selected: isSelected),
-                        ),
+                ),
+                // Сам холст с графом
+                DialogsTreeCanvas(
+                  graph: graph,
+                  algorithm: algorithm,
+                  transformationController: _tc,
+                  contentKey: _contentKey,
+                  nodeBuilder: (Node n) {
+                    final id = n.key!.value as int;
+                    final step = editor.steps.firstWhere((e) => e.id == id);
+                    final isSelected =
+                        editor.selectedStepId == id ||
+                        editor.linkStartStepId == id;
+                    final key = _nodeKeys.putIfAbsent(id, () => GlobalKey());
+                    return Material(
+                      key: key,
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => ref
+                            .read(dialogsEditorControllerProvider.notifier)
+                            .onNodeTap(id),
+                        onDoubleTap: () => _centerOnNode(id),
+                        child: StepNode(step: step, selected: isSelected),
+                      ),
+                    );
+                  },
+                ),
+                // Панель управления справа
+                Positioned(
+                  right: 20,
+                  top: 20,
+                  child: DialogsToolbarPanel(
+                    onFitPressed: () {
+                      final rb = context.findRenderObject() as RenderBox?;
+                      if (rb == null || !rb.hasSize) return;
+                      final viewportSize = rb.size;
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _fitAndCenter(viewportSize);
+                      });
+                    },
+                    currentScale: _tc.value.getMaxScaleOnAxis().clamp(0.5, 2.5),
+                    onScaleChanged: (v) => _setScale(v),
+                    onSettingsPressed: _openDialogSettings,
+                    onRefreshPressed: () {
+                      final selectedId = ref.read(
+                        selectedDialogConfigIdProvider,
                       );
+                      if (selectedId != null) {
+                        ref.invalidate(dialogConfigDetailsProvider(selectedId));
+                      } else {
+                        ref.invalidate(dialogConfigsProvider);
+                      }
+                      setState(() {
+                        _didAutoFit = false;
+                        _lastViewportSize = null;
+                      });
                     },
                   ),
-                  // Панель управления справа
-                  Positioned(
-                    right: 20,
-                    top: 20,
-                    child: DialogsToolbarPanel(
-                      onFitPressed: () {
-                        final rb = context.findRenderObject() as RenderBox?;
-                        if (rb == null || !rb.hasSize) return;
-                        final viewportSize = rb.size;
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _fitAndCenter(viewportSize);
-                        });
-                      },
-                      currentScale:
-                          _tc.value.getMaxScaleOnAxis().clamp(0.5, 2.5),
-                      onScaleChanged: (v) => _setScale(v),
-                      onSettingsPressed: _openDialogSettings,
-                      onRefreshPressed: () {
-                        final selectedId = ref.read(
-                          selectedDialogConfigIdProvider,
-                        );
-                        if (selectedId != null) {
-                          ref.invalidate(
-                            dialogConfigDetailsProvider(selectedId),
-                          );
-                        } else {
-                          ref.invalidate(dialogConfigsProvider);
-                        }
-                        setState(() {
-                          _didAutoFit = false;
-                          _lastViewportSize = null;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -411,5 +406,3 @@ class _StaticDotsPainter extends CustomPainter {
         bgColor != oldDelegate.bgColor;
   }
 }
-
- 
