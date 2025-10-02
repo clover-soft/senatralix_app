@@ -38,6 +38,7 @@ class DialogsTreeCanvas extends StatelessWidget {
     return SizedBox.expand(
       child: hasNodes
           ? InteractiveViewer(
+              constrained: false,
               minScale: 0.5,
               maxScale: 2.5,
               boundaryMargin: const EdgeInsets.all(1000),
@@ -55,10 +56,14 @@ class DialogsTreeCanvas extends StatelessWidget {
                         minHeight: 0,
                         maxWidth: double.infinity,
                         maxHeight: double.infinity,
-                        child: GraphView(
-                          graph: graph,
-                          algorithm: algorithm,
-                          builder: nodeBuilder,
+                        child: SizedBox(
+                          width: canvasSize.width,
+                          height: canvasSize.height,
+                          child: GraphView(
+                            graph: graph,
+                            algorithm: algorithm,
+                            builder: nodeBuilder,
+                          ),
                         ),
                       ),
                     ),

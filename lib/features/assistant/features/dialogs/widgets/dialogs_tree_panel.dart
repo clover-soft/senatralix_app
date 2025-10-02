@@ -76,8 +76,9 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: descCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Описание (необязательно)'),
+                decoration: const InputDecoration(
+                  labelText: 'Описание (необязательно)',
+                ),
                 maxLines: 3,
               ),
             ],
@@ -318,7 +319,20 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                               .read(dialogsEditorControllerProvider.notifier)
                               .onNodeTap(id),
                           onDoubleTap: () => _centerOnNode(id),
-                          child: StepNode(step: step, selected: isSelected),
+                          child: StepNode(
+                            step: step,
+                            selected: isSelected,
+                            onAddNext: () {
+                              final newId = ref
+                                  .read(
+                                    dialogsEditorControllerProvider.notifier,
+                                  )
+                                  .addNextStep(id);
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                _centerOnNode(newId);
+                              });
+                            },
+                          ),
                         ),
                       );
                     },
@@ -336,8 +350,10 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                           _fitAndCenter(viewportSize);
                         });
                       },
-                      currentScale:
-                          _tc.value.getMaxScaleOnAxis().clamp(0.5, 2.5),
+                      currentScale: _tc.value.getMaxScaleOnAxis().clamp(
+                        0.5,
+                        2.5,
+                      ),
                       onScaleChanged: (v) => _setScale(v),
                       onSettingsPressed: _openDialogSettings,
                       onRefreshPressed: () {
@@ -411,5 +427,3 @@ class _StaticDotsPainter extends CustomPainter {
         bgColor != oldDelegate.bgColor;
   }
 }
-
- 

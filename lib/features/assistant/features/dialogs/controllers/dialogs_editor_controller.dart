@@ -97,4 +97,95 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
       );
     }
   }
+
+  /// Создать новый шаг и назначить его как `next` для шага `fromId`.
+  /// Возвращает id созданного шага.
+  int addNextStep(int fromId) {
+    final steps = List<DialogStep>.from(state.steps);
+    // Найдём максимум id и создадим новый
+    var maxId = 0;
+    for (final s in steps) {
+      if (s.id > maxId) maxId = s.id;
+    }
+    final newId = maxId + 1;
+
+    // Обновим исходный шаг: next -> newId
+    final fromIdx = steps.indexWhere((e) => e.id == fromId);
+    if (fromIdx >= 0) {
+      final s = steps[fromIdx];
+      steps[fromIdx] = DialogStep(
+        id: s.id,
+        name: s.name,
+        label: s.label,
+        instructions: s.instructions,
+        requiredSlotsIds: s.requiredSlotsIds,
+        optionalSlotsIds: s.optionalSlotsIds,
+        next: newId,
+        branchLogic: s.branchLogic,
+      );
+    }
+
+    // Добавим новый шаг с дефолтами
+    final newStep = DialogStep(
+      id: newId,
+      name: 'step_$newId',
+      label: 'Шаг $newId',
+      instructions: '',
+      requiredSlotsIds: const [],
+      optionalSlotsIds: const [],
+      next: null,
+      branchLogic: const {},
+    );
+    steps.add(newStep);
+
+    state = DialogsEditorState(
+      steps: steps,
+      selectedStepId: newId,
+      linkStartStepId: null,
+    );
+    return newId;
+  }
+
+  /// Удалить шаг: удаляет сам шаг, обнуляет next у ссылающихся,
+  /// удаляет в branchLogic ветви, указывающие на удаляемый шаг.
+  void deleteStep(int id) {
+    final steps = List<DialogStep>.from(state.steps);
+    // Удалим сам шаг
+    steps.removeWhere((e) => e.id == id);
+
+    // Обновим ссылки у остальных
+    for (var i = 0; i < steps.length; i++) {
+      final s = steps[i];
+      final newNext = (s.next == id) ? null : s.next;
+
+      // Фильтрация branchLogic: убрать значения, ведущие на удалённый id
+      final newBranch = <String, Map<String, int>>{};
+      s.branchLogic.forEach((slot, mapping) {
+        final filtered = <String, int>{};
+        mapping.forEach((k, v) {
+          if (v != id) filtered[k] = v;
+        });
+        if (filtered.isNotEmpty) newBranch[slot] = filtered;
+      });
+
+      if (newNext != s.next || !mapEquals(newBranch, s.branchLogic)) {
+        steps[i] = DialogStep(
+          id: s.id,
+          name: s.name,
+          label: s.label,
+          instructions: s.instructions,
+          requiredSlotsIds: s.requiredSlotsIds,
+          optionalSlotsIds: s.optionalSlotsIds,
+          next: newNext,
+          branchLogic: newBranch,
+        );
+      }
+    }
+
+    state = DialogsEditorState(
+      steps: steps,
+      selectedStepId: steps.isNotEmpty ? steps.first.id : null,
+      linkStartStepId: null,
+    );
+  }
 }
