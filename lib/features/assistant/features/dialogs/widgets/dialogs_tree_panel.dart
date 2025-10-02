@@ -9,6 +9,7 @@ import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialog
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_node.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_toolbar_panel.dart';
+import 'package:sentralix_app/core/logger.dart';
 
 /// Левая панель: дерево сценария
 class DialogsTreePanel extends ConsumerStatefulWidget {
@@ -24,6 +25,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   final Map<int, GlobalKey> _nodeKeys = {};
   bool _didAutoFit = false;
   Size? _lastViewportSize;
+  Size _canvasSize = Size.zero;
 
   @override
   void initState() {
@@ -135,6 +137,10 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
       final b = bounds;
       bounds = b == null ? rect : b.expandToInclude(rect);
     }
+    AppLogger.d(
+      '[TreePanel] _computeNodesBounds: nodes=${_nodeKeys.length}, bounds=$bounds',
+      tag: 'DialogsTree',
+    );
     return bounds;
   }
 
@@ -203,16 +209,40 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
 
   void _centerOnNode(int id) {
     final nodeKey = _nodeKeys[id];
-    if (nodeKey == null) return;
+    if (nodeKey == null) {
+      AppLogger.d(
+        '[TreePanel] _centerOnNode: nodeKey for id=$id is null (keys=${_nodeKeys.keys.toList()})',
+        tag: 'DialogsTree',
+      );
+      return;
+    }
     final nodeCtx = nodeKey.currentContext;
     final contentCtx = _contentKey.currentContext;
-    if (nodeCtx == null || contentCtx == null) return;
+    if (nodeCtx == null || contentCtx == null) {
+      AppLogger.d(
+        '[TreePanel] _centerOnNode: contexts missing (nodeCtx=${nodeCtx != null}, contentCtx=${contentCtx != null}) for id=$id',
+        tag: 'DialogsTree',
+      );
+      return;
+    }
 
     final nodeBox = nodeCtx.findRenderObject() as RenderBox?;
     final contentBox = contentCtx.findRenderObject() as RenderBox?;
     final viewportBox = context.findRenderObject() as RenderBox?;
-    if (nodeBox == null || contentBox == null || viewportBox == null) return;
-    if (!nodeBox.hasSize || !contentBox.hasSize || !viewportBox.hasSize) return;
+    if (nodeBox == null || contentBox == null || viewportBox == null) {
+      AppLogger.d(
+        '[TreePanel] _centerOnNode: boxes missing (nodeBox=${nodeBox != null}, contentBox=${contentBox != null}, viewportBox=${viewportBox != null})',
+        tag: 'DialogsTree',
+      );
+      return;
+    }
+    if (!nodeBox.hasSize || !contentBox.hasSize || !viewportBox.hasSize) {
+      AppLogger.d(
+        '[TreePanel] _centerOnNode: no size (node=${nodeBox.hasSize}, content=${contentBox.hasSize}, viewport=${viewportBox.hasSize})',
+        tag: 'DialogsTree',
+      );
+      return;
+    }
 
     // Координаты ноды в системе контента (до трансформации)
     final nodeTopLeft = nodeBox.localToGlobal(
@@ -236,6 +266,10 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
     final tx = viewportCenter.dx - nodeCenter.dx * currentScale;
     final ty = viewportCenter.dy - nodeCenter.dy * currentScale;
 
+    AppLogger.d(
+      '[TreePanel] _centerOnNode: id=$id center=$nodeCenter scale=$currentScale translate=($tx,$ty) viewport=$viewportSize',
+      tag: 'DialogsTree',
+    );
     setState(() {
       _tc.value = Matrix4.identity()
         ..translateByVector3(vm.Vector3(tx, ty, 0))
@@ -260,6 +294,29 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
             constraints.maxWidth,
             constraints.maxHeight,
           );
+          // Динамический размер холста на основе фактических границ нод
+          const double pad = 300.0;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final bounds = _computeNodesBounds();
+            if (bounds != null && bounds.isFinite) {
+              final w = bounds.width + pad;
+              final h = bounds.height + pad;
+              final proposed = Size(
+                w < viewportSize.width ? viewportSize.width : w,
+                h < viewportSize.height ? viewportSize.height : h,
+              );
+              if ((_canvasSize.width - proposed.width).abs() > 1 ||
+                  (_canvasSize.height - proposed.height).abs() > 1) {
+                if (mounted) setState(() => _canvasSize = proposed);
+              }
+            } else {
+              final proposed = viewportSize;
+              if ((_canvasSize.width - proposed.width).abs() > 1 ||
+                  (_canvasSize.height - proposed.height).abs() > 1) {
+                if (mounted) setState(() => _canvasSize = proposed);
+              }
+            }
+          });
           final hasSteps = ref
               .read(dialogsEditorControllerProvider)
               .steps
@@ -300,6 +357,9 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                 DialogsTreeCanvas(
                   graph: graph,
                   algorithm: algorithm,
+                  canvasSize: _canvasSize == Size.zero
+                      ? viewportSize
+                      : _canvasSize,
                   transformationController: _tc,
                   contentKey: _contentKey,
                   nodeBuilder: (Node n) {
@@ -317,7 +377,38 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                             .read(dialogsEditorControllerProvider.notifier)
                             .onNodeTap(id),
                         onDoubleTap: () => _centerOnNode(id),
-                        child: StepNode(step: step, selected: isSelected),
+                        child: StepNode(
+                          step: step,
+                          selected: isSelected,
+                          onAddNext: () {
+                            final notifier = ref.read(
+                              dialogsEditorControllerProvider.notifier,
+                            );
+                            final newId = notifier.addNextStep(id);
+                            AppLogger.d(
+                              '[TreePanel] Node action: addNext from=$id -> newId=$newId',
+                              tag: 'DialogsTree',
+                            );
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _centerOnNode(newId);
+                            });
+                          },
+                          onSettings: () {
+                            ref
+                                .read(dialogsEditorControllerProvider.notifier)
+                                .selectStep(id);
+                            AppLogger.d(
+                              '[TreePanel] Node action: settings for id=$id (selected)',
+                              tag: 'DialogsTree',
+                            );
+                          },
+                          onDelete: () {
+                            AppLogger.w(
+                              '[TreePanel] Node action: delete requested for id=$id (not implemented)',
+                              tag: 'DialogsTree',
+                            );
+                          },
+                        ),
                       ),
                     );
                   },
@@ -350,6 +441,75 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                       setState(() {
                         _didAutoFit = false;
                         _lastViewportSize = null;
+                      });
+                    },
+                    onAddPressed: () {
+                      final editorState = ref.read(
+                        dialogsEditorControllerProvider,
+                      );
+                      AppLogger.d(
+                        '[TreePanel] onAddPressed: selectedStepId=${editorState.selectedStepId}',
+                        tag: 'DialogsTree',
+                      );
+                      final notifier = ref.read(
+                        dialogsEditorControllerProvider.notifier,
+                      );
+                      int newId;
+                      if (editorState.selectedStepId != null) {
+                        newId = notifier.addNextStep(
+                          editorState.selectedStepId!,
+                        );
+                        AppLogger.d(
+                          '[TreePanel] onAddPressed: addNextStep -> newId=$newId',
+                          tag: 'DialogsTree',
+                        );
+                        // Логируем все шаги после добавления
+                        final steps = ref
+                            .read(dialogsEditorControllerProvider)
+                            .steps;
+                        for (final step in steps) {
+                          AppLogger.d(
+                            '[TreePanel] step: id=${step.id}, name=${step.name}, next=${step.next}',
+                            tag: 'DialogsTree',
+                          );
+                        }
+                        AppLogger.d(
+                          '[TreePanel] steps (json): ${steps.map((e) => e.toString()).join(", ")}',
+                          tag: 'DialogsTree',
+                        );
+                      } else {
+                        notifier.addStep();
+                        final steps = ref
+                            .read(dialogsEditorControllerProvider)
+                            .steps;
+                        if (steps.isEmpty) return;
+                        newId = steps
+                            .map((e) => e.id)
+                            .reduce((a, b) => a > b ? a : b);
+                        AppLogger.d(
+                          '[TreePanel] onAddPressed: addStep -> newId=$newId',
+                          tag: 'DialogsTree',
+                        );
+                        // Логируем все шаги после добавления
+                        AppLogger.d(
+                          '[TreePanel] steps after addStep:',
+                          tag: 'DialogsTree',
+                        );
+                        for (final step in steps) {
+                          AppLogger.d(
+                            '[TreePanel] step: id=${step.id}, name=${step.name}, next=${step.next}',
+                            tag: 'DialogsTree',
+                          );
+                        }
+                        AppLogger.d(
+                          '[TreePanel] steps (json): ${steps.map((e) => e.toString()).join(", ")}',
+                          tag: 'DialogsTree',
+                        );
+                      }
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        AppLogger.d(
+                          '[TreePanel] onAddPressed: centering on newId=$newId',
+                        );
                       });
                     },
                   ),

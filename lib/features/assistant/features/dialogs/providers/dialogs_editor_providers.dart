@@ -4,7 +4,7 @@ import 'package:sentralix_app/features/assistant/features/dialogs/controllers/di
 import 'package:sentralix_app/features/assistant/features/dialogs/graph/dialogs_graph_builder.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/graph/graph_style.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/utils/dialogs_layout_utils.dart';
-import 'package:flutter/foundation.dart';
+import 'package:sentralix_app/core/logger.dart';
 
 /// Контроллер редактора
 final dialogsEditorControllerProvider =
@@ -20,6 +20,6 @@ final graphProvider = Provider<Graph>((ref) {
   final builder = DialogsGraphBuilder(style: style);
   // Лог размера графа (ряды/колонки) по текущей конфигурации
   final stats = computeDialogGridStats(editor.steps);
-  debugPrint('[Dialogs Graph] rows=${stats.rows}, cols=${stats.cols}');
+  AppLogger.d('[Dialogs Graph] rows=${stats.rows}, cols=${stats.cols}', tag: 'DialogsGraph');
   return builder.build(editor.steps);
 });

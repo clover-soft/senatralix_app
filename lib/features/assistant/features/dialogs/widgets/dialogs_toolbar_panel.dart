@@ -13,6 +13,7 @@ class DialogsToolbarPanel extends StatelessWidget {
     required this.onScaleChanged,
     required this.onSettingsPressed,
     required this.onRefreshPressed,
+    required this.onAddPressed,
   });
 
   final VoidCallback onFitPressed;
@@ -20,6 +21,7 @@ class DialogsToolbarPanel extends StatelessWidget {
   final ValueChanged<double> onScaleChanged;
   final VoidCallback onSettingsPressed;
   final VoidCallback onRefreshPressed;
+  final VoidCallback onAddPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +41,15 @@ class DialogsToolbarPanel extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Column(
             children: [
+              // Добавить шаг
+              Tooltip(
+                message: 'Добавить шаг',
+                child: IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: onAddPressed,
+                ),
+              ),
+              const SizedBox(height: 6),
               // Настройки диалога
               Tooltip(
                 message: 'Настройки диалога',

@@ -38,29 +38,35 @@ class DialogsTreeCanvas extends StatelessWidget {
     return SizedBox.expand(
       child: hasNodes
           ? InteractiveViewer(
+              constrained: false,
               minScale: 0.5,
               maxScale: 2.5,
-              boundaryMargin: const EdgeInsets.all(1000),
-              clipBehavior: Clip.hardEdge,
+              boundaryMargin: const EdgeInsets.all(4000),
+              clipBehavior: Clip.none,
               transformationController: transformationController,
               child: LayoutBuilder(
                 builder: (ctx, constraints) {
                   return RepaintBoundary(
                     key: contentKey,
-                    child: Align(
+                    child: Stack(
                       alignment: Alignment.topLeft,
-                      child: OverflowBox(
-                        alignment: Alignment.topLeft,
-                        minWidth: 0,
-                        minHeight: 0,
-                        maxWidth: double.infinity,
-                        maxHeight: double.infinity,
-                        child: GraphView(
-                          graph: graph,
-                          algorithm: algorithm,
-                          builder: nodeBuilder,
+                      children: [
+                        // Конечный размер холста для корректного hit-test
+                        SizedBox(
+                          width: canvasSize.width,
+                          height: canvasSize.height,
                         ),
-                      ),
+                        // Сам граф — не принуждаем к размеру холста
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          child: GraphView(
+                            graph: graph,
+                            algorithm: algorithm,
+                            builder: nodeBuilder,
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:sentralix_app/core/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
 
@@ -33,6 +34,53 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
   void setSteps(List<DialogStep> steps) {
     if (listEquals(state.steps, steps)) return;
     state = DialogsEditorState(steps: List<DialogStep>.from(steps));
+    AppLogger.d('[Editor] setSteps: count=${state.steps.length}', tag: 'DialogsEditor');
+  }
+
+  /// Добавить новую ноду как next к существующей ноде `fromId`.
+  /// Возвращает id созданной ноды.
+  int addNextStep(int fromId) {
+    final steps = List<DialogStep>.from(state.steps);
+    // Новый id
+    var maxId = 0;
+    for (final s in steps) {
+      if (s.id > maxId) maxId = s.id;
+    }
+    final newId = maxId + 1;
+    // Обновить from.next
+    final fromIdx = steps.indexWhere((e) => e.id == fromId);
+    if (fromIdx >= 0) {
+      final s = steps[fromIdx];
+      steps[fromIdx] = DialogStep(
+        id: s.id,
+        name: s.name,
+        label: s.label,
+        instructions: s.instructions,
+        requiredSlotsIds: s.requiredSlotsIds,
+        optionalSlotsIds: s.optionalSlotsIds,
+        next: newId,
+        branchLogic: s.branchLogic,
+      );
+    }
+    // Добавить новую ноду
+    final newStep = DialogStep(
+      id: newId,
+      name: 'step_$newId',
+      label: 'Шаг $newId',
+      instructions: '',
+      requiredSlotsIds: const [],
+      optionalSlotsIds: const [],
+      next: null,
+      branchLogic: const {},
+    );
+    steps.add(newStep);
+    state = DialogsEditorState(
+      steps: steps,
+      selectedStepId: newId,
+      linkStartStepId: null,
+    );
+    AppLogger.d('[Editor] addNextStep: from=$fromId -> newId=$newId, total=${steps.length}', tag: 'DialogsEditor');
+    return newId;
   }
 
   /// Выделить шаг
@@ -79,8 +127,10 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
         selectedStepId: start,
         linkStartStepId: null,
       );
+      AppLogger.d('[Editor] link next: from=$start -> to=$tappedId', tag: 'DialogsEditor');
     } else {
       selectStep(tappedId);
+      AppLogger.d('[Editor] selectStep: id=$tappedId', tag: 'DialogsEditor');
     }
   }
 
@@ -95,6 +145,35 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
         selectedStepId: updated.id,
         linkStartStepId: state.linkStartStepId,
       );
+      AppLogger.d('[Editor] updateStep: id=${updated.id}', tag: 'DialogsEditor');
     }
+  }
+
+  /// Добавить новую ноду (шаг) без связей
+  void addStep() {
+    final steps = List<DialogStep>.from(state.steps);
+    // Найти следующий id
+    var maxId = 0;
+    for (final s in steps) {
+      if (s.id > maxId) maxId = s.id;
+    }
+    final newId = maxId + 1;
+    final newStep = DialogStep(
+      id: newId,
+      name: 'step_$newId',
+      label: 'Шаг $newId',
+      instructions: '',
+      requiredSlotsIds: const [],
+      optionalSlotsIds: const [],
+      next: null,
+      branchLogic: const {},
+    );
+    steps.add(newStep);
+    state = DialogsEditorState(
+      steps: steps,
+      selectedStepId: newId,
+      linkStartStepId: state.linkStartStepId,
+    );
+    AppLogger.d('[Editor] addStep: newId=$newId, total=${steps.length}', tag: 'DialogsEditor');
   }
 }
