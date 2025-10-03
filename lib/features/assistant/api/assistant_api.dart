@@ -3,6 +3,7 @@ import 'package:sentralix_app/data/api/api_client.dart';
 import 'package:sentralix_app/features/assistant/models/assistant.dart';
 import 'package:sentralix_app/features/assistant/models/assistant_feature_settings.dart';
 import 'package:sentralix_app/features/assistant/features/slots/models/dialog_slot.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
 import 'package:sentralix_app/features/assistant/models/assistant_settings.dart';
 import 'package:sentralix_app/features/assistant/models/assistant_tool.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/models/knowledge_item.dart';
@@ -182,6 +183,37 @@ class AssistantApi {
         'external_id': externalId,
         'type': type,
       },
+    );
+    return Map<String, dynamic>.from(resp.data as Map);
+  }
+
+  /// Полное обновление конфигурации диалога с передачей шагов и метаданных
+  /// PATCH /assistants/dialog-configs/{id}
+  /// Тело запроса:
+  /// {
+  ///   "name": "...",
+  ///   "description": "...",
+  ///   "config": { "steps": [ { ...step... } ] },
+  ///   "metadata": { ... }
+  /// }
+  Future<Map<String, dynamic>> updateDialogConfigFull({
+    required int id,
+    required String name,
+    String? description,
+    required List<DialogStep> steps,
+    Map<String, dynamic>? metadata,
+  }) async {
+    final body = <String, dynamic>{
+      'name': name,
+      if (description != null) 'description': description,
+      'config': {
+        'steps': stepsToBackendJson(steps),
+      },
+      'metadata': metadata ?? <String, dynamic>{},
+    };
+    final resp = await _client.patch<dynamic>(
+      '/assistants/dialog-configs/$id',
+      data: body,
     );
     return Map<String, dynamic>.from(resp.data as Map);
   }

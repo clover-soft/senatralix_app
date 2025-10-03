@@ -45,7 +45,25 @@ class DialogStep {
       branchLogic: normalized,
     );
   }
+
+  /// Сериализация шага в формат backend (snake_case поля)
+  Map<String, dynamic> toBackendJson() {
+    return {
+      'id': id,
+      'name': name,
+      'label': label,
+      'instructions': instructions,
+      'required_slots_ids': requiredSlotsIds,
+      'optional_slots_ids': optionalSlotsIds,
+      'next': next,
+      'branch_logic': branchLogic,
+    };
+  }
 }
+
+/// Утилита: сериализовать список шагов в backend-формат
+List<Map<String, dynamic>> stepsToBackendJson(List<DialogStep> steps) =>
+    steps.map((e) => e.toBackendJson()).toList();
 
 /// Модель краткой конфигурации
 class DialogConfigShort {

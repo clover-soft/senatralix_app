@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/core/logger.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_editor_providers.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_providers.dart';
 import 'package:sentralix_app/features/assistant/features/slots/providers/slots_providers.dart';
 import 'package:sentralix_app/features/assistant/features/slots/models/dialog_slot.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_simple_props.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_router_props.dart';
+import 'package:sentralix_app/features/assistant/api/assistant_api.dart';
+import 'package:sentralix_app/data/api/api_client_provider.dart';
+import 'dart:async';
 
 class StepProps extends ConsumerWidget {
   const StepProps({super.key, required this.stepId});
@@ -44,7 +48,7 @@ class StepProps extends ConsumerWidget {
         entry.key: Map<String, int>.from(entry.value),
     };
 
-    void save() {
+    Future<void> save() async {
       if (!(formKey.currentState?.validate() ?? false)) return;
       // Если это маршрутизатор — игнорируем next и обнуляем
       if (isRouter) {
@@ -65,9 +69,51 @@ class StepProps extends ConsumerWidget {
         next: nextId,
         branchLogic: isRouter ? branchMap : <String, Map<String, int>>{},
       );
+      // 1) Обновляем локальное состояние редактора
       ref.read(dialogsEditorControllerProvider.notifier).updateStep(updated);
       AppLogger.i('[StepProps] Saved step id=${current.id}', tag: 'Dialogs');
-      Navigator.of(context).pop(true);
+
+      // 2) Отправляем PATCH полного диалога (если выбран конфиг загружен)
+      try {
+        final configId = ref.read(selectedDialogConfigIdProvider);
+        if (configId != null) {
+          // Берём имя/описание/metadata из кэша деталей (если уже загружены)
+          final detailsAsync = ref.read(dialogConfigDetailsProvider(configId));
+          final details = detailsAsync.hasValue ? detailsAsync.value : null;
+          final name = details?.name ?? 'Dialog $configId';
+          final description = details?.description;
+          final metadata = details?.metadata ?? const <String, dynamic>{};
+
+          // Формируем список шагов к отправке: берём актуальные из редактора
+          final stepsToSend = List<DialogStep>.from(
+            ref.read(dialogsEditorControllerProvider).steps,
+          );
+
+          final api = AssistantApi(ref.read(apiClientProvider));
+          await api.updateDialogConfigFull(
+            id: configId,
+            name: name,
+            description: (description == null || description.trim().isEmpty)
+                ? null
+                : description.trim(),
+            steps: stepsToSend,
+            metadata: metadata,
+          );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Диалог сохранён')),
+            );
+          }
+        }
+        if (context.mounted) Navigator.of(context).pop(true);
+      } catch (e) {
+        AppLogger.e('[StepProps] PATCH failed: $e', tag: 'Dialogs');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Ошибка сохранения: $e')),
+          );
+        }
+      }
     }
 
     return AlertDialog(
@@ -195,7 +241,7 @@ class StepProps extends ConsumerWidget {
           child: const Text('Отмена'),
         ),
         FilledButton.icon(
-          onPressed: save,
+          onPressed: () async => save(),
           icon: const Icon(Icons.save),
           label: const Text('Сохранить'),
         ),

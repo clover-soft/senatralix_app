@@ -32,6 +32,17 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   void initState() {
     super.initState();
     _tc.addListener(_onTcChanged);
+    // Слушаем изменения редактора: при любом апдейте шагов пересобираем/рефитим граф
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.listen(dialogsEditorControllerProvider, (prev, next) {
+        if (!mounted) return;
+        setState(() {
+          _didAutoFit = false;
+          _lastViewportSize = null;
+        });
+      });
+    });
   }
 
   void _onTcChanged() {
