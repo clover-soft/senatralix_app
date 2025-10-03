@@ -57,27 +57,31 @@ class AssistantDialogsScreen extends ConsumerWidget {
               );
             }
 
-            // Вычислим initialIndex по selectedId, если он задан, иначе 0
-            int initialIndex = 0;
+            // Вычислим selectedIndex по selectedId (или 0, если нет/не найден)
+            int selectedIndex = 0;
             if (selectedId != null) {
               final idx = configs.indexWhere((c) => c.id == selectedId);
-              if (idx >= 0) initialIndex = idx;
-            } else {
-              // Установим выбранный после окончания билда, чтобы не менять провайдер в build
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (ref.read(selectedDialogConfigIdProvider) == null &&
-                    configs.isNotEmpty) {
-                  final firstId = configs.first.id;
-                  ref.read(selectedDialogConfigIdProvider.notifier).state = firstId;
-                  // Инициируем загрузку деталей для первого конфига
-                  ref.read(dialogsConfigControllerProvider.notifier).selectConfig(firstId);
-                }
-              });
+              if (idx >= 0) selectedIndex = idx; else selectedIndex = 0;
             }
+            // Если выбранный id не задан или отсутствует в списке — выставим корректный id
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final currentSel = ref.read(selectedDialogConfigIdProvider);
+              if (currentSel == null ||
+                  configs.indexWhere((c) => c.id == currentSel) < 0) {
+                final fixId = configs[selectedIndex].id;
+                ref.read(selectedDialogConfigIdProvider.notifier).state = fixId;
+                ref.read(dialogsConfigControllerProvider.notifier).selectConfig(fixId);
+              }
+            });
 
+            // Ключ на основе состава вкладок и выбранного индекса — гарантирует пересоздание контроллера
+            final tabsKey = ValueKey(
+              '${configs.map((e) => e.id).join(',')}:$selectedIndex',
+            );
             return DefaultTabController(
+              key: tabsKey,
               length: configs.length,
-              initialIndex: initialIndex,
+              initialIndex: selectedIndex,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
