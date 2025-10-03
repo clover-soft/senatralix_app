@@ -6,7 +6,7 @@ import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_p
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_providers.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_tree_panel.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_editor_providers.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
 
 /// Экран-заготовка подфичи "Сценарии" (dialogs)
 class AssistantDialogsScreen extends ConsumerWidget {
@@ -16,13 +16,18 @@ class AssistantDialogsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final id =
         GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
+    // Гарантируем, что список ассистентов загружен, чтобы в AppBar было имя, а не id
+    ref.watch(assistantBootstrapProvider);
     final configsAsync = ref.watch(dialogConfigsProvider);
     final selectedId = ref.watch(selectedDialogConfigIdProvider);
+
+    final cfg = ref.watch(dialogsConfigControllerProvider);
+    final subTitle = cfg.name.isNotEmpty ? 'Сценарии — ${cfg.name}' : 'Сценарии';
 
     return Scaffold(
       appBar: AssistantAppBar(
         assistantId: id,
-        subfeatureTitle: 'Сценарии',
+        subfeatureTitle: subTitle,
       ),
       body: Padding(
         padding: const EdgeInsets.all(12),
@@ -62,8 +67,10 @@ class AssistantDialogsScreen extends ConsumerWidget {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (ref.read(selectedDialogConfigIdProvider) == null &&
                     configs.isNotEmpty) {
-                  ref.read(selectedDialogConfigIdProvider.notifier).state =
-                      configs.first.id;
+                  final firstId = configs.first.id;
+                  ref.read(selectedDialogConfigIdProvider.notifier).state = firstId;
+                  // Инициируем загрузку деталей для первого конфига
+                  ref.read(dialogsConfigControllerProvider.notifier).selectConfig(firstId);
                 }
               });
             }
@@ -80,9 +87,12 @@ class AssistantDialogsScreen extends ConsumerWidget {
                         child: TabBar(
                           isScrollable: true,
                           tabAlignment: TabAlignment.start,
-                          onTap: (i) => ref
-                              .read(selectedDialogConfigIdProvider.notifier)
-                              .state = configs[i].id,
+                          onTap: (i) {
+                            final idSel = configs[i].id;
+                            ref.read(selectedDialogConfigIdProvider.notifier).state = idSel;
+                            // Инициируем загрузку деталей в бизнес-контроллере
+                            ref.read(dialogsConfigControllerProvider.notifier).selectConfig(idSel);
+                          },
                           tabs: [for (final c in configs) Tab(text: c.name)],
                         ),
                       ),
@@ -139,13 +149,13 @@ class AssistantDialogsScreen extends ConsumerWidget {
                                     label: const Text('Добавить'),
                                     onPressed: () async {
                                       if (!(formKey.currentState?.validate() ?? false)) return;
-                                      final api = ref.read(assistantApiProvider);
-                                      final json = await api.createDialogConfig(
-                                        name: nameCtrl.text.trim(),
-                                        description: descCtrl.text.trim(),
-                                      );
-                                      final id = int.tryParse('${json['id']}');
-                                      Navigator.of(ctx).pop(id);
+                                      final createdId = await ref
+                                          .read(dialogsConfigControllerProvider.notifier)
+                                          .createConfigWithWelcomeStep(
+                                            name: nameCtrl.text.trim(),
+                                            description: descCtrl.text.trim(),
+                                          );
+                                      Navigator.of(ctx).pop(createdId);
                                     },
                                   ),
                                 ],
@@ -153,10 +163,11 @@ class AssistantDialogsScreen extends ConsumerWidget {
                             );
 
                             if (createdId != null) {
-                              // Обновляем список вкладок и выбираем новую
+                              // Обновляем список вкладок и выбираем новую, инициируем загрузку деталей
                               ref.invalidate(dialogConfigsProvider);
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 ref.read(selectedDialogConfigIdProvider.notifier).state = createdId;
+                                ref.read(dialogsConfigControllerProvider.notifier).selectConfig(createdId);
                               });
                             }
                           },
@@ -193,12 +204,6 @@ class _DialogConfigTab extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, st) => Center(child: Text('Ошибка загрузки: $e')),
       data: (details) {
-        // Инициализируем контроллер шагами после завершения текущего кадра,
-        // чтобы избежать модификации провайдера во время build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final ctrl = ref.read(dialogsEditorControllerProvider.notifier);
-          ctrl.setSteps(details.steps);
-        });
         return _DialogEditor(details: details);
       },
     );

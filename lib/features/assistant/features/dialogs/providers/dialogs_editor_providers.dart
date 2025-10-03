@@ -5,21 +5,22 @@ import 'package:sentralix_app/features/assistant/features/dialogs/graph/dialogs_
 import 'package:sentralix_app/features/assistant/features/dialogs/graph/graph_style.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/utils/dialogs_layout_utils.dart';
 import 'package:sentralix_app/core/logger.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
 
 /// Контроллер редактора
 final dialogsEditorControllerProvider =
     StateNotifierProvider<DialogsEditorController, DialogsEditorState>((ref) {
-      return DialogsEditorController();
+      return DialogsEditorController(ref);
     });
 
 /// Построенный граф на основе steps и style
 final graphProvider = Provider<Graph>((ref) {
-  final editor = ref.watch(dialogsEditorControllerProvider);
+  final cfg = ref.watch(dialogsConfigControllerProvider);
   // Жёстко фиксируем Sugiyama сверху-вниз
   final style = GraphStyle.sugiyamaTopBottom(nodeSeparation: 20, levelSeparation: 80);
   final builder = DialogsGraphBuilder(style: style);
   // Лог размера графа (ряды/колонки) по текущей конфигурации
-  final stats = computeDialogGridStats(editor.steps);
+  final stats = computeDialogGridStats(cfg.steps);
   AppLogger.d('[Dialogs Graph] rows=${stats.rows}, cols=${stats.cols}', tag: 'DialogsGraph');
-  return builder.build(editor.steps);
+  return builder.build(cfg.steps);
 });

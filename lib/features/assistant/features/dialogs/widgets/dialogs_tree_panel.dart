@@ -7,10 +7,10 @@ import 'package:sentralix_app/features/assistant/features/dialogs/providers/dial
 import 'package:sentralix_app/features/assistant/features/dialogs/graph/graph_style.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_tree_canvas.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_node.dart';
-import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_toolbar_panel.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_props.dart';
 import 'package:sentralix_app/core/logger.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
 
 /// Левая панель: дерево сценария
 class DialogsTreePanel extends ConsumerStatefulWidget {
@@ -32,11 +32,15 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   void initState() {
     super.initState();
     _tc.addListener(_onTcChanged);
-    // Слушаем изменения редактора: при любом апдейте шагов пересобираем/рефитим граф
+    // Слушаем изменения бизнес-состояния (steps): при любом апдейте пересобираем/рефитим граф
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.listen(dialogsEditorControllerProvider, (prev, next) {
+      ref.listen(dialogsConfigControllerProvider, (prev, next) {
         if (!mounted) return;
+        // Если список шагов изменился (по длине или ссылке) — сбрасываем автофит
+        final prevLen = prev?.steps.length ?? -1;
+        final nextLen = next.steps.length;
+        if (identical(prev?.steps, next.steps) && prevLen == nextLen) return;
         setState(() {
           _didAutoFit = false;
           _lastViewportSize = null;
@@ -62,9 +66,10 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   Future<void> _openDialogSettings() async {
     final id = ref.read(selectedDialogConfigIdProvider);
     if (id == null) return;
-    final details = await ref.read(dialogConfigDetailsProvider(id).future);
-    final nameCtrl = TextEditingController(text: details.name);
-    final descCtrl = TextEditingController(text: details.description);
+    // Берём текущее имя/описание из бизнес-состояния
+    final cfg = ref.read(dialogsConfigControllerProvider);
+    final nameCtrl = TextEditingController(text: cfg.name);
+    final descCtrl = TextEditingController(text: cfg.description);
     final formKey = GlobalKey<FormState>();
 
     final saved = await showDialog<bool>(
@@ -108,13 +113,13 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
             label: const Text('Сохранить'),
             onPressed: () async {
               if (!(formKey.currentState?.validate() ?? false)) return;
-              final api = ref.read(assistantApiProvider);
-              await api.updateDialogConfig(
-                id: id,
-                name: nameCtrl.text.trim(),
-                description: descCtrl.text.trim(),
-              );
-              Navigator.of(ctx).pop(true);
+              await ref
+                  .read(dialogsConfigControllerProvider.notifier)
+                  .updateNameDescription(
+                    nameCtrl.text.trim(),
+                    descCtrl.text.trim(),
+                  );
+              if (ctx.mounted) Navigator.of(ctx).pop(true);
             },
           ),
         ],
@@ -122,8 +127,8 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
     );
 
     if (saved == true) {
+      // Обновим список вкладок, чтобы заголовок отобразился с новым именем
       ref.invalidate(dialogConfigsProvider);
-      ref.invalidate(dialogConfigDetailsProvider(id));
       setState(() {
         _didAutoFit = false;
         _lastViewportSize = null;
@@ -297,6 +302,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
       levelSeparation: 80,
     ).buildAlgorithm();
     final editor = ref.watch(dialogsEditorControllerProvider);
+    final cfg = ref.watch(dialogsConfigControllerProvider);
 
     return ClipRect(
       child: LayoutBuilder(
@@ -329,10 +335,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
               }
             }
           });
-          final hasSteps = ref
-              .read(dialogsEditorControllerProvider)
-              .steps
-              .isNotEmpty;
+          final hasSteps = cfg.steps.isNotEmpty;
           final sizeChanged =
               _lastViewportSize == null ||
               (viewportSize.width - (_lastViewportSize!.width)).abs() > 8 ||
@@ -376,7 +379,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                   contentKey: _contentKey,
                   nodeBuilder: (Node n) {
                     final id = n.key!.value as int;
-                    final step = editor.steps.firstWhere((e) => e.id == id);
+                    final step = cfg.steps.firstWhere((e) => e.id == id);
                     final isSelected =
                         editor.selectedStepId == id ||
                         editor.linkStartStepId == id;
@@ -418,11 +421,69 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                               builder: (ctx) => StepProps(stepId: id),
                             );
                           },
-                          onDelete: () {
-                            AppLogger.w(
-                              '[TreePanel] Node action: delete requested for id=$id (not implemented)',
-                              tag: 'DialogsTree',
+                          onDelete: () async {
+                            final steps = ref.read(dialogsConfigControllerProvider).steps;
+                            if (steps.length == 1) {
+                              // Диалог состоит из одного шага: подтверждение удаления всего диалога
+                              final ok = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('Удалить диалог?'),
+                                  content: const Text('В диалоге только один шаг. Будет удалён ВЕСЬ диалог. Действие необратимо.'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(ctx).pop(false),
+                                      child: const Text('Отмена'),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () => Navigator.of(ctx).pop(true),
+                                      child: const Text('Удалить диалог'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (ok == true) {
+                                await ref.read(dialogsConfigControllerProvider.notifier).deleteDialog();
+                                // Обновим список вкладок и сбросим выбранный id
+                                ref.invalidate(dialogConfigsProvider);
+                                ref.read(selectedDialogConfigIdProvider.notifier).state = null;
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Диалог удалён')),
+                                  );
+                                }
+                              }
+                              return;
+                            }
+
+                            // Обычное удаление шага
+                            final ok = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Удалить шаг?'),
+                                content: Text('Шаг #$id будет удалён. Все переходы на этот шаг будут очищены.'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(false),
+                                    child: const Text('Отмена'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.of(ctx).pop(true),
+                                    child: const Text('Удалить шаг'),
+                                  ),
+                                ],
+                              ),
                             );
+                            if (ok == true) {
+                              // Удаляем через бизнес-контроллер и сохраняем с дебаунсом
+                              ref.read(dialogsConfigControllerProvider.notifier).deleteStep(id);
+                              ref.read(dialogsConfigControllerProvider.notifier).saveFullDebounced();
+                              // Сброс автофита
+                              setState(() {
+                                _didAutoFit = false;
+                                _lastViewportSize = null;
+                              });
+                            }
                           },
                         ),
                       ),
@@ -445,12 +506,14 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                     currentScale: _tc.value.getMaxScaleOnAxis().clamp(0.5, 2.5),
                     onScaleChanged: (v) => _setScale(v),
                     onSettingsPressed: _openDialogSettings,
-                    onRefreshPressed: () {
+                    onRefreshPressed: () async {
                       final selectedId = ref.read(
                         selectedDialogConfigIdProvider,
                       );
                       if (selectedId != null) {
                         ref.invalidate(dialogConfigDetailsProvider(selectedId));
+                        // Дополнительно синхронизируем бизнес-состояние с бэкендом
+                        await ref.read(dialogsConfigControllerProvider.notifier).loadDetails(selectedId);
                       } else {
                         ref.invalidate(dialogConfigsProvider);
                       }
@@ -481,7 +544,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                         );
                         // Логируем все шаги после добавления
                         final steps = ref
-                            .read(dialogsEditorControllerProvider)
+                            .read(dialogsConfigControllerProvider)
                             .steps;
                         for (final step in steps) {
                           AppLogger.d(
@@ -496,7 +559,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                       } else {
                         notifier.addStep();
                         final steps = ref
-                            .read(dialogsEditorControllerProvider)
+                            .read(dialogsConfigControllerProvider)
                             .steps;
                         if (steps.isEmpty) return;
                         newId = steps

@@ -187,6 +187,36 @@ class AssistantApi {
     return Map<String, dynamic>.from(resp.data as Map);
   }
 
+  /// Удалить конфигурацию диалога по id (204 No Content при успехе)
+  Future<void> deleteDialogConfig(int id) async {
+    await _client.delete<void>('/assistants/dialog-configs/$id');
+  }
+
+  /// Создать конфигурацию диалога с начальными шагами (CREATE)
+  /// POST /assistants/dialog-configs/
+  /// Тело запроса поддерживает ключ "config": { "steps": [...] }
+  Future<Map<String, dynamic>> createDialogConfigFull({
+    required String name,
+    String? description,
+    required List<DialogStep> steps,
+    Map<String, dynamic>? metadata,
+  }) async {
+    final body = <String, dynamic>{
+      'name': name,
+      if (description != null && description.trim().isNotEmpty)
+        'description': description.trim(),
+      'config': {
+        'steps': stepsToBackendJson(steps),
+      },
+      'metadata': metadata ?? <String, dynamic>{},
+    };
+    final resp = await _client.post<dynamic>(
+      '/assistants/dialog-configs/',
+      data: body,
+    );
+    return Map<String, dynamic>.from(resp.data as Map);
+  }
+
   /// Полное обновление конфигурации диалога с передачей шагов и метаданных
   /// PATCH /assistants/dialog-configs/{id}
   /// Тело запроса:

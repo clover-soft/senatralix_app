@@ -1,26 +1,22 @@
-import 'package:flutter/foundation.dart';
 import 'package:sentralix_app/core/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
 
 /// Состояние редактора диалогов
 class DialogsEditorState {
   const DialogsEditorState({
-    required this.steps,
     this.selectedStepId,
     this.linkStartStepId,
   });
 
-  final List<DialogStep> steps;
   final int? selectedStepId;
   final int? linkStartStepId;
 
   DialogsEditorState copyWith({
-    List<DialogStep>? steps,
     int? selectedStepId,
     int? linkStartStepId,
   }) => DialogsEditorState(
-        steps: steps ?? this.steps,
         selectedStepId: selectedStepId,
         linkStartStepId: linkStartStepId,
       );
@@ -28,19 +24,15 @@ class DialogsEditorState {
 
 /// Контроллер редактора: выбор шага, режим назначения next, обновление шагов
 class DialogsEditorController extends StateNotifier<DialogsEditorState> {
-  DialogsEditorController() : super(const DialogsEditorState(steps: []));
+  DialogsEditorController(this._read) : super(const DialogsEditorState());
 
-  /// Инициализация шагов из деталей конфига
-  void setSteps(List<DialogStep> steps) {
-    if (listEquals(state.steps, steps)) return;
-    state = DialogsEditorState(steps: List<DialogStep>.from(steps));
-    AppLogger.d('[Editor] setSteps: count=${state.steps.length}', tag: 'DialogsEditor');
-  }
+  final Ref _read;
 
   /// Добавить новую ноду как next к существующей ноде `fromId`.
   /// Возвращает id созданной ноды.
   int addNextStep(int fromId) {
-    final steps = List<DialogStep>.from(state.steps);
+    final cfg = _read.read(dialogsConfigControllerProvider);
+    final steps = List<DialogStep>.from(cfg.steps);
     // Новый id
     var maxId = 0;
     for (final s in steps) {
@@ -74,8 +66,10 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
       branchLogic: const {},
     );
     steps.add(newStep);
+    final cfgNotifier = _read.read(dialogsConfigControllerProvider.notifier);
+    cfgNotifier.updateSteps(steps);
+    cfgNotifier.saveFullDebounced();
     state = DialogsEditorState(
-      steps: steps,
       selectedStepId: newId,
       linkStartStepId: null,
     );
@@ -86,7 +80,6 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
   /// Выделить шаг
   void selectStep(int id) {
     state = state.copyWith(
-      steps: state.steps,
       selectedStepId: id,
       linkStartStepId: state.linkStartStepId,
     );
@@ -96,7 +89,6 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
   void beginLinkFromSelected() {
     if (state.selectedStepId == null) return;
     state = state.copyWith(
-      steps: state.steps,
       selectedStepId: state.selectedStepId,
       linkStartStepId: state.selectedStepId,
     );
@@ -107,7 +99,8 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
     final start = state.linkStartStepId;
     if (start != null && start != tappedId) {
       // назначить next
-      final steps = List<DialogStep>.from(state.steps);
+      final cfg = _read.read(dialogsConfigControllerProvider);
+      final steps = List<DialogStep>.from(cfg.steps);
       final idx = steps.indexWhere((e) => e.id == start);
       if (idx >= 0) {
         final s = steps[idx];
@@ -122,8 +115,10 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
           branchLogic: s.branchLogic,
         );
       }
+      final cfgNotifier = _read.read(dialogsConfigControllerProvider.notifier);
+      cfgNotifier.updateSteps(steps);
+      cfgNotifier.saveFullDebounced();
       state = DialogsEditorState(
-        steps: steps,
         selectedStepId: start,
         linkStartStepId: null,
       );
@@ -136,12 +131,13 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
 
   /// Обновить шаг (например, из правой панели свойств)
   void updateStep(DialogStep updated) {
-    final steps = List<DialogStep>.from(state.steps);
+    final cfg = _read.read(dialogsConfigControllerProvider);
+    final steps = List<DialogStep>.from(cfg.steps);
     final idx = steps.indexWhere((e) => e.id == updated.id);
     if (idx >= 0) {
       steps[idx] = updated;
+      _read.read(dialogsConfigControllerProvider.notifier).updateSteps(steps);
       state = DialogsEditorState(
-        steps: steps,
         selectedStepId: updated.id,
         linkStartStepId: state.linkStartStepId,
       );
@@ -151,7 +147,8 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
 
   /// Добавить новую ноду (шаг) без связей
   void addStep() {
-    final steps = List<DialogStep>.from(state.steps);
+    final cfg = _read.read(dialogsConfigControllerProvider);
+    final steps = List<DialogStep>.from(cfg.steps);
     // Найти следующий id
     var maxId = 0;
     for (final s in steps) {
@@ -169,8 +166,8 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
       branchLogic: const {},
     );
     steps.add(newStep);
+    _read.read(dialogsConfigControllerProvider.notifier).updateSteps(steps);
     state = DialogsEditorState(
-      steps: steps,
       selectedStepId: newId,
       linkStartStepId: state.linkStartStepId,
     );
