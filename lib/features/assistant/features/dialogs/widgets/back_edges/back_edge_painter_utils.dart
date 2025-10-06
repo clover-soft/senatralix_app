@@ -59,3 +59,10 @@ Offset lineToArrowBase({
   path.lineTo(base.dx, base.dy);
   return base;
 }
+
+/// Возвращает Y-координату верхней «полки» для обхода сверху.
+/// По умолчанию это `toCenterY - offset` (offset=80).
+double computeTopShelfY({
+  required double toCenterY,
+  double offset = 80.0,
+}) => toCenterY - offset;

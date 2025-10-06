@@ -20,10 +20,12 @@ void drawBackEdgeTopRightBypass({
 }) {
   const double r = 6.0;
 
-  // Точки
+  // Точки выхода
   final exitX = fromRect.left + fromRect.width * 0.75;
   final p0 = Offset(exitX, fromRect.top); // выход с верхней грани
-  final pUp = Offset(exitX, fromRect.top - shelfUp); // вверх на 20
+  // Горизонтальная полка для этого маршрута — ровно через 20px от источника
+  // (по требованию: «поворачивать направо через 20px»)
+  final double shelfY = fromRect.top - shelfUp;
 
   // Базовая правая ось: правая грань самого правого прямоугольника + 20
   double xMax = (allBounds?.right ?? toRect.right) + 20.0;
@@ -50,31 +52,33 @@ void drawBackEdgeTopRightBypass({
   final vy = arrowEnd.dy - prevForArrow.dy;
   final angle = math.atan2(vy, vx);
 
-  // Строим путь до основания стрелки: p0 -> вверх к (pUp.dy + r) ->
-  // скруглённый поворот вправо в точке pUp (r=6) -> вправо к xMax (скругление r=6) ->
-  // вертикально к уровню цели -> влево до подхода
+  // Строим путь до основания стрелки:
+  // 1) Выход вверх из p0 на 20px до shelfY с мягким скруглением (r=6)
+  // 2) Поворот вправо на полку shelfY (r=6)
+  // 3) Идём по полке вправо до xMax, затем поворот на вертикаль у xMax (r=6)
+  // 4) Вертикально к уровню центра цели и подход к правой грани
   final path = Path()
     ..moveTo(p0.dx, p0.dy)
-    // 1) Подъём до точки чуть ниже pUp, чтобы сделать поворот радиусом r=6
-    ..lineTo(pUp.dx, pUp.dy + r)
-    // 2) Скруглённый поворот вправо в самой точке pUp (четверть круга радиуса r)
-    ..quadraticBezierTo(pUp.dx, pUp.dy, pUp.dx + r, pUp.dy)
-    // 3) Поворот на правую «магистраль» с дугой r=6 у xMax
-    ..lineTo(xMax - r, pUp.dy)
+    // 1) Подъём: p0 -> почти до shelfY
+    ..lineTo(p0.dx, shelfY + r)
+    // скругление на повороте вправо к полке (четверть окружности r=6)
+    ..quadraticBezierTo(p0.dx, shelfY, p0.dx + r, shelfY)
+    // 2) Полка: вправо до xMax с дугой r=6 на повороте к вертикали (направление зависит от положения цели)
+    ..lineTo(xMax - r, shelfY)
     ..arcToPoint(
-      Offset(xMax, pUp.dy + (toRect.center.dy >= pUp.dy ? 1 : -1) * r),
+      Offset(xMax, shelfY + ((toRect.center.dy >= shelfY) ? r : -r)),
       radius: const Radius.circular(r),
-      clockwise: toRect.center.dy >= pUp.dy,
+      clockwise: (toRect.center.dy >= shelfY),
     )
-    // вертикально к уровню цели
-    ..lineTo(xMax, toRect.center.dy - (toRect.center.dy >= pUp.dy ? 1 : -1) * r)
+    // 3) Вертикально к уровню цели с небольшим скруглением к горизонтали подхода
+    ..lineTo(xMax, toRect.center.dy - ((toRect.center.dy >= shelfY) ? r : -r))
     ..quadraticBezierTo(xMax, toRect.center.dy, xMax - r, toRect.center.dy);
 
   // Доводим до основания стрелки и рисуем
   lineToArrowBase(path: path, arrowEnd: arrowEnd, angle: angle, headLen: 12.0);
   canvas.drawPath(path, edgePaint);
 
-  // Рисуем наконечник
+  // Наконечник стрелки
   drawArrowHead(
     canvas: canvas,
     color: color,
