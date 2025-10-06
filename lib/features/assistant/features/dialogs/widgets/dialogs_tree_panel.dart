@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:graphview/GraphView.dart';
 import 'package:vector_math/vector_math_64.dart' as vm;
@@ -14,6 +13,12 @@ import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_p
 import 'package:sentralix_app/core/logger.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/utils/graph_cycles.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/back_edge_route.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/route_direct_rightmost.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/route_right_bypass.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/route_side_by_side.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/route_side_by_side_left.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/route_top_right_bypass.dart';
 
 /// Левая панель: дерево сценария
 class DialogsTreePanel extends ConsumerStatefulWidget {
@@ -62,12 +67,14 @@ class _BackEdgesPainter extends CustomPainter {
       return topLeft & box.size;
     }
 
-    // Общие границы графа для прокладки трассы справа
+    // Общие границы графа и список прямоугольников нод (для детектора маршрута)
     Rect? allBounds;
+    final List<Rect> allNodeRects = [];
     for (final key in nodeKeys.values) {
       final r = _nodeRect(key);
       if (r == null) continue;
       allBounds = allBounds == null ? r : allBounds.expandToInclude(r);
+      allNodeRects.add(r);
     }
     final double routeX = (allBounds?.right ?? 0) + 20.0;
     const double cornerRBase = 0;
@@ -84,8 +91,7 @@ class _BackEdgesPainter extends CustomPainter {
       final fromRect = _nodeRect(fromKey);
       final toRect = _nodeRect(toKey);
       if (fromRect == null || toRect == null) continue;
-      final xRight = toRect.right;
-      final yCenter = toRect.center.dy;
+      final double xRight = toRect.right;
       final bool isRightmostTarget = xRight >= ((allBounds?.right ?? xRight) - 0.5);
       final double baseX = isRightmostTarget ? (xRight + 20.0) : routeX;
       final String edgeKey = '${e.key}->${e.value}';
@@ -95,7 +101,6 @@ class _BackEdgesPainter extends CustomPainter {
         'p0y': fromRect.center.dy,
       });
     }
-    // Группировка и присвоение смещений
     final Map<String, List<Map<String, dynamic>>> groups = {};
     for (final it in items) {
       final String gk = (it['baseX'] as double).toStringAsFixed(1);
@@ -110,6 +115,7 @@ class _BackEdgesPainter extends CustomPainter {
       }
     }
 
+    // Отрисовка всех back-edges выбранными маршрутами
     for (final e in backEdges) {
       final fromKey = nodeKeys[e.key];
       final toKey = nodeKeys[e.value];
@@ -118,136 +124,67 @@ class _BackEdgesPainter extends CustomPainter {
       final toRect = _nodeRect(toKey);
       if (fromRect == null || toRect == null) continue;
 
-      // Выход из fromRect вправо, вход в toRect справа
-      final p0 = Offset(fromRect.right, fromRect.center.dy);
-      // Точка подхода правее ноды на 20px
-      final p3 = Offset(toRect.right + 20.0, toRect.center.dy);
-      // Финальная точка стрелки у правого края ноды (чуть внутрь, чтобы не обрезать)
-      final arrowEnd = Offset(toRect.right - 1.0, toRect.center.dy);
-
-      // Новый ортогональный маршрут обратного ребра:
-      // Вариант A: если таргет — крайняя справа нода, ведём по оси её правой границы (без обхода сверху)
-      // Вариант B: иначе — ведём по routeX и верхней полке yUp, затем к таргету
-      {
-        const double r = 6.0; // радиус скругления на поворотах
-        final double xRight = toRect.right;
-        final double yCenter = toRect.center.dy;
-        final bool isRightmostTarget = xRight >= ((allBounds?.right ?? xRight) - 0.5);
-
-        if (isRightmostTarget) {
-          final String edgeKey = '${e.key}->${e.value}';
-          final double xAxis = axisXForEdge[edgeKey] ?? (xRight + 20.0);
-          final double sVert = yCenter >= p0.dy ? 1.0 : -1.0; // направление до центра таргета
-          // Строим путь до основания стрелки (baseX, baseY), чтобы линия не вылезала из треугольника
-          final Path path = Path()
-            ..moveTo(p0.dx, p0.dy)
-            // вправо до оси xAxis с запасом r и скругление вверх
-            ..lineTo(xAxis - r, p0.dy)
-            ..quadraticBezierTo(xAxis, p0.dy, xAxis, p0.dy + sVert * r)
-            // вертикально до уровня центра таргета и скругление влево
-            ..lineTo(xAxis, yCenter - sVert * r)
-            ..quadraticBezierTo(xAxis, yCenter, xAxis - r, yCenter);
-
-          // Геометрия треугольной стрелки и основание
-          final prevForArrow = Offset(arrowEnd.dx + 6.0, arrowEnd.dy);
-          final vx = arrowEnd.dx - prevForArrow.dx;
-          final vy = arrowEnd.dy - prevForArrow.dy;
-          final angle = math.atan2(vy, vx);
-          const double headLen = 12.0;
-          const double headWidth = 10.0;
-          final double ux = math.cos(angle);
-          final double uy = math.sin(angle);
-          final double baseX = arrowEnd.dx - headLen * ux;
-          final double baseY = arrowEnd.dy - headLen * uy;
-          final double px = -uy; // перпендикуляр (x)
-          final double py = ux;  // перпендикуляр (y)
-
-          // Доведём путь только до основания стрелки
-          path.lineTo(baseX, baseY);
-          canvas.drawPath(path, edgePaint);
-
-          final Offset left = Offset(
-            baseX + (headWidth / 2) * px,
-            baseY + (headWidth / 2) * py,
-          );
-          final Offset right = Offset(
-            baseX - (headWidth / 2) * px,
-            baseY - (headWidth / 2) * py,
-          );
-          final Path arrowHead = Path()
-            ..moveTo(arrowEnd.dx, arrowEnd.dy)
-            ..lineTo(left.dx, left.dy)
-            ..lineTo(right.dx, right.dy)
-            ..close();
-          final Paint fillPaint = Paint()
-            ..color = color
-            ..style = PaintingStyle.fill;
-          canvas.drawPath(arrowHead, fillPaint);
-          continue; // Старую маршрутизацию не выполняем
-        } else {
-          // Вариант B: прежняя трасса через routeX и верхнюю полку yUp
-          final double yUp = toRect.center.dy - 80.0;
-          final double xApproach = toRect.right + 20.0;
-          final double sUp = yUp >= p0.dy ? 1.0 : -1.0; // направление по вертикали к yUp
-          final double sDown = arrowEnd.dy >= yUp ? 1.0 : -1.0; // направление к уровню цели
-          final String edgeKey = '${e.key}->${e.value}';
-          final double axisX = axisXForEdge[edgeKey] ?? routeX;
-
-          // Геометрия треугольной стрелки: вычисляем основание заранее
-          final prevForArrow = Offset(arrowEnd.dx + 6.0, arrowEnd.dy);
-          final vx = arrowEnd.dx - prevForArrow.dx;
-          final vy = arrowEnd.dy - prevForArrow.dy;
-          final angle = math.atan2(vy, vx);
-          const double headLen = 12.0;
-          const double headWidth = 10.0;
-          final double ux = math.cos(angle);
-          final double uy = math.sin(angle);
-          final double baseX = arrowEnd.dx - headLen * ux;
-          final double baseY = arrowEnd.dy - headLen * uy;
-
-          final Path path = Path()
-            ..moveTo(p0.dx, p0.dy)
-            // вправо до routeX с запасом r и скругление вверх
-            ..lineTo(axisX - r, p0.dy)
-            ..quadraticBezierTo(axisX, p0.dy, axisX, p0.dy + sUp * r)
-            // вертикально до yUp с запасом и скругление влево
-            ..lineTo(axisX, yUp - sUp * r)
-            ..quadraticBezierTo(axisX, yUp, axisX - r, yUp)
-            // влево до xApproach с запасом и скругление вниз
-            ..lineTo(xApproach + r, yUp)
-            ..quadraticBezierTo(xApproach, yUp, xApproach, yUp + sDown * r)
-            // вниз до уровня цели с запасом и скругление влево
-            ..lineTo(xApproach, arrowEnd.dy - sDown * r)
-            ..quadraticBezierTo(xApproach, arrowEnd.dy, xApproach - r, arrowEnd.dy)
-            // финальный короткий участок влево до основания стрелки
-            ..lineTo(baseX, baseY);
-
-          canvas.drawPath(path, edgePaint);
-          final double px = -uy;
-          final double py = ux;
-          final Offset left = Offset(
-            baseX + (headWidth / 2) * px,
-            baseY + (headWidth / 2) * py,
-          );
-          final Offset right = Offset(
-            baseX - (headWidth / 2) * px,
-            baseY - (headWidth / 2) * py,
-          );
-          final Path arrowHead = Path()
-            ..moveTo(arrowEnd.dx, arrowEnd.dy)
-            ..lineTo(left.dx, left.dy)
-            ..lineTo(right.dx, right.dy)
-            ..close();
-          final Paint fillPaint = Paint()
-            ..color = color
-            ..style = PaintingStyle.fill;
-          canvas.drawPath(arrowHead, fillPaint);
-          continue; // Старую маршрутизацию не выполняем
-        }
+      final route = detectBackEdgeRoute(
+        fromRect: fromRect,
+        toRect: toRect,
+        allBounds: allBounds,
+        nodeRects: allNodeRects,
+      );
+      final String edgeKey = '${e.key}->${e.value}';
+      if (route == BackEdgeRoute.sideBySide) {
+        drawBackEdgeSideBySide(
+          canvas: canvas,
+          edgePaint: edgePaint,
+          fromRect: fromRect,
+          toRect: toRect,
+          color: color,
+        );
+        continue;
+      } else if (route == BackEdgeRoute.sideBySideLeft) {
+        drawBackEdgeSideBySideLeft(
+          canvas: canvas,
+          edgePaint: edgePaint,
+          fromRect: fromRect,
+          toRect: toRect,
+          color: color,
+        );
+        continue;
+      } else if (route == BackEdgeRoute.topRightBypass) {
+        drawBackEdgeTopRightBypass(
+          canvas: canvas,
+          edgePaint: edgePaint,
+          fromRect: fromRect,
+          toRect: toRect,
+          color: color,
+          allBounds: allBounds,
+          nodeRects: allNodeRects,
+        );
+        continue;
+      } else if (route == BackEdgeRoute.directToRightmost) {
+        final double xAxis = axisXForEdge[edgeKey] ?? (toRect.right + 20.0);
+        drawBackEdgeDirectRightmost(
+          canvas: canvas,
+          edgePaint: edgePaint,
+          fromRect: fromRect,
+          toRect: toRect,
+          axisX: xAxis,
+          color: color,
+        );
+        continue;
+      } else {
+        final double axisX = axisXForEdge[edgeKey] ?? routeX;
+        final double yUp = toRect.center.dy - 80.0;
+        drawBackEdgeRightBypass(
+          canvas: canvas,
+          edgePaint: edgePaint,
+          fromRect: fromRect,
+          toRect: toRect,
+          axisX: axisX,
+          yUp: yUp,
+          color: color,
+        );
+        continue;
       }
-
-      // Путь: p0 -> вправо до routeX (со скруглением), затем по вертикали к уровню p3 (со скруглением),
-      // затем влево до p3
     }
   }
 
