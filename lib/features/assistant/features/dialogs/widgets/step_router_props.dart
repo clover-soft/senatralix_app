@@ -51,14 +51,13 @@ class _StepRouterPropsState extends State<StepRouterProps> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Маршрутизатор', style: Theme.of(context).textTheme.labelLarge),
         const SizedBox(height: 8),
         // Выбор единственного слота-перечня
         Row(
           children: [
             Expanded(
               child: DropdownButtonFormField<int?>(
-                value: _selectedSlotId,
+                initialValue: _selectedSlotId,
                 isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Слот (перечень) для маршрутизации'),
                 items: [
@@ -100,7 +99,7 @@ class _StepRouterPropsState extends State<StepRouterProps> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<int?>(
-                          value: mappings[v],
+                          initialValue: mappings[v],
                           isExpanded: true,
                           decoration: const InputDecoration(labelText: 'Следующий шаг'),
                           items: [

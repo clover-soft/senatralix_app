@@ -24,7 +24,7 @@ class StepNode extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // База для тени: темнее в тёмной теме, мягче в светлой
     final shadowColor = (isDark ? Colors.black : Colors.black)
-        .withOpacity(isDark ? 0.28 : 0.14);
+        .withValues(alpha: isDark ? 0.28 : 0.14);
     final shadowBlur = selected ? 12.0 : 9.0;
     final shadowOffset = selected ? const Offset(0, 3) : const Offset(0, 2);
     final shadowSpread = selected ? 0.4 : 0.2;
@@ -53,7 +53,7 @@ class StepNode extends StatelessWidget {
               // Лёгкая подсветка снизу для лучшего отделения на тёмной теме
               if (isDark)
                 BoxShadow(
-                  color: Colors.white.withOpacity(0.03),
+                  color: Colors.white.withValues(alpha: 0.03),
                   blurRadius: 2,
                   offset: const Offset(0, 1),
                 ),
@@ -102,7 +102,7 @@ class StepNode extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.12),
+                            color: Colors.orange.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(color: Colors.orange.shade400),
                           ),

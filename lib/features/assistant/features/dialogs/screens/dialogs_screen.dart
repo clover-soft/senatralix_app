@@ -54,7 +54,7 @@ class AssistantDialogsScreen extends ConsumerWidget {
                     elevation: 1,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: scheme.outlineVariant.withOpacity(0.6), width: 1.0),
+                      side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.6), width: 1.0),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: InkWell(

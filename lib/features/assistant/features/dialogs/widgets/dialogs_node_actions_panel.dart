@@ -33,12 +33,12 @@ class DialogsNodeActionsPanel extends StatelessWidget {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withOpacity(0.92),
+                color: cs.surfaceContainerHighest.withValues(alpha: 0.92),
                 shape: BoxShape.circle,
                 border: Border.all(color: cs.outlineVariant, width: 1),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.18),
+                    color: Colors.black.withValues(alpha: 0.18),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),

@@ -188,7 +188,8 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   Size _canvasSize = Size.zero;
   int? _lastFittedStepsCount;
   bool _userInteracted = false; // Пользователь двигал/масштабировал граф
-  bool _isProgrammaticTransform = false; // Внутреннее изменение матрицы (не считать за взаимодействие)
+  bool _isProgrammaticTransform =
+      false; // Внутреннее изменение матрицы (не считать за взаимодействие)
 
   @override
   void initState() {
@@ -311,7 +312,6 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
         _lastViewportSize = null;
       });
     }
-    
   }
 
   /// Расчёт реальных границ графа по позициям нод в системе координат контента
@@ -332,7 +332,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
       final b = bounds;
       bounds = b == null ? rect : b.expandToInclude(rect);
     }
-    
+
     return bounds;
   }
 
@@ -372,7 +372,6 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   }
 
   void _fitAndCenter(Size viewportSize, {bool force = false}) {
-    
     // Рассчёт по реальным границам графа (нод)
     final nodesBounds = _computeNodesBounds();
     if (nodesBounds == null || nodesBounds.isEmpty) return;
@@ -411,7 +410,10 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
     // Зафиксируем, что автофит выполнен для текущего состояния
     _didAutoFit = true;
     _lastViewportSize = viewportSize;
-    _lastFittedStepsCount = ref.read(dialogsConfigControllerProvider).steps.length;
+    _lastFittedStepsCount = ref
+        .read(dialogsConfigControllerProvider)
+        .steps
+        .length;
   }
 
   void _centerOnNode(int id) {
@@ -458,7 +460,6 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
     final tx = viewportCenter.dx - nodeCenter.dx * currentScale;
     final ty = viewportCenter.dy - nodeCenter.dy * currentScale;
 
-    
     _isProgrammaticTransform = true;
     setState(() {
       _tc.value = Matrix4.identity()
@@ -472,7 +473,6 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
 
   @override
   Widget build(BuildContext context) {
-    
     // Строим граф сверху-вниз всегда (Sugiyama). Если есть циклы — исключаем обратные рёбра
     final cfg = ref.watch(dialogsConfigControllerProvider);
     final style = GraphStyle.sugiyamaTopBottom(
@@ -490,16 +490,13 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
     } else {
       graph = builder.build(cfg.steps);
     }
-    if (backEdges.isNotEmpty) {
-      
-    }
+    if (backEdges.isNotEmpty) {}
     final Algorithm algorithm = style.buildAlgorithm();
     final editor = ref.watch(dialogsEditorControllerProvider);
     // Чистим ключи старых нод, которых нет в текущем сценарии
     final currentIds = cfg.steps.map((e) => e.id).toSet();
     _nodeKeys.removeWhere((id, key) => !currentIds.contains(id));
 
-    
     return ClipRect(
       child: LayoutBuilder(
         builder: (ctx, constraints) {
@@ -508,7 +505,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
             constraints.maxWidth,
             constraints.maxHeight,
           );
-          
+
           // Динамический размер холста на основе фактических границ нод
           const double pad = 300.0;
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -533,7 +530,8 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
             }
             // Гарантированный запуск вписывания после пересчёта размеров (только до взаимодействия пользователя)
             final stepsCount = cfg.steps.length;
-            if (cfg.steps.isNotEmpty && !_userInteracted &&
+            if (cfg.steps.isNotEmpty &&
+                !_userInteracted &&
                 (!_didAutoFit || _lastFittedStepsCount != stepsCount)) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _fitAndCenter(viewportSize);
@@ -545,8 +543,11 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
               _lastViewportSize == null ||
               (viewportSize.width - (_lastViewportSize!.width)).abs() > 8 ||
               (viewportSize.height - (_lastViewportSize!.height)).abs() > 8;
-          if (hasSteps && !_userInteracted &&
-              (!_didAutoFit || sizeChanged || _lastFittedStepsCount != cfg.steps.length)) {
+          if (hasSteps &&
+              !_userInteracted &&
+              (!_didAutoFit ||
+                  sizeChanged ||
+                  _lastFittedStepsCount != cfg.steps.length)) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _fitAndCenter(viewportSize);
             });
@@ -759,14 +760,18 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                         _didAutoFit = false;
                         _lastViewportSize = null;
                         _lastFittedStepsCount = null;
-                        _userInteracted = false; // разрешаем автo/принудительный фит после обновления
+                        _userInteracted =
+                            false; // разрешаем авто/принудительный фит после обновления
                       });
                       // Принудительное вписывание после обновления
+                      if (!mounted) return;
                       final rb = context.findRenderObject() as RenderBox?;
                       if (rb != null && rb.hasSize) {
                         final viewportSize = rb.size;
                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _fitAndCenter(viewportSize, force: true);
+                          if (mounted) {
+                            _fitAndCenter(viewportSize, force: true);
+                          }
                         });
                       }
                     },
@@ -785,10 +790,20 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                         // обновление произойдёт через провайдер
                       } else {
                         notifier.addStep();
-                        final steps = ref.read(dialogsConfigControllerProvider).steps;
+                        final steps = ref
+                            .read(dialogsConfigControllerProvider)
+                            .steps;
                         if (steps.isEmpty) return;
-                        newId = steps.map((e) => e.id).reduce((a, b) => a > b ? a : b);
+                        newId = steps
+                            .map((e) => e.id)
+                            .reduce((a, b) => a > b ? a : b);
                       }
+                      // Перейдём камерой к новому узлу после кадра
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          _centerOnNode(newId);
+                        }
+                      });
                     },
                   ),
                 ),
