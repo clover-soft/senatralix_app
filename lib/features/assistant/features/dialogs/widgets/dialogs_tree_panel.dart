@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:graphview/GraphView.dart';
 import 'package:vector_math/vector_math_64.dart' as vm;
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_editor_providers.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_providers.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/graph/graph_style.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/graph/dialogs_graph_builder.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_tree_canvas.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_node.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_toolbar_panel.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_props.dart';
 import 'package:sentralix_app/core/logger.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/utils/graph_cycles.dart';
 
 /// Левая панель: дерево сценария
 class DialogsTreePanel extends ConsumerStatefulWidget {
@@ -18,6 +21,182 @@ class DialogsTreePanel extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<DialogsTreePanel> createState() => _DialogsTreePanelState();
+}
+
+/// Рисует обратные рёбра (back-edges), исключённые из GraphView, поверх холста.
+class _BackEdgesPainter extends CustomPainter {
+  _BackEdgesPainter({
+    required this.backEdges,
+    required this.nodeKeys,
+    required this.contentKey,
+    required this.color,
+  });
+
+  final List<MapEntry<int, int>> backEdges;
+  final Map<int, GlobalKey> nodeKeys;
+  final GlobalKey contentKey;
+  final Color color;
+
+  // helpers удалены (не используются)
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final contentCtx = contentKey.currentContext;
+    if (contentCtx == null) return;
+    final contentBox = contentCtx.findRenderObject() as RenderBox?;
+    if (contentBox == null || !contentBox.hasSize) return;
+
+    final edgePaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    Rect? _nodeRect(GlobalKey key) {
+      final ctx = key.currentContext;
+      if (ctx == null) return null;
+      final box = ctx.findRenderObject() as RenderBox?;
+      if (box == null || !box.hasSize) return null;
+      final topLeft = box.localToGlobal(Offset.zero, ancestor: contentBox);
+      return topLeft & box.size;
+    }
+
+    // Общие границы графа для прокладки трассы справа
+    Rect? allBounds;
+    for (final key in nodeKeys.values) {
+      final r = _nodeRect(key);
+      if (r == null) continue;
+      allBounds = allBounds == null ? r : allBounds.expandToInclude(r);
+    }
+    final double routeX = (allBounds?.right ?? 0) + 20.0;
+    const double cornerRBase = 0;
+
+    for (final e in backEdges) {
+      final fromKey = nodeKeys[e.key];
+      final toKey = nodeKeys[e.value];
+      if (fromKey == null || toKey == null) continue;
+      final fromRect = _nodeRect(fromKey);
+      final toRect = _nodeRect(toKey);
+      if (fromRect == null || toRect == null) continue;
+
+      // Выход из fromRect вправо, вход в toRect справа
+      final p0 = Offset(fromRect.right, fromRect.center.dy);
+      // Точка подхода правее ноды на 20px
+      final p3 = Offset(toRect.right + 20.0, toRect.center.dy);
+      // Финальная точка стрелки у правого края ноды (чуть внутрь, чтобы не обрезать)
+      final arrowEnd = Offset(toRect.right - 1.0, toRect.center.dy);
+
+      // Новый ортогональный маршрут обратного ребра:
+      // Вариант A: если таргет — крайняя справа нода, ведём по оси её правой границы (без обхода сверху)
+      // Вариант B: иначе — ведём по routeX и верхней полке yUp, затем к таргету
+      {
+        const double r = 6.0; // радиус скругления на поворотах
+        final double xRight = toRect.right;
+        final double yCenter = toRect.center.dy;
+        final bool isRightmostTarget = xRight >= ((allBounds?.right ?? xRight) - 0.5);
+
+        if (isRightmostTarget) {
+          final double sVert = yCenter >= p0.dy ? 1.0 : -1.0; // направление до центра таргета
+          final double xAxis = xRight + 20.0; // ось правой границы таргета +20px
+          final Path path = Path()
+            ..moveTo(p0.dx, p0.dy)
+            // вправо до оси xAxis с запасом r и скругление вверх
+            ..lineTo(xAxis - r, p0.dy)
+            ..quadraticBezierTo(xAxis, p0.dy, xAxis, p0.dy + sVert * r)
+            // вертикально до уровня центра таргета и скругление влево
+            ..lineTo(xAxis, yCenter - sVert * r)
+            ..quadraticBezierTo(xAxis, yCenter, xAxis - r, yCenter)
+            // финальный короткий участок влево к вершине стрелки
+            ..lineTo(arrowEnd.dx, arrowEnd.dy);
+
+          canvas.drawPath(path, edgePaint);
+
+          final prevForArrow = Offset(arrowEnd.dx + 6.0, arrowEnd.dy);
+          final vx = arrowEnd.dx - prevForArrow.dx;
+          final vy = arrowEnd.dy - prevForArrow.dy;
+          final angle = math.atan2(vy, vx);
+          const double ah = 8;
+          const double aw = 4;
+          final a1 = Offset(
+            arrowEnd.dx - ah * math.cos(angle) + aw * math.sin(angle),
+            arrowEnd.dy - ah * math.sin(angle) - aw * math.cos(angle),
+          );
+          final a2 = Offset(
+            arrowEnd.dx - ah * math.cos(angle) - aw * math.sin(angle),
+            arrowEnd.dy - ah * math.sin(angle) + aw * math.cos(angle),
+          );
+          final arrowPath = Path()
+            ..moveTo(arrowEnd.dx, arrowEnd.dy)
+            ..lineTo(a1.dx, a1.dy)
+            ..moveTo(arrowEnd.dx, arrowEnd.dy)
+            ..lineTo(a2.dx, a2.dy);
+          canvas.drawPath(arrowPath, edgePaint);
+          continue; // Старую маршрутизацию не выполняем
+        } else {
+          // Вариант B: прежняя трасса через routeX и верхнюю полку yUp
+          final double yUp = toRect.center.dy - 80.0;
+          final double xApproach = toRect.right + 20.0;
+          final double sUp = yUp >= p0.dy ? 1.0 : -1.0; // направление по вертикали к yUp
+          final double sDown = arrowEnd.dy >= yUp ? 1.0 : -1.0; // направление к уровню цели
+
+          final Path path = Path()
+            ..moveTo(p0.dx, p0.dy)
+            // вправо до routeX с запасом r и скругление вверх
+            ..lineTo(routeX - r, p0.dy)
+            ..quadraticBezierTo(routeX, p0.dy, routeX, p0.dy + sUp * r)
+            // вертикально до yUp с запасом и скругление влево
+            ..lineTo(routeX, yUp - sUp * r)
+            ..quadraticBezierTo(routeX, yUp, routeX - r, yUp)
+            // влево до xApproach с запасом и скругление вниз
+            ..lineTo(xApproach + r, yUp)
+            ..quadraticBezierTo(xApproach, yUp, xApproach, yUp + sDown * r)
+            // вниз до уровня цели с запасом и скругление влево
+            ..lineTo(xApproach, arrowEnd.dy - sDown * r)
+            ..quadraticBezierTo(xApproach, arrowEnd.dy, xApproach - r, arrowEnd.dy)
+            // финальный короткий участок влево к вершине стрелки
+            ..lineTo(arrowEnd.dx, arrowEnd.dy);
+
+          canvas.drawPath(path, edgePaint);
+
+          final prevForArrow = Offset(arrowEnd.dx + 6.0, arrowEnd.dy);
+          final vx = arrowEnd.dx - prevForArrow.dx;
+          final vy = arrowEnd.dy - prevForArrow.dy;
+          final angle = math.atan2(vy, vx);
+          const double ah = 8;
+          const double aw = 4;
+          final a1 = Offset(
+            arrowEnd.dx - ah * math.cos(angle) + aw * math.sin(angle),
+            arrowEnd.dy - ah * math.sin(angle) - aw * math.cos(angle),
+          );
+          final a2 = Offset(
+            arrowEnd.dx - ah * math.cos(angle) - aw * math.sin(angle),
+            arrowEnd.dy - ah * math.sin(angle) + aw * math.cos(angle),
+          );
+          final arrowPath = Path()
+            ..moveTo(arrowEnd.dx, arrowEnd.dy)
+            ..lineTo(a1.dx, a1.dy)
+            ..moveTo(arrowEnd.dx, arrowEnd.dy)
+            ..lineTo(a2.dx, a2.dy);
+          canvas.drawPath(arrowPath, edgePaint);
+          continue; // Старую маршрутизацию не выполняем
+        }
+      }
+
+      // Путь: p0 -> вправо до routeX (со скруглением), затем по вертикали к уровню p3 (со скруглением),
+      // затем влево до p3
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _BackEdgesPainter oldDelegate) {
+    if (identical(backEdges, oldDelegate.backEdges) &&
+        identical(nodeKeys, oldDelegate.nodeKeys) &&
+        color == oldDelegate.color) {
+      return false;
+    }
+    return true;
+  }
 }
 
 class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
@@ -296,13 +475,31 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
 
   @override
   Widget build(BuildContext context) {
-    final graph = ref.watch(graphProvider);
-    final algorithm = GraphStyle.sugiyamaTopBottom(
+    // Строим граф сверху-вниз всегда (Sugiyama). Если есть циклы — исключаем обратные рёбра
+    final cfg = ref.watch(dialogsConfigControllerProvider);
+    final style = GraphStyle.sugiyamaTopBottom(
       nodeSeparation: 20,
       levelSeparation: 80,
-    ).buildAlgorithm();
+    );
+    final builder = DialogsGraphBuilder(style: style);
+    final bool cyclic = hasDialogCycles(cfg.steps);
+    Graph graph;
+    List<MapEntry<int, int>> backEdges = const [];
+    if (cyclic) {
+      backEdges = selectEdgesToOmit(cfg.steps);
+      final omit = backEdges.map((e) => '${e.key}->${e.value}').toSet();
+      graph = builder.buildFiltered(cfg.steps, omitEdges: omit);
+    } else {
+      graph = builder.build(cfg.steps);
+    }
+    if (backEdges.isNotEmpty) {
+      AppLogger.d(
+        '[TreePanel] omitEdges=${backEdges.map((e) => '${e.key}->${e.value}').join(', ')}',
+        tag: 'DialogsTree',
+      );
+    }
+    final Algorithm algorithm = style.buildAlgorithm();
     final editor = ref.watch(dialogsEditorControllerProvider);
-    final cfg = ref.watch(dialogsConfigControllerProvider);
 
     return ClipRect(
       child: LayoutBuilder(
@@ -377,6 +574,15 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                       : _canvasSize,
                   transformationController: _tc,
                   contentKey: _contentKey,
+                  interactive: true,
+                  foregroundPainter: backEdges.isNotEmpty
+                      ? _BackEdgesPainter(
+                          backEdges: backEdges,
+                          nodeKeys: _nodeKeys,
+                          contentKey: _contentKey,
+                          color: Theme.of(context).colorScheme.primary,
+                        )
+                      : null,
                   nodeBuilder: (Node n) {
                     final id = n.key!.value as int;
                     final step = cfg.steps.firstWhere((e) => e.id == id);
@@ -422,34 +628,52 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                             );
                           },
                           onDelete: () async {
-                            final steps = ref.read(dialogsConfigControllerProvider).steps;
+                            final steps = ref
+                                .read(dialogsConfigControllerProvider)
+                                .steps;
                             if (steps.length == 1) {
                               // Диалог состоит из одного шага: подтверждение удаления всего диалога
                               final ok = await showDialog<bool>(
                                 context: context,
                                 builder: (ctx) => AlertDialog(
                                   title: const Text('Удалить диалог?'),
-                                  content: const Text('В диалоге только один шаг. Будет удалён ВЕСЬ диалог. Действие необратимо.'),
+                                  content: const Text(
+                                    'В диалоге только один шаг. Будет удалён ВЕСЬ диалог. Действие необратимо.',
+                                  ),
                                   actions: [
                                     TextButton(
-                                      onPressed: () => Navigator.of(ctx).pop(false),
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(false),
                                       child: const Text('Отмена'),
                                     ),
                                     FilledButton(
-                                      onPressed: () => Navigator.of(ctx).pop(true),
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(true),
                                       child: const Text('Удалить диалог'),
                                     ),
                                   ],
                                 ),
                               );
                               if (ok == true) {
-                                await ref.read(dialogsConfigControllerProvider.notifier).deleteDialog();
+                                await ref
+                                    .read(
+                                      dialogsConfigControllerProvider.notifier,
+                                    )
+                                    .deleteDialog();
                                 // Обновим список вкладок и сбросим выбранный id
                                 ref.invalidate(dialogConfigsProvider);
-                                ref.read(selectedDialogConfigIdProvider.notifier).state = null;
+                                ref
+                                        .read(
+                                          selectedDialogConfigIdProvider
+                                              .notifier,
+                                        )
+                                        .state =
+                                    null;
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Диалог удалён')),
+                                    const SnackBar(
+                                      content: Text('Диалог удалён'),
+                                    ),
                                   );
                                 }
                               }
@@ -461,14 +685,18 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                               context: context,
                               builder: (ctx) => AlertDialog(
                                 title: const Text('Удалить шаг?'),
-                                content: Text('Шаг #$id будет удалён. Все переходы на этот шаг будут очищены.'),
+                                content: Text(
+                                  'Шаг #$id будет удалён. Все переходы на этот шаг будут очищены.',
+                                ),
                                 actions: [
                                   TextButton(
-                                    onPressed: () => Navigator.of(ctx).pop(false),
+                                    onPressed: () =>
+                                        Navigator.of(ctx).pop(false),
                                     child: const Text('Отмена'),
                                   ),
                                   FilledButton(
-                                    onPressed: () => Navigator.of(ctx).pop(true),
+                                    onPressed: () =>
+                                        Navigator.of(ctx).pop(true),
                                     child: const Text('Удалить шаг'),
                                   ),
                                 ],
@@ -476,8 +704,16 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                             );
                             if (ok == true) {
                               // Удаляем через бизнес-контроллер и сохраняем с дебаунсом
-                              ref.read(dialogsConfigControllerProvider.notifier).deleteStep(id);
-                              ref.read(dialogsConfigControllerProvider.notifier).saveFullDebounced();
+                              ref
+                                  .read(
+                                    dialogsConfigControllerProvider.notifier,
+                                  )
+                                  .deleteStep(id);
+                              ref
+                                  .read(
+                                    dialogsConfigControllerProvider.notifier,
+                                  )
+                                  .saveFullDebounced();
                               // Сброс автофита
                               setState(() {
                                 _didAutoFit = false;
@@ -490,6 +726,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                     );
                   },
                 ),
+
                 // Панель управления справа
                 Positioned(
                   right: 20,
@@ -513,7 +750,9 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                       if (selectedId != null) {
                         ref.invalidate(dialogConfigDetailsProvider(selectedId));
                         // Дополнительно синхронизируем бизнес-состояние с бэкендом
-                        await ref.read(dialogsConfigControllerProvider.notifier).loadDetails(selectedId);
+                        await ref
+                            .read(dialogsConfigControllerProvider.notifier)
+                            .loadDetails(selectedId);
                       } else {
                         ref.invalidate(dialogConfigsProvider);
                       }

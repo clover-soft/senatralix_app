@@ -53,4 +53,54 @@ class DialogsGraphBuilder {
 
     return graph;
   }
+
+  /// Построить граф, исключив указанные рёбра (fromId -> toId)
+  Graph buildFiltered(
+    List<DialogStep> steps, {
+    Set<String> omitEdges = const {},
+  }) {
+    String key(int a, int b) => '$a->$b';
+    final graph = Graph()..isTree = (style.layoutType == GraphLayoutType.buchheimTopBottom);
+
+    // Узлы
+    final nodeById = <int, Node>{};
+    for (final s in steps) {
+      final n = Node.Id(s.id);
+      nodeById[s.id] = n;
+      graph.addNode(n);
+    }
+
+    // next
+    for (final s in steps) {
+      if (s.next != null && s.next! > 0) {
+        if (omitEdges.contains(key(s.id, s.next!))) continue;
+        final from = nodeById[s.id];
+        final to = nodeById[s.next!];
+        if (from != null && to != null) {
+          graph.addEdge(from, to, paint: style.edgeNextPaint);
+        }
+      }
+    }
+
+    // branch_logic
+    final allowBranches = style.layoutType != GraphLayoutType.buchheimTopBottom;
+    if (allowBranches) {
+      for (final s in steps) {
+        for (final mapping in s.branchLogic.values) {
+          for (final entry in mapping.entries) {
+            final toId = entry.value;
+            if (toId <= 0) continue;
+            if (omitEdges.contains(key(s.id, toId))) continue;
+            final from = nodeById[s.id];
+            final to = nodeById[toId];
+            if (from != null && to != null) {
+              graph.addEdge(from, to, paint: style.edgeBranchPaint);
+            }
+          }
+        }
+      }
+    }
+
+    return graph;
+  }
 }

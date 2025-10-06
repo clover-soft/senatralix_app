@@ -12,6 +12,8 @@ class DialogsTreeCanvas extends StatelessWidget {
     this.canvasSize = const Size(2400, 1800),
     this.transformationController,
     this.contentKey,
+    this.interactive = true,
+    this.foregroundPainter,
   });
 
   /// Граф для отображения
@@ -32,52 +34,72 @@ class DialogsTreeCanvas extends StatelessWidget {
   /// Ключ обёртки контента (для измерения размеров графа)
   final Key? contentKey;
 
+  /// Разрешить масштаб/скролл. Если false — граф статичен.
+  final bool interactive;
+
+  /// Дополнительный рисователь поверх графа, который должен трансформироваться вместе с ним
+  final CustomPainter? foregroundPainter;
+
   @override
   Widget build(BuildContext context) {
     final hasNodes = graph.nodes.isNotEmpty;
-    return SizedBox.expand(
-      child: hasNodes
-          ? InteractiveViewer(
-              constrained: false,
-              minScale: 0.5,
-              maxScale: 2.5,
-              boundaryMargin: const EdgeInsets.all(4000),
-              clipBehavior: Clip.none,
-              transformationController: transformationController,
-              child: LayoutBuilder(
-                builder: (ctx, constraints) {
-                  return RepaintBoundary(
-                    key: contentKey,
-                    child: Stack(
-                      alignment: Alignment.topLeft,
-                      children: [
-                        // Конечный размер холста для корректного hit-test
-                        SizedBox(
-                          width: canvasSize.width,
-                          height: canvasSize.height,
-                        ),
-                        // Сам граф — не принуждаем к размеру холста
-                        Positioned(
-                          left: 0,
-                          top: 0,
-                          child: GraphView(
-                            graph: graph,
-                            algorithm: algorithm,
-                            builder: nodeBuilder,
-                          ),
-                        ),
-                      ],
+    final core = LayoutBuilder(
+      builder: (ctx, constraints) {
+        return RepaintBoundary(
+          key: contentKey,
+          child: Stack(
+            alignment: Alignment.topLeft,
+            children: [
+              SizedBox(
+                width: canvasSize.width,
+                height: canvasSize.height,
+              ),
+              Positioned(
+                left: 0,
+                top: 0,
+                child: GraphView(
+                  graph: graph,
+                  algorithm: algorithm,
+                  builder: nodeBuilder,
+                ),
+              ),
+              if (foregroundPainter != null)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: CustomPaint(
+                      painter: foregroundPainter,
                     ),
-                  );
-                },
-              ),
-            )
-          : const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('Граф ещё не загружен'),
-              ),
-            ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!hasNodes) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Text('Граф ещё не загружен'),
+        ),
+      );
+    }
+
+    if (!interactive) {
+      return SizedBox.expand(child: core);
+    }
+
+    return SizedBox.expand(
+      child: InteractiveViewer(
+        constrained: false,
+        minScale: 0.5,
+        maxScale: 2.5,
+        boundaryMargin: const EdgeInsets.all(4000),
+        clipBehavior: Clip.none,
+        transformationController: transformationController,
+        child: core,
+      ),
     );
   }
 }
