@@ -50,14 +50,22 @@ void drawBackEdgeTopRightBypass({
   final vy = arrowEnd.dy - prevForArrow.dy;
   final angle = math.atan2(vy, vx);
 
-  // Строим путь до основания стрелки: p0 -> pUp -> вправо к xMax -> вертикаль к уровню цели -> влево до подхода
+  // Строим путь до основания стрелки: p0 -> вверх к (pUp.dy + r) ->
+  // скруглённый поворот вправо в точке pUp (r=6) -> вправо к xMax (скругление r=6) ->
+  // вертикально к уровню цели -> влево до подхода
   final path = Path()
     ..moveTo(p0.dx, p0.dy)
-    // выход вверх
-    ..lineTo(pUp.dx, pUp.dy)
-    // поворот вправо
+    // 1) Подъём до точки чуть ниже pUp, чтобы сделать поворот радиусом r=6
+    ..lineTo(pUp.dx, pUp.dy + r)
+    // 2) Скруглённый поворот вправо в самой точке pUp (четверть круга радиуса r)
+    ..quadraticBezierTo(pUp.dx, pUp.dy, pUp.dx + r, pUp.dy)
+    // 3) Поворот на правую «магистраль» с дугой r=6 у xMax
     ..lineTo(xMax - r, pUp.dy)
-    ..quadraticBezierTo(xMax, pUp.dy, xMax, pUp.dy + (toRect.center.dy >= pUp.dy ? 1 : -1) * r)
+    ..arcToPoint(
+      Offset(xMax, pUp.dy + (toRect.center.dy >= pUp.dy ? 1 : -1) * r),
+      radius: const Radius.circular(r),
+      clockwise: toRect.center.dy >= pUp.dy,
+    )
     // вертикально к уровню цели
     ..lineTo(xMax, toRect.center.dy - (toRect.center.dy >= pUp.dy ? 1 : -1) * r)
     ..quadraticBezierTo(xMax, toRect.center.dy, xMax - r, toRect.center.dy);
