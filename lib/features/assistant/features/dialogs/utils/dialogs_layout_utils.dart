@@ -35,7 +35,7 @@ DialogGridStats computeDialogGridStats(List<DialogStep> steps) {
   final outgoing = <int, Set<int>>{}; // from -> {to}
   final incomingCount = <int, int>{}; // to -> count
 
-  void _addEdge(int from, int to) {
+  void addEdge(int from, int to) {
     if (!ids.contains(to)) return; // игнор ссылок на несуществующие id
     outgoing.putIfAbsent(from, () => <int>{}).add(to);
     incomingCount[to] = (incomingCount[to] ?? 0) + 1;
@@ -44,12 +44,12 @@ DialogGridStats computeDialogGridStats(List<DialogStep> steps) {
   // Собираем рёбра
   for (final s in steps) {
     if (s.next != null) {
-      _addEdge(s.id, s.next!);
+      addEdge(s.id, s.next!);
     }
     if (s.branchLogic.isNotEmpty) {
       for (final entry in s.branchLogic.entries) {
         for (final kv in entry.value.entries) {
-          _addEdge(s.id, kv.value);
+          addEdge(s.id, kv.value);
         }
       }
     }

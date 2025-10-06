@@ -1,4 +1,3 @@
-import 'package:sentralix_app/core/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
@@ -73,7 +72,7 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
       selectedStepId: newId,
       linkStartStepId: null,
     );
-    AppLogger.d('[Editor] addNextStep: from=$fromId -> newId=$newId, total=${steps.length}', tag: 'DialogsEditor');
+    
     return newId;
   }
 
@@ -122,10 +121,10 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
         selectedStepId: start,
         linkStartStepId: null,
       );
-      AppLogger.d('[Editor] link next: from=$start -> to=$tappedId', tag: 'DialogsEditor');
+      
     } else {
       selectStep(tappedId);
-      AppLogger.d('[Editor] selectStep: id=$tappedId', tag: 'DialogsEditor');
+      
     }
   }
 
@@ -141,7 +140,7 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
         selectedStepId: updated.id,
         linkStartStepId: state.linkStartStepId,
       );
-      AppLogger.d('[Editor] updateStep: id=${updated.id}', tag: 'DialogsEditor');
+      
     }
   }
 
@@ -171,6 +170,6 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
       selectedStepId: newId,
       linkStartStepId: state.linkStartStepId,
     );
-    AppLogger.d('[Editor] addStep: newId=$newId, total=${steps.length}', tag: 'DialogsEditor');
+    
   }
 }

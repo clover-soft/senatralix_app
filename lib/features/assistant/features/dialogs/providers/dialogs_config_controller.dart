@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sentralix_app/core/logger.dart';
 import 'package:sentralix_app/features/assistant/api/assistant_api.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
@@ -108,10 +107,10 @@ class DialogsConfigController extends StateNotifier<DialogsConfigState> {
         steps: details.steps,
         clearError: true,
       );
-      AppLogger.d('[DialogsConfig] details loaded id=$id steps=${details.steps.length}', tag: 'Dialogs');
+      
     } catch (e) {
       state = state.copyWith(error: '$e');
-      AppLogger.e('[DialogsConfig] loadDetails failed: $e', tag: 'Dialogs');
+      
     }
   }
 
@@ -126,7 +125,7 @@ class DialogsConfigController extends StateNotifier<DialogsConfigState> {
       await _api.updateDialogConfig(id: id, name: name, description: description);
     } catch (e) {
       state = state.copyWith(error: '$e');
-      AppLogger.e('[DialogsConfig] updateNameDescription failed: $e', tag: 'Dialogs');
+      
     }
   }
 
@@ -145,10 +144,10 @@ class DialogsConfigController extends StateNotifier<DialogsConfigState> {
         metadata: state.metadata,
       );
       state = state.copyWith(isSaving: false);
-      AppLogger.i('[DialogsConfig] saveFull ok id=$id', tag: 'Dialogs');
+      
     } catch (e) {
       state = state.copyWith(isSaving: false, error: '$e');
-      AppLogger.e('[DialogsConfig] saveFull failed: $e', tag: 'Dialogs');
+      
     }
   }
 
@@ -218,7 +217,7 @@ class DialogsConfigController extends StateNotifier<DialogsConfigState> {
     // Удаляем сам шаг
     steps.removeAt(idx);
     state = state.copyWith(steps: steps, clearError: true);
-    AppLogger.w('[DialogsConfig] deleteStep: id=$id, left=${steps.length}', tag: 'Dialogs');
+    
   }
 
   /// Удалить текущий диалог (DELETE) и очистить локальное состояние провайдера
@@ -228,10 +227,10 @@ class DialogsConfigController extends StateNotifier<DialogsConfigState> {
     try {
       await _api.deleteDialogConfig(id);
       state = const DialogsConfigState();
-      AppLogger.w('[DialogsConfig] dialog deleted id=$id', tag: 'Dialogs');
+      
     } catch (e) {
       state = state.copyWith(error: '$e');
-      AppLogger.e('[DialogsConfig] deleteDialog failed: $e', tag: 'Dialogs');
+      
     }
   }
 }

@@ -146,23 +146,6 @@ List<MapEntry<int, int>> selectEdgesToOmit(List<DialogStep> steps) {
     final k = '${e.key}->${e.value}';
     if (seen.add(k)) unique.add(e);
   }
-  // Лог
-  try {
-    final levelsStr = level.entries
-        .map((e) => '${e.key}:${e.value}')
-        .join(', ');
-    final predsStr = preds.entries
-        .map(
-          (e) =>
-              '${e.key}<=[${e.value.join(',')}] (min=${(e.value.isEmpty) ? 'inf' : (e.value.map((u) => level[u] ?? (1 << 30)).reduce((a, b) => a < b ? a : b))})',
-        )
-        .join('; ');
-    final edgesStr = edges.map((e) => '${e.key}->${e.value}').join(', ');
-    final backsStr = backs.map((e) => '${e.key}->${e.value}').join(', ');
-    final omitStr = unique.map((e) => '${e.key}->${e.value}').join(', ');
-    print(
-      '[GraphCycles] levels={$levelsStr} preds={$predsStr} edges=[$edgesStr] backs=[$backsStr] omit=[$omitStr]',
-    );
-  } catch (_) {}
+  // Логи удалены
   return unique;
 }

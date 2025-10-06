@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// Панель инструментов графа диалогов (вправо, вертикальная колонка)
+/// Панель инструментов графа сценария (вправо, вертикальная колонка)
 /// - Кнопка "Вписать"
 /// - Вертикальный слайдер масштаба
-/// - Кнопка "Настройки диалога"
+/// - Кнопка "Настройки сценария"
 /// - Кнопка "Обновить"
 class DialogsToolbarPanel extends StatelessWidget {
   const DialogsToolbarPanel({
@@ -50,9 +50,9 @@ class DialogsToolbarPanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              // Настройки диалога
+              // Настройки сценария
               Tooltip(
-                message: 'Настройки диалога',
+                message: 'Настройки сценария',
                 child: IconButton(
                   icon: const Icon(Icons.settings),
                   onPressed: onSettingsPressed,

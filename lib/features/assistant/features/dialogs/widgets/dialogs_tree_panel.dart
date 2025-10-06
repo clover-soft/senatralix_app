@@ -10,7 +10,6 @@ import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialog
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_node.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_toolbar_panel.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_props.dart';
-import 'package:sentralix_app/core/logger.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/utils/graph_cycles.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/back_edge_route.dart';
@@ -187,6 +186,9 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   bool _didAutoFit = false;
   Size? _lastViewportSize;
   Size _canvasSize = Size.zero;
+  int? _lastFittedStepsCount;
+  bool _userInteracted = false; // Пользователь двигал/масштабировал граф
+  bool _isProgrammaticTransform = false; // Внутреннее изменение матрицы (не считать за взаимодействие)
 
   @override
   void initState() {
@@ -206,12 +208,26 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
           _lastViewportSize = null;
         });
       });
+      // При смене выбранного сценария — также сбрасываем автофит, чтобы вписать новый граф
+      ref.listen(selectedDialogConfigIdProvider, (prev, next) {
+        if (!mounted) return;
+        setState(() {
+          _didAutoFit = false;
+          _lastViewportSize = null;
+          _lastFittedStepsCount = null;
+          _userInteracted = false;
+        });
+      });
     });
   }
 
   void _onTcChanged() {
     if (!mounted) return;
-    // Обновляем UI (в частности, положение слайдера) при изменении масштаба/матрицы
+    // Если это пользовательское изменение матрицы — фиксируем факт взаимодействия
+    if (!_isProgrammaticTransform) {
+      _userInteracted = true;
+    }
+    // Обновляем UI (например, положение слайдера)
     setState(() {});
   }
 
@@ -222,7 +238,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
     super.dispose();
   }
 
-  /// Открыть модалку настроек диалога (редактирование имени и описания)
+  /// Открыть модалку настроек сценария (редактирование имени и описания)
   Future<void> _openDialogSettings() async {
     final id = ref.read(selectedDialogConfigIdProvider);
     if (id == null) return;
@@ -235,7 +251,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Настройки диалога'),
+        title: const Text('Настройки сценария'),
         content: Form(
           key: formKey,
           child: Column(
@@ -243,7 +259,9 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
             children: [
               TextFormField(
                 controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Название'),
+                decoration: const InputDecoration(
+                  labelText: 'Название сценария',
+                ),
                 autofocus: true,
                 validator: (v) {
                   final s = (v ?? '').trim();
@@ -256,7 +274,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
               TextFormField(
                 controller: descCtrl,
                 decoration: const InputDecoration(
-                  labelText: 'Описание (необязательно)',
+                  labelText: 'Описание сценария (необязательно)',
                 ),
                 maxLines: 3,
               ),
@@ -285,7 +303,6 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
         ],
       ),
     );
-
     if (saved == true) {
       // Обновим список вкладок, чтобы заголовок отобразился с новым именем
       ref.invalidate(dialogConfigsProvider);
@@ -294,6 +311,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
         _lastViewportSize = null;
       });
     }
+    
   }
 
   /// Расчёт реальных границ графа по позициям нод в системе координат контента
@@ -314,10 +332,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
       final b = bounds;
       bounds = b == null ? rect : b.expandToInclude(rect);
     }
-    AppLogger.d(
-      '[TreePanel] _computeNodesBounds: nodes=${_nodeKeys.length}, bounds=$bounds',
-      tag: 'DialogsTree',
-    );
+    
     return bounds;
   }
 
@@ -345,14 +360,19 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
     final tx = viewportCenter.dx - rectCenter.dx * scale;
     final ty = viewportCenter.dy - rectCenter.dy * scale;
 
+    _isProgrammaticTransform = true;
     setState(() {
       _tc.value = Matrix4.identity()
         ..translateByVector3(vm.Vector3(tx, ty, 0))
         ..scaleByVector3(vm.Vector3(scale, scale, 1));
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isProgrammaticTransform = false;
+    });
   }
 
-  void _fitAndCenter(Size viewportSize) {
+  void _fitAndCenter(Size viewportSize, {bool force = false}) {
+    
     // Рассчёт по реальным границам графа (нод)
     final nodesBounds = _computeNodesBounds();
     if (nodesBounds == null || nodesBounds.isEmpty) return;
@@ -377,29 +397,32 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
     final tx = viewportCenter.dx - rectCenter.dx * targetScale;
     final ty = viewportCenter.dy - rectCenter.dy * targetScale;
 
-    setState(() {
-      _tc.value = Matrix4.identity()
-        ..translateByVector3(vm.Vector3(tx, ty, 0))
-        ..scaleByVector3(vm.Vector3(targetScale, targetScale, 1));
-    });
+    if (force || !_userInteracted) {
+      _isProgrammaticTransform = true;
+      setState(() {
+        _tc.value = Matrix4.identity()
+          ..translateByVector3(vm.Vector3(tx, ty, 0))
+          ..scaleByVector3(vm.Vector3(targetScale, targetScale, 1));
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _isProgrammaticTransform = false;
+      });
+    }
+    // Зафиксируем, что автофит выполнен для текущего состояния
+    _didAutoFit = true;
+    _lastViewportSize = viewportSize;
+    _lastFittedStepsCount = ref.read(dialogsConfigControllerProvider).steps.length;
   }
 
   void _centerOnNode(int id) {
+    if (_userInteracted) return;
     final nodeKey = _nodeKeys[id];
     if (nodeKey == null) {
-      AppLogger.d(
-        '[TreePanel] _centerOnNode: nodeKey for id=$id is null (keys=${_nodeKeys.keys.toList()})',
-        tag: 'DialogsTree',
-      );
       return;
     }
     final nodeCtx = nodeKey.currentContext;
     final contentCtx = _contentKey.currentContext;
     if (nodeCtx == null || contentCtx == null) {
-      AppLogger.d(
-        '[TreePanel] _centerOnNode: contexts missing (nodeCtx=${nodeCtx != null}, contentCtx=${contentCtx != null}) for id=$id',
-        tag: 'DialogsTree',
-      );
       return;
     }
 
@@ -407,17 +430,9 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
     final contentBox = contentCtx.findRenderObject() as RenderBox?;
     final viewportBox = context.findRenderObject() as RenderBox?;
     if (nodeBox == null || contentBox == null || viewportBox == null) {
-      AppLogger.d(
-        '[TreePanel] _centerOnNode: boxes missing (nodeBox=${nodeBox != null}, contentBox=${contentBox != null}, viewportBox=${viewportBox != null})',
-        tag: 'DialogsTree',
-      );
       return;
     }
     if (!nodeBox.hasSize || !contentBox.hasSize || !viewportBox.hasSize) {
-      AppLogger.d(
-        '[TreePanel] _centerOnNode: no size (node=${nodeBox.hasSize}, content=${contentBox.hasSize}, viewport=${viewportBox.hasSize})',
-        tag: 'DialogsTree',
-      );
       return;
     }
 
@@ -443,19 +458,21 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
     final tx = viewportCenter.dx - nodeCenter.dx * currentScale;
     final ty = viewportCenter.dy - nodeCenter.dy * currentScale;
 
-    AppLogger.d(
-      '[TreePanel] _centerOnNode: id=$id center=$nodeCenter scale=$currentScale translate=($tx,$ty) viewport=$viewportSize',
-      tag: 'DialogsTree',
-    );
+    
+    _isProgrammaticTransform = true;
     setState(() {
       _tc.value = Matrix4.identity()
         ..translateByVector3(vm.Vector3(tx, ty, 0))
         ..scaleByVector3(vm.Vector3(currentScale, currentScale, 1));
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isProgrammaticTransform = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    
     // Строим граф сверху-вниз всегда (Sugiyama). Если есть циклы — исключаем обратные рёбра
     final cfg = ref.watch(dialogsConfigControllerProvider);
     final style = GraphStyle.sugiyamaTopBottom(
@@ -474,14 +491,15 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
       graph = builder.build(cfg.steps);
     }
     if (backEdges.isNotEmpty) {
-      AppLogger.d(
-        '[TreePanel] omitEdges=${backEdges.map((e) => '${e.key}->${e.value}').join(', ')}',
-        tag: 'DialogsTree',
-      );
+      
     }
     final Algorithm algorithm = style.buildAlgorithm();
     final editor = ref.watch(dialogsEditorControllerProvider);
+    // Чистим ключи старых нод, которых нет в текущем сценарии
+    final currentIds = cfg.steps.map((e) => e.id).toSet();
+    _nodeKeys.removeWhere((id, key) => !currentIds.contains(id));
 
+    
     return ClipRect(
       child: LayoutBuilder(
         builder: (ctx, constraints) {
@@ -490,6 +508,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
             constraints.maxWidth,
             constraints.maxHeight,
           );
+          
           // Динамический размер холста на основе фактических границ нод
           const double pad = 300.0;
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -512,17 +531,24 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                 if (mounted) setState(() => _canvasSize = proposed);
               }
             }
+            // Гарантированный запуск вписывания после пересчёта размеров (только до взаимодействия пользователя)
+            final stepsCount = cfg.steps.length;
+            if (cfg.steps.isNotEmpty && !_userInteracted &&
+                (!_didAutoFit || _lastFittedStepsCount != stepsCount)) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _fitAndCenter(viewportSize);
+              });
+            }
           });
           final hasSteps = cfg.steps.isNotEmpty;
           final sizeChanged =
               _lastViewportSize == null ||
               (viewportSize.width - (_lastViewportSize!.width)).abs() > 8 ||
               (viewportSize.height - (_lastViewportSize!.height)).abs() > 8;
-          if (hasSteps && (!_didAutoFit || sizeChanged)) {
+          if (hasSteps && !_userInteracted &&
+              (!_didAutoFit || sizeChanged || _lastFittedStepsCount != cfg.steps.length)) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _fitAndCenter(viewportSize);
-              _didAutoFit = true;
-              _lastViewportSize = viewportSize;
             });
           }
           return Padding(
@@ -587,10 +613,6 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                               dialogsEditorControllerProvider.notifier,
                             );
                             final newId = notifier.addNextStep(id);
-                            AppLogger.d(
-                              '[TreePanel] Node action: addNext from=$id -> newId=$newId',
-                              tag: 'DialogsTree',
-                            );
                             WidgetsBinding.instance.addPostFrameCallback((_) {
                               _centerOnNode(newId);
                             });
@@ -599,10 +621,6 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                             ref
                                 .read(dialogsEditorControllerProvider.notifier)
                                 .selectStep(id);
-                            AppLogger.d(
-                              '[TreePanel] Node action: opening settings for id=$id',
-                              tag: 'DialogsTree',
-                            );
                             await showDialog<bool>(
                               context: context,
                               builder: (ctx) => StepProps(stepId: id),
@@ -613,13 +631,13 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                                 .read(dialogsConfigControllerProvider)
                                 .steps;
                             if (steps.length == 1) {
-                              // Диалог состоит из одного шага: подтверждение удаления всего диалога
+                              // Сценарий состоит из одного шага: подтверждение удаления всего сценария
                               final ok = await showDialog<bool>(
                                 context: context,
                                 builder: (ctx) => AlertDialog(
-                                  title: const Text('Удалить диалог?'),
+                                  title: const Text('Удалить сценарий?'),
                                   content: const Text(
-                                    'В диалоге только один шаг. Будет удалён ВЕСЬ диалог. Действие необратимо.',
+                                    'В сценарии только один шаг. Будет удалён ВЕСЬ сценарий. Действие необратимо.',
                                   ),
                                   actions: [
                                     TextButton(
@@ -630,7 +648,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                                     FilledButton(
                                       onPressed: () =>
                                           Navigator.of(ctx).pop(true),
-                                      child: const Text('Удалить диалог'),
+                                      child: const Text('Удалить сценарий'),
                                     ),
                                   ],
                                 ),
@@ -653,7 +671,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Диалог удалён'),
+                                      content: Text('Сценарий удалён'),
                                     ),
                                   );
                                 }
@@ -718,7 +736,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                       if (rb == null || !rb.hasSize) return;
                       final viewportSize = rb.size;
                       WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _fitAndCenter(viewportSize);
+                        _fitAndCenter(viewportSize, force: true);
                       });
                     },
                     currentScale: _tc.value.getMaxScaleOnAxis().clamp(0.5, 2.5),
@@ -740,15 +758,21 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                       setState(() {
                         _didAutoFit = false;
                         _lastViewportSize = null;
+                        _lastFittedStepsCount = null;
+                        _userInteracted = false; // разрешаем автo/принудительный фит после обновления
                       });
+                      // Принудительное вписывание после обновления
+                      final rb = context.findRenderObject() as RenderBox?;
+                      if (rb != null && rb.hasSize) {
+                        final viewportSize = rb.size;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _fitAndCenter(viewportSize, force: true);
+                        });
+                      }
                     },
                     onAddPressed: () {
                       final editorState = ref.read(
                         dialogsEditorControllerProvider,
-                      );
-                      AppLogger.d(
-                        '[TreePanel] onAddPressed: selectedStepId=${editorState.selectedStepId}',
-                        tag: 'DialogsTree',
                       );
                       final notifier = ref.read(
                         dialogsEditorControllerProvider.notifier,
@@ -758,58 +782,13 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                         newId = notifier.addNextStep(
                           editorState.selectedStepId!,
                         );
-                        AppLogger.d(
-                          '[TreePanel] onAddPressed: addNextStep -> newId=$newId',
-                          tag: 'DialogsTree',
-                        );
-                        // Логируем все шаги после добавления
-                        final steps = ref
-                            .read(dialogsConfigControllerProvider)
-                            .steps;
-                        for (final step in steps) {
-                          AppLogger.d(
-                            '[TreePanel] step: id=${step.id}, name=${step.name}, next=${step.next}',
-                            tag: 'DialogsTree',
-                          );
-                        }
-                        AppLogger.d(
-                          '[TreePanel] steps (json): ${steps.map((e) => e.toString()).join(", ")}',
-                          tag: 'DialogsTree',
-                        );
+                        // обновление произойдёт через провайдер
                       } else {
                         notifier.addStep();
-                        final steps = ref
-                            .read(dialogsConfigControllerProvider)
-                            .steps;
+                        final steps = ref.read(dialogsConfigControllerProvider).steps;
                         if (steps.isEmpty) return;
-                        newId = steps
-                            .map((e) => e.id)
-                            .reduce((a, b) => a > b ? a : b);
-                        AppLogger.d(
-                          '[TreePanel] onAddPressed: addStep -> newId=$newId',
-                          tag: 'DialogsTree',
-                        );
-                        // Логируем все шаги после добавления
-                        AppLogger.d(
-                          '[TreePanel] steps after addStep:',
-                          tag: 'DialogsTree',
-                        );
-                        for (final step in steps) {
-                          AppLogger.d(
-                            '[TreePanel] step: id=${step.id}, name=${step.name}, next=${step.next}',
-                            tag: 'DialogsTree',
-                          );
-                        }
-                        AppLogger.d(
-                          '[TreePanel] steps (json): ${steps.map((e) => e.toString()).join(", ")}',
-                          tag: 'DialogsTree',
-                        );
+                        newId = steps.map((e) => e.id).reduce((a, b) => a > b ? a : b);
                       }
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        AppLogger.d(
-                          '[TreePanel] onAddPressed: centering on newId=$newId',
-                        );
-                      });
                     },
                   ),
                 ),

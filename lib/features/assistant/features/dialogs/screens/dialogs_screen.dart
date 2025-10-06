@@ -39,20 +39,115 @@ class AssistantDialogsScreen extends ConsumerWidget {
               children: [
                 const Icon(Icons.error_outline, color: Colors.redAccent),
                 const SizedBox(height: 8),
-                Text('Не удалось загрузить конфиги диалогов: $e'),
+                Text('Не удалось загрузить конфиги сценариев: $e'),
               ],
             ),
           ),
           data: (configs) {
             if (configs.isEmpty) {
+              final scheme = Theme.of(context).colorScheme;
               return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.forum_outlined, size: 48),
-                    const SizedBox(height: 8),
-                    const Text('Конфигурации диалогов отсутствуют'),
-                  ],
+                child: SizedBox(
+                  width: 360,
+                  height: 200,
+                  child: Card(
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: scheme.outlineVariant.withOpacity(0.6), width: 1.0),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: () async {
+                        final nameCtrl = TextEditingController();
+                        final descCtrl = TextEditingController();
+                        final formKey = GlobalKey<FormState>();
+
+                        final createdId = await showDialog<int?>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Новая конфигурация сценария'),
+                            content: Form(
+                              key: formKey,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextFormField(
+                                    controller: nameCtrl,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Название сценария',
+                                    ),
+                                    autofocus: true,
+                                    validator: (v) {
+                                      final s = (v ?? '').trim();
+                                      if (s.length < 2) return 'Минимум 2 символа';
+                                      if (s.length > 64) return 'Максимум 64 символа';
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 12),
+                                  TextFormField(
+                                    controller: descCtrl,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Описание сценария (необязательно)'
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(null),
+                                child: const Text('Отмена'),
+                              ),
+                              FilledButton.icon(
+                                icon: const Icon(Icons.add),
+                                label: const Text('Добавить сценарий'),
+                                onPressed: () async {
+                                  if (!(formKey.currentState?.validate() ?? false)) return;
+                                  final createdId = await ref
+                                      .read(dialogsConfigControllerProvider.notifier)
+                                      .createConfigWithWelcomeStep(
+                                        name: nameCtrl.text.trim(),
+                                        description: descCtrl.text.trim(),
+                                      );
+                                  if (!ctx.mounted) return;
+                                  Navigator.of(ctx).pop(createdId);
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (createdId != null) {
+                          ref.invalidate(dialogConfigsProvider);
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            ref.read(selectedDialogConfigIdProvider.notifier).state = createdId;
+                            ref
+                                .read(dialogsConfigControllerProvider.notifier)
+                                .selectConfig(createdId);
+                          });
+                        }
+                      },
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: 28,
+                              backgroundColor: scheme.primaryContainer,
+                              child: Icon(Icons.add, size: 32, color: scheme.onPrimaryContainer),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Добавить сценарий',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               );
             }
@@ -61,7 +156,11 @@ class AssistantDialogsScreen extends ConsumerWidget {
             int selectedIndex = 0;
             if (selectedId != null) {
               final idx = configs.indexWhere((c) => c.id == selectedId);
-              if (idx >= 0) selectedIndex = idx; else selectedIndex = 0;
+              if (idx >= 0) {
+                selectedIndex = idx;
+              } else {
+                selectedIndex = 0;
+              }
             }
             // Если выбранный id не задан или отсутствует в списке — выставим корректный id
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -102,7 +201,7 @@ class AssistantDialogsScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       Tooltip(
-                        message: 'Добавить диалог',
+                        message: 'Добавить сценарий',
                         child: IconButton(
                           icon: const Icon(Icons.add),
                           onPressed: () async {
@@ -113,7 +212,7 @@ class AssistantDialogsScreen extends ConsumerWidget {
                             final createdId = await showDialog<int?>(
                               context: context,
                               builder: (ctx) => AlertDialog(
-                                title: const Text('Новая конфигурация диалога'),
+                                title: const Text('Новая конфигурация сценария'),
                                 content: Form(
                                   key: formKey,
                                   child: Column(
@@ -122,7 +221,7 @@ class AssistantDialogsScreen extends ConsumerWidget {
                                       TextFormField(
                                         controller: nameCtrl,
                                         decoration: const InputDecoration(
-                                          labelText: 'Название',
+                                          labelText: 'Название сценария',
                                         ),
                                         autofocus: true,
                                         validator: (v) {
@@ -136,7 +235,7 @@ class AssistantDialogsScreen extends ConsumerWidget {
                                       TextFormField(
                                         controller: descCtrl,
                                         decoration: const InputDecoration(
-                                          labelText: 'Описание (необязательно)'
+                                          labelText: 'Описание сценария (необязательно)'
                                         ),
                                         maxLines: 3,
                                       ),
@@ -150,7 +249,7 @@ class AssistantDialogsScreen extends ConsumerWidget {
                                   ),
                                   FilledButton.icon(
                                     icon: const Icon(Icons.add),
-                                    label: const Text('Добавить'),
+                                    label: const Text('Добавить сценарий'),
                                     onPressed: () async {
                                       if (!(formKey.currentState?.validate() ?? false)) return;
                                       final createdId = await ref
@@ -159,6 +258,7 @@ class AssistantDialogsScreen extends ConsumerWidget {
                                             name: nameCtrl.text.trim(),
                                             description: descCtrl.text.trim(),
                                           );
+                                      if (!ctx.mounted) return;
                                       Navigator.of(ctx).pop(createdId);
                                     },
                                   ),
