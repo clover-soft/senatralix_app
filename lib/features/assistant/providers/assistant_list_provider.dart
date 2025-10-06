@@ -107,6 +107,23 @@ class AssistantListNotifier extends StateNotifier<AssistantListState> {
     );
   }
 
+  /// Установить привязанный сценарий диалога к ассистенту
+  void setDialogId(String id, int? dialogId) {
+    state = state.copyWith(
+      items: state.items.map((e) {
+        if (e.id != id) return e;
+        // Явно создаём новый экземпляр с заданным dialogId (включая null)
+        return Assistant(
+          id: e.id,
+          name: e.name,
+          description: e.description,
+          settings: e.settings,
+          dialogId: dialogId,
+        );
+      }).toList(),
+    );
+  }
+
   /// Полная замена списка ассистентов (после загрузки с бэкенда)
   void replaceAll(List<Assistant> items) {
     state = state.copyWith(items: List<Assistant>.from(items));

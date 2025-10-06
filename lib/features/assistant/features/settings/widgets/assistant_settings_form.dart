@@ -7,6 +7,8 @@ import 'package:sentralix_app/features/assistant/models/assistant_settings.dart'
 import 'package:sentralix_app/features/assistant/providers/assistant_list_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 import 'package:remixicon/remixicon.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_providers.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
 
 /// Форма настроек ассистента (ConsumerWidget + локальный провайдер состояния)
 class AssistantSettingsForm extends ConsumerStatefulWidget {
@@ -94,6 +96,7 @@ class AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
           name: ref.read(assistantListProvider).byId(widget.assistantId)?.name ?? '',
           description: ref.read(assistantListProvider).byId(widget.assistantId)?.description,
           settings: data,
+          dialogId: ref.read(assistantListProvider).byId(widget.assistantId)?.dialogId,
         );
         // Обновим список ассистентов и настройки по ответу сервера
         assistantsNotifier.rename(updated.id, updated.name,
@@ -214,6 +217,43 @@ class AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
           ),
 
           const SizedBox(height: 16),
+
+          // Привязанный сценарий (dialog)
+          Consumer(builder: (context, ref, _) {
+            final dialogsAsync = ref.watch(dialogConfigsProvider);
+            final assistant = ref.watch(assistantListProvider).byId(widget.assistantId);
+            final selectedDialogId = assistant?.dialogId;
+            return dialogsAsync.when(
+              loading: () => const SizedBox.shrink(),
+              error: (e, st) => const SizedBox.shrink(),
+              data: (list) {
+                final items = <DropdownMenuItem<int?>>[
+                  const DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text('— не привязан —'),
+                  ),
+                  ...list.map((DialogConfigShort c) => DropdownMenuItem<int?>(
+                        value: c.id,
+                        child: Text('${c.id}: ${c.name}'),
+                      )),
+                ];
+                return DropdownButtonFormField<int?>(
+                  initialValue: selectedDialogId,
+                  items: items,
+                  onChanged: (v) {
+                    ref.read(assistantListProvider.notifier).setDialogId(
+                          widget.assistantId,
+                          v,
+                        );
+                  },
+                  decoration: const InputDecoration(
+                    labelText: 'Привязанный сценарий (dialog)',
+                    helperText: 'Выберите сценарий для ассистента',
+                  ),
+                );
+              },
+            );
+          }),
 
           // Температура
           Text(

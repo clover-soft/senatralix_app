@@ -402,6 +402,7 @@ class AssistantApi {
     required String name,
     String? description,
     required AssistantSettings settings,
+    int? dialogId,
   }) async {
     final body = <String, dynamic>{
       'name': name,
@@ -412,6 +413,8 @@ class AssistantApi {
       'maxTokens': settings.maxTokens,
       'instruction': settings.instruction,
       'temperature': settings.temperature,
+      // Передаём dialog_id всегда: null снимает привязку
+      'dialog_id': dialogId,
     };
     final resp = await _client.patch<dynamic>(
       '/assistants/$assistantId/core',
@@ -426,6 +429,9 @@ class AssistantApi {
           ? AssistantSettings.fromBackend(
               Map<String, dynamic>.from(data['settings'] as Map),
             )
+          : null,
+      dialogId: (data['dialog_id'] != null)
+          ? int.tryParse('${data['dialog_id']}')
           : null,
     );
   }
@@ -445,6 +451,9 @@ class AssistantApi {
                 ? AssistantSettings.fromBackend(
                     Map<String, dynamic>.from(e['settings'] as Map),
                   )
+                : null,
+            dialogId: (e['dialog_id'] != null)
+                ? int.tryParse('${e['dialog_id']}')
                 : null,
           ),
         )

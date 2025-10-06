@@ -6,12 +6,15 @@ class Assistant {
   final String name;
   final String? description;
   final AssistantSettings? settings; // настройки ассистента (опционально)
+  /// Идентификатор связанного сценария диалога (если задан на бэкенде)
+  final int? dialogId;
 
   const Assistant({
     required this.id,
     required this.name,
     this.description,
     this.settings,
+    this.dialogId,
   });
 
   Assistant copyWith({
@@ -19,10 +22,12 @@ class Assistant {
     String? name,
     String? description,
     AssistantSettings? settings,
+    int? dialogId,
   }) => Assistant(
     id: id ?? this.id,
     name: name ?? this.name,
     description: description ?? this.description,
     settings: settings ?? this.settings,
+    dialogId: dialogId ?? this.dialogId,
   );
 }
