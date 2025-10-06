@@ -23,72 +23,42 @@ void drawBackEdgeTopRightBypass({
   // Точки выхода
   final exitX = fromRect.left + fromRect.width * 0.75;
   final p0 = Offset(exitX, fromRect.top); // выход с верхней грани
-  // Горизонтальная полка для этого маршрута — ровно через 20px от источника
-  // (по требованию: «поворачивать направо через 20px»). Далее при необходимости поднимем её выше препятствий.
-  double shelfY = fromRect.top - shelfUp;
+  // Горизонтальная полка для этого маршрута:
+  // (строго по ТЗ) поворот направо через 20px от ИСТОЧНИКА
+  final double shelfY = fromRect.top - shelfUp; // fromRect.top - 20
 
-  // Базовая правая ось: правая грань самого правого прямоугольника + 20
-  double xMax = (allBounds?.right ?? toRect.right) + 20.0;
-  // Гарантируем минимальную длину полки (чтобы было визуально заметно)
-  final double minShelfLen = 30.0;
-  final double xStart = (p0.dx + r);
-  final double minX = xStart + minShelfLen;
-  if (xMax < minX) xMax = minX;
-
-  // Поднимаем полку, если на её пути есть нода. y растёт вниз, поэтому «поднять» = уменьшить Y.
-  const double clearance = 10.0;
+  // Вертикальная ось для правого обхода: берём максимум правых граней
+  double xAxis = toRect.right + 20.0;
   for (final rct in nodeRects) {
-    final bool crossesHorizontally = (rct.right > xStart) && (rct.left < xMax);
-    final bool crossesVertically = (rct.top - 0.5 <= shelfY) && (rct.bottom + 0.5 >= shelfY);
-    if (crossesHorizontally && crossesVertically) {
-      final double candidate = rct.top - clearance;
-      if (candidate < shelfY) shelfY = candidate; // поднимаем полку над верхом препятствия
-    }
+    xAxis = math.max(xAxis, rct.right + 0.0);
   }
 
-  // Если по пути справа налево к цели встречаются ноды на уровне цели — расширяем вправо на 80
-  bool hasObstacleAtY(double y, double fromX, double toX) {
-    for (final rct in nodeRects) {
-      if (rct.top <= y && rct.bottom >= y) {
-        final overlapsX = rct.left < fromX && rct.right > toX;
-        if (overlapsX) return true;
-      }
-    }
-    return false;
-  }
+  // Целевые уровни по Y
+  final double y1 = shelfY;            // полка после выхода из источника (источник.top - 20)
+  final double y2 = toRect.top - 25.0; // уровень над приёмником
 
-  if (hasObstacleAtY(toRect.center.dy, xMax, toRect.right)) {
-    xMax += 80.0;
-  }
+  // Геометрия стрелки: вход в верхнюю грань приёмника
+  final double arrowX = toRect.right - 20.0;
+  final Offset arrowEnd = Offset(arrowX, toRect.top + 0.5);
+  final double angle = math.pi / 2; // стрелка вниз
 
-  // Геометрия стрелки: входим в правую грань цели
-  final arrowEnd = Offset(toRect.right - 1.0, toRect.center.dy);
-  final prevForArrow = Offset(arrowEnd.dx + 6.0, arrowEnd.dy);
-  final vx = arrowEnd.dx - prevForArrow.dx;
-  final vy = arrowEnd.dy - prevForArrow.dy;
-  final angle = math.atan2(vy, vx);
-
-  // Строим путь до основания стрелки:
-  // 1) Выход вверх из p0 на 20px до shelfY с мягким скруглением (r=6)
-  // 2) Поворот вправо на полку shelfY (r=6)
-  // 3) Идём по полке вправо до xMax, затем поворот на вертикаль у xMax (r=6)
-  // 4) Вертикально к уровню центра цели и подход к правой грани
+  // Строим путь:
+  // 1) p0 -> вверх до y1 и поворот вправо r=6
   final path = Path()
     ..moveTo(p0.dx, p0.dy)
-    // 1) Подъём: p0 -> почти до shelfY
-    ..lineTo(p0.dx, shelfY + r)
-    // скругление на повороте вправо к полке (четверть окружности r=6)
-    ..quadraticBezierTo(p0.dx, shelfY, p0.dx + r, shelfY)
-    // 2) Полка: вправо до xMax с дугой r=6 на повороте к вертикали (направление зависит от положения цели)
-    ..lineTo(xMax - r, shelfY)
-    ..arcToPoint(
-      Offset(xMax, shelfY + ((toRect.center.dy >= shelfY) ? r : -r)),
-      radius: const Radius.circular(r),
-      clockwise: (toRect.center.dy >= shelfY),
-    )
-    // 3) Вертикально к уровню цели с небольшим скруглением к горизонтали подхода
-    ..lineTo(xMax, toRect.center.dy - ((toRect.center.dy >= shelfY) ? r : -r))
-    ..quadraticBezierTo(xMax, toRect.center.dy, xMax - r, toRect.center.dy);
+    ..lineTo(p0.dx, y1 + r)
+    ..quadraticBezierTo(p0.dx, y1, p0.dx + r, y1)
+    // 2) вправо до xAxis и поворот вверх r=6
+    ..lineTo(xAxis - r, y1)
+    ..arcToPoint(Offset(xAxis, y1 - r), radius: const Radius.circular(r), clockwise: false)
+    // 3) вверх до y2 и поворот влево r=6
+    ..lineTo(xAxis, y2 + r)
+    ..arcToPoint(Offset(xAxis - r, y2), radius: const Radius.circular(r), clockwise: false)
+    // 4) влево до (arrowX) и поворот вниз r=6
+    ..lineTo(arrowX - r, y2)
+    ..arcToPoint(Offset(arrowX, y2 + r), radius: const Radius.circular(r), clockwise: true)
+    // 5) вниз до верхней грани приёмника - 10
+    ..lineTo(arrowX, toRect.top - 10.0);
 
   // Доводим до основания стрелки и рисуем
   lineToArrowBase(path: path, arrowEnd: arrowEnd, angle: angle, headLen: 12.0);
