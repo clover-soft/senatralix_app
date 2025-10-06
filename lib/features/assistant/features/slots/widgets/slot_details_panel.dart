@@ -336,6 +336,7 @@ class _SlotDetailsPanelState extends ConsumerState<SlotDetailsPanel> {
                             onPressed: (_nameError != null || _saving)
                                 ? null
                                 : () async {
+                                    final ctx = context; // сохранить локальный BuildContext
                                     // Валидация метаданных
                                     Map<String, dynamic> metadata = const {};
                                     final raw = _metadataCtrl.text.trim();
@@ -345,13 +346,15 @@ class _SlotDetailsPanelState extends ConsumerState<SlotDetailsPanel> {
                                         if (parsed is Map) {
                                           metadata = Map<String, dynamic>.from(parsed);
                                         } else {
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          if (!ctx.mounted) return;
+                                          ScaffoldMessenger.of(ctx).showSnackBar(
                                             const SnackBar(content: Text('Metadata должен быть объектом JSON')),
                                           );
                                           return;
                                         }
                                       } catch (e) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        if (!ctx.mounted) return;
+                                        ScaffoldMessenger.of(ctx).showSnackBar(
                                           SnackBar(content: Text('Некорректный JSON metadata: $e')),
                                         );
                                         return;
@@ -361,7 +364,8 @@ class _SlotDetailsPanelState extends ConsumerState<SlotDetailsPanel> {
                                     // Имя не должно быть пустым и без запрещённого префикса
                                     final name = _nameCtrl.text.trim();
                                     if (name.isEmpty) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      if (!ctx.mounted) return;
+                                      ScaffoldMessenger.of(ctx).showSnackBar(
                                         const SnackBar(content: Text('Имя (key) не должно быть пустым')),
                                       );
                                       return;
@@ -418,13 +422,13 @@ class _SlotDetailsPanelState extends ConsumerState<SlotDetailsPanel> {
                                       // Обновим список
                                       ref.invalidate(dialogSlotsProvider);
 
-                                      if (!mounted) return;
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      if (!ctx.mounted) return;
+                                      ScaffoldMessenger.of(ctx).showSnackBar(
                                         const SnackBar(content: Text('Слот сохранён')),
                                       );
                                     } catch (e) {
-                                      if (!mounted) return;
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      if (!ctx.mounted) return;
+                                      ScaffoldMessenger.of(ctx).showSnackBar(
                                         SnackBar(content: Text('Ошибка при сохранении: $e')),
                                       );
                                     } finally {

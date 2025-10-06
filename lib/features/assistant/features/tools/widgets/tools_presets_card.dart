@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:sentralix_app/features/assistant/features/tools/data/tool_presets.dart';
 
-/// Карточка пресетов инструментов. Каждый пресет — Draggable<ToolPreset>.
+/// Карточка пресетов инструментов. Каждый пресет — `Draggable<ToolPreset>`.
 class ToolsPresetsCard extends StatelessWidget {
   const ToolsPresetsCard({super.key});
 

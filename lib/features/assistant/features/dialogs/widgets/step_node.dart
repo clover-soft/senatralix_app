@@ -121,7 +121,8 @@ class StepNode extends StatelessWidget {
           right: 6,
           bottom: 6,
           child: DialogsNodeActionsPanel(
-            onAddNext: onAddNext,
+            // Скрываем кнопку "+" если для шага уже назначен следующий шаг
+            onAddNext: step.next == null ? onAddNext : null,
             onSettings: onSettings,
             onDelete: onDelete,
           ),

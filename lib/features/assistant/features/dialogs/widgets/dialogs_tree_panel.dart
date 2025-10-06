@@ -764,14 +764,14 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                             false; // разрешаем авто/принудительный фит после обновления
                       });
                       // Принудительное вписывание после обновления
-                      if (!mounted) return;
-                      final rb = context.findRenderObject() as RenderBox?;
+                      final ctx = context; // сохранить BuildContext
+                      if (!ctx.mounted) return;
+                      final rb = ctx.findRenderObject() as RenderBox?;
                       if (rb != null && rb.hasSize) {
                         final viewportSize = rb.size;
                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted) {
-                            _fitAndCenter(viewportSize, force: true);
-                          }
+                          if (!ctx.mounted) return;
+                          _fitAndCenter(viewportSize, force: true);
                         });
                       }
                     },

@@ -51,15 +51,22 @@ class DialogsNodeActionsPanel extends StatelessWidget {
       );
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
+    final List<Widget> buttons = [];
+    if (onAddNext != null) {
+      buttons.addAll([
         action(tooltip: 'Добавить шаг', icon: Icons.add, onTap: onAddNext),
         const SizedBox(width: 8),
-        action(tooltip: 'Настройки шага', icon: Icons.settings, onTap: onSettings),
-        const SizedBox(width: 8),
-        action(tooltip: 'Удалить шаг', icon: Icons.delete_outline, onTap: onDelete),
-      ],
+      ]);
+    }
+    buttons.addAll([
+      action(tooltip: 'Настройки шага', icon: Icons.settings, onTap: onSettings),
+      const SizedBox(width: 8),
+      action(tooltip: 'Удалить шаг', icon: Icons.delete_outline, onTap: onDelete),
+    ]);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: buttons,
     );
   }
 }

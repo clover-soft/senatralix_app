@@ -130,7 +130,7 @@ class _Filters extends ConsumerWidget {
           width: 220,
           child: DropdownButtonFormField<String>(
             isDense: true,
-            value: type,
+            initialValue: type,
             items: [
               const DropdownMenuItem<String>(
                 value: '',
