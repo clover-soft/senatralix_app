@@ -72,6 +72,44 @@ class _BackEdgesPainter extends CustomPainter {
     final double routeX = (allBounds?.right ?? 0) + 20.0;
     const double cornerRBase = 0;
 
+    // Предрасчёт осей для вертикальных участков, чтобы параллельные рёбра не накладывались:
+    // группируем по базовой оси (для правых обходов это routeX, для крайних правых таргетов — right+20),
+    // сортируем по высоте источника и смещаем каждое следующее на +20px вправо
+    final Map<String, double> axisXForEdge = {};
+    final List<Map<String, dynamic>> items = [];
+    for (final e in backEdges) {
+      final fromKey = nodeKeys[e.key];
+      final toKey = nodeKeys[e.value];
+      if (fromKey == null || toKey == null) continue;
+      final fromRect = _nodeRect(fromKey);
+      final toRect = _nodeRect(toKey);
+      if (fromRect == null || toRect == null) continue;
+      final xRight = toRect.right;
+      final yCenter = toRect.center.dy;
+      final bool isRightmostTarget = xRight >= ((allBounds?.right ?? xRight) - 0.5);
+      final double baseX = isRightmostTarget ? (xRight + 20.0) : routeX;
+      final String edgeKey = '${e.key}->${e.value}';
+      items.add({
+        'key': edgeKey,
+        'baseX': baseX,
+        'p0y': fromRect.center.dy,
+      });
+    }
+    // Группировка и присвоение смещений
+    final Map<String, List<Map<String, dynamic>>> groups = {};
+    for (final it in items) {
+      final String gk = (it['baseX'] as double).toStringAsFixed(1);
+      (groups[gk] ??= []).add(it);
+    }
+    for (final entry in groups.entries) {
+      final list = entry.value;
+      list.sort((a, b) => (a['p0y'] as double).compareTo(b['p0y'] as double));
+      for (var i = 0; i < list.length; i++) {
+        final double base = list[i]['baseX'] as double;
+        axisXForEdge[list[i]['key'] as String] = base + 20.0 * i;
+      }
+    }
+
     for (final e in backEdges) {
       final fromKey = nodeKeys[e.key];
       final toKey = nodeKeys[e.value];
@@ -97,8 +135,9 @@ class _BackEdgesPainter extends CustomPainter {
         final bool isRightmostTarget = xRight >= ((allBounds?.right ?? xRight) - 0.5);
 
         if (isRightmostTarget) {
+          final String edgeKey = '${e.key}->${e.value}';
+          final double xAxis = axisXForEdge[edgeKey] ?? (xRight + 20.0);
           final double sVert = yCenter >= p0.dy ? 1.0 : -1.0; // направление до центра таргета
-          final double xAxis = xRight + 20.0; // ось правой границы таргета +20px
           final Path path = Path()
             ..moveTo(p0.dx, p0.dy)
             // вправо до оси xAxis с запасом r и скругление вверх
@@ -139,15 +178,17 @@ class _BackEdgesPainter extends CustomPainter {
           final double xApproach = toRect.right + 20.0;
           final double sUp = yUp >= p0.dy ? 1.0 : -1.0; // направление по вертикали к yUp
           final double sDown = arrowEnd.dy >= yUp ? 1.0 : -1.0; // направление к уровню цели
+          final String edgeKey = '${e.key}->${e.value}';
+          final double axisX = axisXForEdge[edgeKey] ?? routeX;
 
           final Path path = Path()
             ..moveTo(p0.dx, p0.dy)
             // вправо до routeX с запасом r и скругление вверх
-            ..lineTo(routeX - r, p0.dy)
-            ..quadraticBezierTo(routeX, p0.dy, routeX, p0.dy + sUp * r)
+            ..lineTo(axisX - r, p0.dy)
+            ..quadraticBezierTo(axisX, p0.dy, axisX, p0.dy + sUp * r)
             // вертикально до yUp с запасом и скругление влево
-            ..lineTo(routeX, yUp - sUp * r)
-            ..quadraticBezierTo(routeX, yUp, routeX - r, yUp)
+            ..lineTo(axisX, yUp - sUp * r)
+            ..quadraticBezierTo(axisX, yUp, axisX - r, yUp)
             // влево до xApproach с запасом и скругление вниз
             ..lineTo(xApproach + r, yUp)
             ..quadraticBezierTo(xApproach, yUp, xApproach, yUp + sDown * r)

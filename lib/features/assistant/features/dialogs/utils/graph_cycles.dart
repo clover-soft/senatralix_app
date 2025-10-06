@@ -114,15 +114,25 @@ List<MapEntry<int, int>> selectEdgesToOmit(List<DialogStep> steps) {
     final v = e.value;
     final du = level[u] ?? (1 << 30);
     final dv = level[v] ?? (1 << 30);
-    if (dv < du) {
-      // v выше u — это «вверх»; оставить как есть
+    // Выбираем ребро, направленное из более глубокого уровня к более высокому («вверх»)
+    if (du > dv) {
+      // u глубже v — e(u->v) идёт вверх
       omit.add(e);
-    } else if (hasEdge(v, u) && (level[u] ?? 0) < (level[v] ?? 0)) {
-      // есть обратное ребро и оно «вверх» — предпочесть его
-      omit.add(MapEntry(v, u));
+    } else if (dv > du) {
+      // v глубже u — если есть обратное ребро, выберем его как «вверх»
+      if (hasEdge(v, u)) {
+        omit.add(MapEntry(v, u));
+      } else {
+        // нет обратного — выбора нет, оставляем исходное
+        omit.add(e);
+      }
     } else {
-      // fallback — как есть
-      omit.add(e);
+      // du == dv (один уровень). Предпочтем обратное, если оно есть, чтобы получить «вверх» при раскладке
+      if (hasEdge(v, u)) {
+        omit.add(MapEntry(v, u));
+      } else {
+        omit.add(e);
+      }
     }
   }
   // Уникализируем
