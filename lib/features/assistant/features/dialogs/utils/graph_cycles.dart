@@ -79,7 +79,15 @@ Map<int, int> _computeLevels(List<DialogStep> steps) {
       indeg[v] = (indeg[v] ?? 0) + 1;
     }
   });
-  final roots = nodes.where((n) => (indeg[n] ?? 0) == 0).toList();
+  var roots = nodes.where((n) => (indeg[n] ?? 0) == 0).toList();
+  if (roots.isEmpty && nodes.isNotEmpty) {
+    // Фолбэк: используем вершины с минимальной входящей степенью как корни
+    final minIn = indeg.values.fold<int>(1 << 30, (m, v) => v < m ? v : m);
+    roots = nodes.where((n) => (indeg[n] ?? 0) == minIn).toList();
+    // Если и это не помогло (теоретически), возьмём минимальный id
+    roots.sort();
+    if (roots.isEmpty) roots = [nodes.reduce((a, b) => a < b ? a : b)];
+  }
   final dist = <int, int>{for (final n in nodes) n: 1 << 30};
   final queue = <int>[];
   for (final r in roots) {
@@ -142,5 +150,13 @@ List<MapEntry<int, int>> selectEdgesToOmit(List<DialogStep> steps) {
     final k = '${e.key}->${e.value}';
     if (seen.add(k)) unique.add(e);
   }
+  // Отладочный лог: уровни и выбранные рёбра для исключения
+  try {
+    final levelsStr = level.entries.map((e) => '${e.key}:${e.value}').join(', ');
+    final backsStr = backs.map((e) => '${e.key}->${e.value}').join(', ');
+    final omitStr = unique.map((e) => '${e.key}->${e.value}').join(', ');
+    // Используем print, чтобы не тянуть зависимости логгера в утилиту
+    print('[GraphCycles] levels={$levelsStr} backs=[$backsStr] omit=[$omitStr]');
+  } catch (_) {}
   return unique;
 }

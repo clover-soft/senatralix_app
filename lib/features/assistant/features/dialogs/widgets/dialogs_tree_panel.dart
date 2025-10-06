@@ -138,6 +138,7 @@ class _BackEdgesPainter extends CustomPainter {
           final String edgeKey = '${e.key}->${e.value}';
           final double xAxis = axisXForEdge[edgeKey] ?? (xRight + 20.0);
           final double sVert = yCenter >= p0.dy ? 1.0 : -1.0; // направление до центра таргета
+          // Строим путь до основания стрелки (baseX, baseY), чтобы линия не вылезала из треугольника
           final Path path = Path()
             ..moveTo(p0.dx, p0.dy)
             // вправо до оси xAxis с запасом r и скругление вверх
@@ -145,32 +146,43 @@ class _BackEdgesPainter extends CustomPainter {
             ..quadraticBezierTo(xAxis, p0.dy, xAxis, p0.dy + sVert * r)
             // вертикально до уровня центра таргета и скругление влево
             ..lineTo(xAxis, yCenter - sVert * r)
-            ..quadraticBezierTo(xAxis, yCenter, xAxis - r, yCenter)
-            // финальный короткий участок влево к вершине стрелки
-            ..lineTo(arrowEnd.dx, arrowEnd.dy);
+            ..quadraticBezierTo(xAxis, yCenter, xAxis - r, yCenter);
 
-          canvas.drawPath(path, edgePaint);
-
+          // Геометрия треугольной стрелки и основание
           final prevForArrow = Offset(arrowEnd.dx + 6.0, arrowEnd.dy);
           final vx = arrowEnd.dx - prevForArrow.dx;
           final vy = arrowEnd.dy - prevForArrow.dy;
           final angle = math.atan2(vy, vx);
-          const double ah = 8;
-          const double aw = 4;
-          final a1 = Offset(
-            arrowEnd.dx - ah * math.cos(angle) + aw * math.sin(angle),
-            arrowEnd.dy - ah * math.sin(angle) - aw * math.cos(angle),
+          const double headLen = 12.0;
+          const double headWidth = 10.0;
+          final double ux = math.cos(angle);
+          final double uy = math.sin(angle);
+          final double baseX = arrowEnd.dx - headLen * ux;
+          final double baseY = arrowEnd.dy - headLen * uy;
+          final double px = -uy; // перпендикуляр (x)
+          final double py = ux;  // перпендикуляр (y)
+
+          // Доведём путь только до основания стрелки
+          path.lineTo(baseX, baseY);
+          canvas.drawPath(path, edgePaint);
+
+          final Offset left = Offset(
+            baseX + (headWidth / 2) * px,
+            baseY + (headWidth / 2) * py,
           );
-          final a2 = Offset(
-            arrowEnd.dx - ah * math.cos(angle) - aw * math.sin(angle),
-            arrowEnd.dy - ah * math.sin(angle) + aw * math.cos(angle),
+          final Offset right = Offset(
+            baseX - (headWidth / 2) * px,
+            baseY - (headWidth / 2) * py,
           );
-          final arrowPath = Path()
+          final Path arrowHead = Path()
             ..moveTo(arrowEnd.dx, arrowEnd.dy)
-            ..lineTo(a1.dx, a1.dy)
-            ..moveTo(arrowEnd.dx, arrowEnd.dy)
-            ..lineTo(a2.dx, a2.dy);
-          canvas.drawPath(arrowPath, edgePaint);
+            ..lineTo(left.dx, left.dy)
+            ..lineTo(right.dx, right.dy)
+            ..close();
+          final Paint fillPaint = Paint()
+            ..color = color
+            ..style = PaintingStyle.fill;
+          canvas.drawPath(arrowHead, fillPaint);
           continue; // Старую маршрутизацию не выполняем
         } else {
           // Вариант B: прежняя трасса через routeX и верхнюю полку yUp
@@ -180,6 +192,18 @@ class _BackEdgesPainter extends CustomPainter {
           final double sDown = arrowEnd.dy >= yUp ? 1.0 : -1.0; // направление к уровню цели
           final String edgeKey = '${e.key}->${e.value}';
           final double axisX = axisXForEdge[edgeKey] ?? routeX;
+
+          // Геометрия треугольной стрелки: вычисляем основание заранее
+          final prevForArrow = Offset(arrowEnd.dx + 6.0, arrowEnd.dy);
+          final vx = arrowEnd.dx - prevForArrow.dx;
+          final vy = arrowEnd.dy - prevForArrow.dy;
+          final angle = math.atan2(vy, vx);
+          const double headLen = 12.0;
+          const double headWidth = 10.0;
+          final double ux = math.cos(angle);
+          final double uy = math.sin(angle);
+          final double baseX = arrowEnd.dx - headLen * ux;
+          final double baseY = arrowEnd.dy - headLen * uy;
 
           final Path path = Path()
             ..moveTo(p0.dx, p0.dy)
@@ -195,31 +219,29 @@ class _BackEdgesPainter extends CustomPainter {
             // вниз до уровня цели с запасом и скругление влево
             ..lineTo(xApproach, arrowEnd.dy - sDown * r)
             ..quadraticBezierTo(xApproach, arrowEnd.dy, xApproach - r, arrowEnd.dy)
-            // финальный короткий участок влево к вершине стрелки
-            ..lineTo(arrowEnd.dx, arrowEnd.dy);
+            // финальный короткий участок влево до основания стрелки
+            ..lineTo(baseX, baseY);
 
           canvas.drawPath(path, edgePaint);
-
-          final prevForArrow = Offset(arrowEnd.dx + 6.0, arrowEnd.dy);
-          final vx = arrowEnd.dx - prevForArrow.dx;
-          final vy = arrowEnd.dy - prevForArrow.dy;
-          final angle = math.atan2(vy, vx);
-          const double ah = 8;
-          const double aw = 4;
-          final a1 = Offset(
-            arrowEnd.dx - ah * math.cos(angle) + aw * math.sin(angle),
-            arrowEnd.dy - ah * math.sin(angle) - aw * math.cos(angle),
+          final double px = -uy;
+          final double py = ux;
+          final Offset left = Offset(
+            baseX + (headWidth / 2) * px,
+            baseY + (headWidth / 2) * py,
           );
-          final a2 = Offset(
-            arrowEnd.dx - ah * math.cos(angle) - aw * math.sin(angle),
-            arrowEnd.dy - ah * math.sin(angle) + aw * math.cos(angle),
+          final Offset right = Offset(
+            baseX - (headWidth / 2) * px,
+            baseY - (headWidth / 2) * py,
           );
-          final arrowPath = Path()
+          final Path arrowHead = Path()
             ..moveTo(arrowEnd.dx, arrowEnd.dy)
-            ..lineTo(a1.dx, a1.dy)
-            ..moveTo(arrowEnd.dx, arrowEnd.dy)
-            ..lineTo(a2.dx, a2.dy);
-          canvas.drawPath(arrowPath, edgePaint);
+            ..lineTo(left.dx, left.dy)
+            ..lineTo(right.dx, right.dy)
+            ..close();
+          final Paint fillPaint = Paint()
+            ..color = color
+            ..style = PaintingStyle.fill;
+          canvas.drawPath(arrowHead, fillPaint);
           continue; // Старую маршрутизацию не выполняем
         }
       }
