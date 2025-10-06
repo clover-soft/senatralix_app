@@ -30,11 +30,12 @@ void drawBackEdgeTopRightBypass({
   // Вертикальная ось для правого обхода: берём максимум правых граней
   double xAxis = toRect.right + 20.0;
   for (final rct in nodeRects) {
-    xAxis = math.max(xAxis, rct.right + 0.0);
+    xAxis = math.max(xAxis, rct.right + 20.0);
   }
 
   // Целевые уровни по Y
-  final double y1 = shelfY;            // полка после выхода из источника (источник.top - 20)
+  final double y1 =
+      shelfY; // полка после выхода из источника (источник.top - 20)
   final double y2 = toRect.top - 25.0; // уровень над приёмником
 
   // Геометрия стрелки: вход в верхнюю грань приёмника
@@ -50,15 +51,27 @@ void drawBackEdgeTopRightBypass({
     ..quadraticBezierTo(p0.dx, y1, p0.dx + r, y1)
     // 2) вправо до xAxis и поворот вверх r=6
     ..lineTo(xAxis - r, y1)
-    ..arcToPoint(Offset(xAxis, y1 - r), radius: const Radius.circular(r), clockwise: false)
+    ..arcToPoint(
+      Offset(xAxis, y1 - r),
+      radius: const Radius.circular(r),
+      clockwise: false,
+    )
     // 3) вверх до y2 и поворот влево r=6
     ..lineTo(xAxis, y2 + r)
-    ..arcToPoint(Offset(xAxis - r, y2), radius: const Radius.circular(r), clockwise: false)
+    ..arcToPoint(
+      Offset(xAxis - r, y2),
+      radius: const Radius.circular(r),
+      clockwise: false,
+    )
     // 4) влево до (arrowX) и поворот вниз r=6
-    ..lineTo(arrowX - r, y2)
-    ..arcToPoint(Offset(arrowX, y2 + r), radius: const Radius.circular(r), clockwise: true)
+    ..lineTo(arrowX + r, y2)
+    ..arcToPoint(
+      Offset(arrowX, y2 + r),
+      radius: const Radius.circular(r),
+      clockwise: false,
+    )
     // 5) вниз до верхней грани приёмника - 10
-    ..lineTo(arrowX, toRect.top - 10.0);
+    ..lineTo(arrowX, toRect.top - 5.0);
 
   // Доводим до основания стрелки и рисуем
   lineToArrowBase(path: path, arrowEnd: arrowEnd, angle: angle, headLen: 12.0);

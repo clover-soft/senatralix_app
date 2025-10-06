@@ -56,7 +56,7 @@ class _BackEdgesPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    Rect? _nodeRect(GlobalKey key) {
+    Rect? nodeRect(GlobalKey key) {
       final ctx = key.currentContext;
       if (ctx == null) return null;
       final box = ctx.findRenderObject() as RenderBox?;
@@ -69,13 +69,12 @@ class _BackEdgesPainter extends CustomPainter {
     Rect? allBounds;
     final List<Rect> allNodeRects = [];
     for (final key in nodeKeys.values) {
-      final r = _nodeRect(key);
+      final r = nodeRect(key);
       if (r == null) continue;
       allBounds = allBounds == null ? r : allBounds.expandToInclude(r);
       allNodeRects.add(r);
     }
     final double routeX = (allBounds?.right ?? 0) + 20.0;
-    const double cornerRBase = 0;
 
     // Предрасчёт осей для вертикальных участков, чтобы параллельные рёбра не накладывались:
     // группируем по базовой оси (для правых обходов это routeX, для крайних правых таргетов — right+20),
@@ -86,18 +85,15 @@ class _BackEdgesPainter extends CustomPainter {
       final fromKey = nodeKeys[e.key];
       final toKey = nodeKeys[e.value];
       if (fromKey == null || toKey == null) continue;
-      final fromRect = _nodeRect(fromKey);
-      final toRect = _nodeRect(toKey);
+      final fromRect = nodeRect(fromKey);
+      final toRect = nodeRect(toKey);
       if (fromRect == null || toRect == null) continue;
       final double xRight = toRect.right;
-      final bool isRightmostTarget = xRight >= ((allBounds?.right ?? xRight) - 0.5);
+      final bool isRightmostTarget =
+          xRight >= ((allBounds?.right ?? xRight) - 0.5);
       final double baseX = isRightmostTarget ? (xRight + 20.0) : routeX;
       final String edgeKey = '${e.key}->${e.value}';
-      items.add({
-        'key': edgeKey,
-        'baseX': baseX,
-        'p0y': fromRect.center.dy,
-      });
+      items.add({'key': edgeKey, 'baseX': baseX, 'p0y': fromRect.center.dy});
     }
     final Map<String, List<Map<String, dynamic>>> groups = {};
     for (final it in items) {
@@ -118,8 +114,8 @@ class _BackEdgesPainter extends CustomPainter {
       final fromKey = nodeKeys[e.key];
       final toKey = nodeKeys[e.value];
       if (fromKey == null || toKey == null) continue;
-      final fromRect = _nodeRect(fromKey);
-      final toRect = _nodeRect(toKey);
+      final fromRect = nodeRect(fromKey);
+      final toRect = nodeRect(toKey);
       if (fromRect == null || toRect == null) continue;
 
       final route = detectBackEdgeRoute(

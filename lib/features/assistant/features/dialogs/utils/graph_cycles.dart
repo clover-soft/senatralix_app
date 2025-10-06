@@ -22,7 +22,9 @@ bool hasDialogCycles(List<DialogStep> steps) {
   if (steps.isEmpty) return false;
   final g = _buildAdjacency(steps);
   final nodes = g.keys.toSet();
-  final color = <int, int>{for (final id in nodes) id: 0}; // 0 white, 1 gray, 2 black
+  final color = <int, int>{
+    for (final id in nodes) id: 0,
+  }; // 0 white, 1 gray, 2 black
 
   bool dfs(int u) {
     color[u] = 1; // gray
@@ -66,45 +68,6 @@ List<MapEntry<int, int>> findBackEdges(List<DialogStep> steps) {
     if (color[id] == 0) dfs(id);
   }
   return result;
-}
-
-/// Посчитать дистанции (уровни) от корней (вершины без входящих рёбер).
-Map<int, int> _computeLevels(List<DialogStep> steps) {
-  final g = _buildAdjacency(steps);
-  final nodes = g.keys.toSet();
-  // Входящие
-  final indeg = <int, int>{for (final n in nodes) n: 0};
-  g.forEach((u, outs) {
-    for (final v in outs) {
-      indeg[v] = (indeg[v] ?? 0) + 1;
-    }
-  });
-  var roots = nodes.where((n) => (indeg[n] ?? 0) == 0).toList();
-  if (roots.isEmpty && nodes.isNotEmpty) {
-    // Фолбэк: используем вершины с минимальной входящей степенью как корни
-    final minIn = indeg.values.fold<int>(1 << 30, (m, v) => v < m ? v : m);
-    roots = nodes.where((n) => (indeg[n] ?? 0) == minIn).toList();
-    // Если и это не помогло (теоретически), возьмём минимальный id
-    roots.sort();
-    if (roots.isEmpty) roots = [nodes.reduce((a, b) => a < b ? a : b)];
-  }
-  final dist = <int, int>{for (final n in nodes) n: 1 << 30};
-  final queue = <int>[];
-  for (final r in roots) {
-    dist[r] = 0;
-    queue.add(r);
-  }
-  while (queue.isNotEmpty) {
-    final u = queue.removeAt(0);
-    for (final v in g[u] ?? const <int>[]) {
-      final nd = dist[u]! + 1;
-      if (nd < (dist[v] ?? (1 << 30))) {
-        dist[v] = nd;
-        queue.add(v);
-      }
-    }
-  }
-  return dist;
 }
 
 /// Выбрать рёбра для исключения из Sugiyama так, чтобы удалялись именно «вверх» направленные связи.
@@ -185,14 +148,21 @@ List<MapEntry<int, int>> selectEdgesToOmit(List<DialogStep> steps) {
   }
   // Лог
   try {
-    final levelsStr = level.entries.map((e) => '${e.key}:${e.value}').join(', ');
+    final levelsStr = level.entries
+        .map((e) => '${e.key}:${e.value}')
+        .join(', ');
     final predsStr = preds.entries
-        .map((e) => '${e.key}<=[${e.value.join(',')}] (min=${(e.value.isEmpty)?'inf':(e.value.map((u)=>level[u]??(1<<30)).reduce((a,b)=>a<b?a:b))})')
+        .map(
+          (e) =>
+              '${e.key}<=[${e.value.join(',')}] (min=${(e.value.isEmpty) ? 'inf' : (e.value.map((u) => level[u] ?? (1 << 30)).reduce((a, b) => a < b ? a : b))})',
+        )
         .join('; ');
     final edgesStr = edges.map((e) => '${e.key}->${e.value}').join(', ');
     final backsStr = backs.map((e) => '${e.key}->${e.value}').join(', ');
     final omitStr = unique.map((e) => '${e.key}->${e.value}').join(', ');
-    print('[GraphCycles] levels={$levelsStr} preds={$predsStr} edges=[$edgesStr] backs=[$backsStr] omit=[$omitStr]');
+    print(
+      '[GraphCycles] levels={$levelsStr} preds={$predsStr} edges=[$edgesStr] backs=[$backsStr] omit=[$omitStr]',
+    );
   } catch (_) {}
   return unique;
 }
