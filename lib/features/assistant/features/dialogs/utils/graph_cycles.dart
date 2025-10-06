@@ -111,38 +111,71 @@ Map<int, int> _computeLevels(List<DialogStep> steps) {
 /// На вход: исходные шаги. На выход: пары (from,to), которые следует исключить и дорисовать отдельно.
 List<MapEntry<int, int>> selectEdgesToOmit(List<DialogStep> steps) {
   final g = _buildAdjacency(steps);
+  // 1) Находим back-edges
   final backs = findBackEdges(steps);
-  if (backs.isEmpty) return backs;
-  final level = _computeLevels(steps);
-  final omit = <MapEntry<int, int>>[];
-  bool hasEdge(int a, int b) => (g[a] ?? const <int>[]).contains(b);
+  final backSet = backs.map((e) => '${e.key}->${e.value}').toSet();
 
-  for (final e in backs) {
-    final u = e.key;
-    final v = e.value;
-    final du = level[u] ?? (1 << 30);
-    final dv = level[v] ?? (1 << 30);
-    // Выбираем ребро, направленное из более глубокого уровня к более высокому («вверх»)
-    if (du > dv) {
-      // u глубже v — e(u->v) идёт вверх
-      omit.add(e);
-    } else if (dv > du) {
-      // v глубже u — если есть обратное ребро, выберем его как «вверх»
-      if (hasEdge(v, u)) {
-        omit.add(MapEntry(v, u));
-      } else {
-        // нет обратного — выбора нет, оставляем исходное
-        omit.add(e);
-      }
-    } else {
-      // du == dv (один уровень). Предпочтем обратное, если оно есть, чтобы получить «вверх» при раскладке
-      if (hasEdge(v, u)) {
-        omit.add(MapEntry(v, u));
-      } else {
-        omit.add(e);
+  // 2) Считаем уровни на графе без back-edges
+  final nodes = g.keys.toSet();
+  final indeg = <int, int>{for (final n in nodes) n: 0};
+  g.forEach((u, outs) {
+    for (final v in outs) {
+      if (backSet.contains('$u->$v')) continue;
+      indeg[v] = (indeg[v] ?? 0) + 1;
+    }
+  });
+  var roots = nodes.where((n) => (indeg[n] ?? 0) == 0).toList();
+  if (roots.isEmpty && nodes.isNotEmpty) {
+    final minIn = indeg.values.fold<int>(1 << 30, (m, v) => v < m ? v : m);
+    roots = nodes.where((n) => (indeg[n] ?? 0) == minIn).toList()..sort();
+  }
+  final level = <int, int>{for (final n in nodes) n: 1 << 30};
+  final queue = <int>[];
+  for (final r in roots) {
+    level[r] = 0;
+    queue.add(r);
+  }
+  while (queue.isNotEmpty) {
+    final u = queue.removeAt(0);
+    for (final v in g[u] ?? const <int>[]) {
+      if (backSet.contains('$u->$v')) continue;
+      final nd = level[u]! + 1;
+      if (nd < (level[v] ?? (1 << 30))) {
+        level[v] = nd;
+        queue.add(v);
       }
     }
   }
+
+  // 3) Для каждой вершины v оставляем входящее от предка с минимальным уровнем
+  final preds = <int, List<int>>{}; // v -> [u]
+  final edges = <MapEntry<int, int>>[];
+  g.forEach((u, outs) {
+    for (final v in outs) {
+      edges.add(MapEntry(u, v));
+      if (backSet.contains('$u->$v')) continue;
+      (preds[v] ??= <int>[]).add(u);
+      preds.putIfAbsent(u, () => <int>[]);
+    }
+  });
+
+  final omit = <MapEntry<int, int>>[];
+  preds.forEach((v, us) {
+    if (us.isEmpty) return;
+    int minPredLevel = 1 << 30;
+    for (final u in us) {
+      final lu = level[u] ?? (1 << 30);
+      if (lu < minPredLevel) minPredLevel = lu;
+    }
+    for (final u in us) {
+      final lu = level[u] ?? (1 << 30);
+      if (lu > minPredLevel) omit.add(MapEntry(u, v));
+    }
+  });
+
+  // 4) Добавляем сами back-edges в omit (дорисовываются поверх)
+  omit.addAll(backs);
+
   // Уникализируем
   final seen = <String>{};
   final unique = <MapEntry<int, int>>[];
@@ -150,13 +183,16 @@ List<MapEntry<int, int>> selectEdgesToOmit(List<DialogStep> steps) {
     final k = '${e.key}->${e.value}';
     if (seen.add(k)) unique.add(e);
   }
-  // Отладочный лог: уровни и выбранные рёбра для исключения
+  // Лог
   try {
     final levelsStr = level.entries.map((e) => '${e.key}:${e.value}').join(', ');
+    final predsStr = preds.entries
+        .map((e) => '${e.key}<=[${e.value.join(',')}] (min=${(e.value.isEmpty)?'inf':(e.value.map((u)=>level[u]??(1<<30)).reduce((a,b)=>a<b?a:b))})')
+        .join('; ');
+    final edgesStr = edges.map((e) => '${e.key}->${e.value}').join(', ');
     final backsStr = backs.map((e) => '${e.key}->${e.value}').join(', ');
     final omitStr = unique.map((e) => '${e.key}->${e.value}').join(', ');
-    // Используем print, чтобы не тянуть зависимости логгера в утилиту
-    print('[GraphCycles] levels={$levelsStr} backs=[$backsStr] omit=[$omitStr]');
+    print('[GraphCycles] levels={$levelsStr} preds={$predsStr} edges=[$edgesStr] backs=[$backsStr] omit=[$omitStr]');
   } catch (_) {}
   return unique;
 }
