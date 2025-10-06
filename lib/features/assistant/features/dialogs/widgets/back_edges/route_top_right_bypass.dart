@@ -24,11 +24,27 @@ void drawBackEdgeTopRightBypass({
   final exitX = fromRect.left + fromRect.width * 0.75;
   final p0 = Offset(exitX, fromRect.top); // выход с верхней грани
   // Горизонтальная полка для этого маршрута — ровно через 20px от источника
-  // (по требованию: «поворачивать направо через 20px»)
-  final double shelfY = fromRect.top - shelfUp;
+  // (по требованию: «поворачивать направо через 20px»). Далее при необходимости поднимем её выше препятствий.
+  double shelfY = fromRect.top - shelfUp;
 
   // Базовая правая ось: правая грань самого правого прямоугольника + 20
   double xMax = (allBounds?.right ?? toRect.right) + 20.0;
+  // Гарантируем минимальную длину полки (чтобы было визуально заметно)
+  final double minShelfLen = 30.0;
+  final double xStart = (p0.dx + r);
+  final double minX = xStart + minShelfLen;
+  if (xMax < minX) xMax = minX;
+
+  // Поднимаем полку, если на её пути есть нода. y растёт вниз, поэтому «поднять» = уменьшить Y.
+  const double clearance = 10.0;
+  for (final rct in nodeRects) {
+    final bool crossesHorizontally = (rct.right > xStart) && (rct.left < xMax);
+    final bool crossesVertically = (rct.top - 0.5 <= shelfY) && (rct.bottom + 0.5 >= shelfY);
+    if (crossesHorizontally && crossesVertically) {
+      final double candidate = rct.top - clearance;
+      if (candidate < shelfY) shelfY = candidate; // поднимаем полку над верхом препятствия
+    }
+  }
 
   // Если по пути справа налево к цели встречаются ноды на уровне цели — расширяем вправо на 80
   bool hasObstacleAtY(double y, double fromX, double toX) {

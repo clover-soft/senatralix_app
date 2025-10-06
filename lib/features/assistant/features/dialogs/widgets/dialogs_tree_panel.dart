@@ -14,8 +14,6 @@ import 'package:sentralix_app/core/logger.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/utils/graph_cycles.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/back_edge_route.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/route_direct_rightmost.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/route_right_bypass.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/route_side_by_side.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/route_side_by_side_left.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/route_top_right_bypass.dart';
@@ -130,7 +128,6 @@ class _BackEdgesPainter extends CustomPainter {
         allBounds: allBounds,
         nodeRects: allNodeRects,
       );
-      final String edgeKey = '${e.key}->${e.value}';
       if (route == BackEdgeRoute.sideBySide) {
         drawBackEdgeSideBySide(
           canvas: canvas,
@@ -160,28 +157,16 @@ class _BackEdgesPainter extends CustomPainter {
           nodeRects: allNodeRects,
         );
         continue;
-      } else if (route == BackEdgeRoute.directToRightmost) {
-        final double xAxis = axisXForEdge[edgeKey] ?? (toRect.right + 20.0);
-        drawBackEdgeDirectRightmost(
-          canvas: canvas,
-          edgePaint: edgePaint,
-          fromRect: fromRect,
-          toRect: toRect,
-          axisX: xAxis,
-          color: color,
-        );
-        continue;
       } else {
-        final double axisX = axisXForEdge[edgeKey] ?? routeX;
-        final double yUp = toRect.center.dy - 80.0;
-        drawBackEdgeRightBypass(
+        // По умолчанию — обход через верх и вправо (topRightBypass)
+        drawBackEdgeTopRightBypass(
           canvas: canvas,
           edgePaint: edgePaint,
           fromRect: fromRect,
           toRect: toRect,
-          axisX: axisX,
-          yUp: yUp,
           color: color,
+          allBounds: allBounds,
+          nodeRects: allNodeRects,
         );
         continue;
       }

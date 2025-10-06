@@ -2,20 +2,13 @@ import 'dart:ui';
 
 /// Тип маршрута для обратного ребра
 enum BackEdgeRoute {
-  /// Обход справа с полкой сверху (right bypass)
-  rightBypass,
-
-  /// Прямое подключение к правой грани самой правой ноды (без обхода)
-  directToRightmost,
-
   /// Источник и приёмник стоят «бок-о-бок»: приёмник сразу справа от источника
   sideBySide,
 
   /// Источник и приёмник стоят «бок-о-бок», но приёмник слева от источника
   sideBySideLeft,
 
-  /// Выход сверху на 0.75 ширины, вправо к максимально правой оси,
-  /// затем подъём и горизонтальный подход к правой грани приёмника
+  /// Обход через верх и вправо (с полкой при наличии препятствий справа у источника или приёмника)
   topRightBypass,
 }
 
@@ -42,19 +35,24 @@ BackEdgeRoute detectBackEdgeRoute({
     return BackEdgeRoute.sideBySideLeft;
   }
 
-  // 2) Крайняя правая цель — подключаемся напрямую к её правой грани
-  final double xRight = toRect.right;
-  final bool isRightmostTarget = xRight >= ((allBounds?.right ?? xRight) - 0.5);
-  if (isRightmostTarget) return BackEdgeRoute.directToRightmost;
-
-  // 3) Если справа от источника есть нода (с перекрытием по Y), используем обход topRightBypass
+  // 2) Полка (topRightBypass), если справа от ИСТОЧНИКА или справа от ПРИЁМНИКА есть нода с вертикальным перекрытием
+  bool rightOfSource = false;
+  bool rightOfTarget = false;
   for (final r in nodeRects) {
-    if (r.left >= fromRect.right - 1) {
-      final overlapsY = !(r.bottom < fromRect.top || r.top > fromRect.bottom);
-      if (overlapsY) {
-        return BackEdgeRoute.topRightBypass;
-      }
+    // справа от источника
+    if (!rightOfSource && r.left >= fromRect.right - 1) {
+      final overlapsYSrc = !(r.bottom < fromRect.top || r.top > fromRect.bottom);
+      if (overlapsYSrc) rightOfSource = true;
     }
+    // справа от приёмника
+    if (!rightOfTarget && r.left >= toRect.right - 1) {
+      final overlapsYTgt = !(r.bottom < toRect.top || r.top > toRect.bottom);
+      if (overlapsYTgt) rightOfTarget = true;
+    }
+    if (rightOfSource || rightOfTarget) break;
   }
-  return BackEdgeRoute.rightBypass;
+  if (rightOfSource || rightOfTarget) return BackEdgeRoute.topRightBypass;
+
+  // 3) Иначе — общий случай: обход через верх и вправо
+  return BackEdgeRoute.topRightBypass;
 }
