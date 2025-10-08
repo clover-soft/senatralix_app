@@ -48,12 +48,21 @@ class DialogStep {
 
   /// Сериализация шага в формат backend (snake_case поля)
   Map<String, dynamic> toBackendJson() {
+    // Гарантируем: если задан branch_logic, соответствующий slot_id присутствует в required_slots_ids
+    final req = <int>{...requiredSlotsIds};
+    if (branchLogic.isNotEmpty) {
+      for (final key in branchLogic.keys) {
+        final slotId = int.tryParse('$key');
+        if (slotId != null) req.add(slotId);
+      }
+    }
+
     return {
       'id': id,
       'name': name,
       'label': label,
       'instructions': instructions,
-      'required_slots_ids': requiredSlotsIds,
+      'required_slots_ids': req.toList(),
       'optional_slots_ids': optionalSlotsIds,
       'next': next,
       'branch_logic': branchLogic,
