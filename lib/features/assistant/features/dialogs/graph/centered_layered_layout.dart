@@ -16,8 +16,7 @@ class CenteredLayoutResult {
   });
 }
 
-// Флаг отладочного вывода этапов раскладки
-const bool _kLayoutDebug = false;
+
 
 /// Индексация шагов по id
 Map<int, DialogStep> _indexById(List<DialogStep> steps) => {
@@ -101,6 +100,56 @@ Map<int, int> _computeInitialLevels(
   return level;
 }
 
+/// Ограничение разрыва по рёбрам: для каждого child уровень не выше min(parent)+maxGap,
+/// при этом соблюдаем минимум child >= parent+1. Итеративно до стабилизации.
+void _applyEdgeGapUpperBounds(
+  List<DialogStep> steps,
+  Map<int, Set<int>> parents,
+  Map<int, int> level, {
+  int maxGap = 1,
+}) {
+  if (maxGap < 1) maxGap = 1;
+  final ids = steps.map((e) => e.id).toList();
+  for (int iter = 0; iter < steps.length * 2; iter++) {
+    bool changed = false;
+    // Верхние границы по всем родителям (min over parents)
+    for (final id in ids) {
+      final ps = parents[id] ?? const <int>{};
+      if (ps.isEmpty) continue; // корни не ограничиваем сверху
+      int ub = 1 << 30;
+      for (final p in ps) {
+        final cand = (level[p] ?? 0) + maxGap;
+        if (cand < ub) ub = cand;
+      }
+      if ((level[id] ?? 0) > ub) {
+        level[id] = ub;
+        changed = true;
+      }
+    }
+    // Минимум: child >= parent + 1
+    for (final id in ids) {
+      final ps = parents[id] ?? const <int>{};
+      int need = 0;
+      for (final p in ps) {
+        final req = (level[p] ?? 0) + 1;
+        if (req > need) need = req;
+      }
+      if ((level[id] ?? 0) < need) {
+        level[id] = need;
+        changed = true;
+      }
+    }
+    // Гарантируем, что все некорневые не остаются на уровне 0
+    for (final id in ids) {
+      if (id != 1 && (level[id] ?? 0) == 0) {
+        level[id] = 1;
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+}
+
 /// Эксклюзивность branch-узлов: на одном уровне максимум 1 branch-нода, и не выше родителей
 void _enforceBranchExclusivity(
   List<DialogStep> steps,
@@ -146,12 +195,7 @@ void _compressLevels(Map<int, int> level) {
   level.updateAll((_, v) => rank[v]!);
 }
 
-/// Базовая сортировка узлов внутри уровня (по id)
-void _sortWithinLevels(Map<int, List<int>> byLevel) {
-  for (final l in byLevel.keys) {
-    byLevel[l]!.sort();
-  }
-}
+
 
 /// Расчёт позиций для каждого узла по уровням с центрированием рядов
 Map<int, Offset> _computePositions(
@@ -206,6 +250,57 @@ Map<int, Offset> _computePositions(
   return (nextEdges, branchEdges);
 }
 
+/// Барицентрическая сортировка внутри уровней (сверху-вниз):
+/// сортирует узлы текущего уровня по среднему индексу их родителей на предыдущем уровне
+void _barycentricSort(
+  Map<int, List<int>> byLevel,
+  Map<int, Set<int>> parents,
+) {
+  final levels = byLevel.keys.toList()..sort();
+  if (levels.length < 2) return;
+  // Построим индекс текущих порядков
+  final orderIndex = <int, Map<int, int>>{}; // level -> (nodeId -> index)
+  for (final l in levels) {
+    final nodes = byLevel[l]!;
+    final idx = <int, int>{};
+    for (int i = 0; i < nodes.length; i++) idx[nodes[i]] = i;
+    orderIndex[l] = idx;
+  }
+  for (int i = 1; i < levels.length; i++) {
+    final l = levels[i];
+    final prev = levels[i - 1];
+    final prevOrder = orderIndex[prev]!;
+    final nodes = byLevel[l]!;
+    nodes.sort((a, b) {
+      double baryA;
+      final pa = parents[a] ?? const <int>{};
+      final idxA = pa
+          .where((p) => prevOrder.containsKey(p))
+          .map((p) => prevOrder[p]!.toDouble())
+          .toList();
+      baryA = idxA.isEmpty ? (orderIndex[l]?[a]?.toDouble() ?? 0) : (idxA.reduce((x, y) => x + y) / idxA.length);
+
+      double baryB;
+      final pb = parents[b] ?? const <int>{};
+      final idxB = pb
+          .where((p) => prevOrder.containsKey(p))
+          .map((p) => prevOrder[p]!.toDouble())
+          .toList();
+      baryB = idxB.isEmpty ? (orderIndex[l]?[b]?.toDouble() ?? 0) : (idxB.reduce((x, y) => x + y) / idxB.length);
+
+      final cmp = baryA.compareTo(baryB);
+      if (cmp != 0) return cmp;
+      return a.compareTo(b); // стабильность: по id
+    });
+    // Обновим индексы уровня после сортировки
+    final idxMap = <int, int>{};
+    for (int k = 0; k < nodes.length; k++) {
+      idxMap[nodes[k]] = k;
+    }
+    orderIndex[l] = idxMap;
+  }
+}
+
 /// Вычисляет уровни и координаты для центрированной построчной раскладки.
 CenteredLayoutResult computeCenteredLayout(
   List<DialogStep> steps, {
@@ -232,18 +327,25 @@ CenteredLayoutResult computeCenteredLayout(
   // Начальные уровни: корень id=1 наверху, остальные ниже, parent < child
   final level = _computeInitialLevels(steps, parents, outgoing);
 
+  // Cap: ограничим разрыв по рёбрам (child <= min(parent)+1) с сохранением parent<child
+  _applyEdgeGapUpperBounds(steps, parents, level, maxGap: 1);
+
   // Эксклюзивность для branch-узлов и корректировка относительно родителей
   _enforceBranchExclusivity(steps, parents, level);
+
+  // Повторный cap после эксклюзивности branch для восстановления монотонности и ограничения разрыва
+  _applyEdgeGapUpperBounds(steps, parents, level, maxGap: 1);
 
   // Плотное сжатие 0..K
   _compressLevels(level);
 
-  // Группировка по уровням
+  // Группировка по уровням (пересобираем после cap/сжатия)
   final byLevel = <int, List<int>>{};
   for (final e in level.entries) {
     (byLevel[e.value] ??= <int>[]).add(e.key);
   }
-  _sortWithinLevels(byLevel);
+  // Барицентрическая сортировка для уменьшения пересечений рёбер
+  _barycentricSort(byLevel, parents);
 
   // Размещение branch слева в ряду (если есть другие ноды)
   final branchSet = steps.where((s) => s.branchLogic.isNotEmpty).map((s) => s.id).toSet();
@@ -254,6 +356,20 @@ CenteredLayoutResult computeCenteredLayout(
       nodes.remove(atLevel.first);
       nodes.insert(0, atLevel.first);
     }
+  }
+
+  // Лог: список рядов с идентификаторами нод и branch-нод
+  final sortedLevels = byLevel.keys.toList()..sort();
+  for (final l in sortedLevels) {
+    final nodes = byLevel[l]!;
+    final branchIdsAtLevel = nodes.where((id) => branchSet.contains(id)).toList();
+    final nodesFmt = nodes.map((id) {
+      final ps = parents[id] ?? const <int>{};
+      final plist = ps.toList()..sort();
+      return '$id(${plist.join(',')})';
+    }).toList();
+    // ignore: avoid_print
+    print('[layout] row l=$l nodes=$nodesFmt branchIds=$branchIdsAtLevel');
   }
 
   // Позиции и рёбра
