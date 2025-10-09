@@ -23,8 +23,9 @@ class StepNode extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // База для тени: темнее в тёмной теме, мягче в светлой
-    final shadowColor = (isDark ? Colors.black : Colors.black)
-        .withValues(alpha: isDark ? 0.28 : 0.14);
+    final shadowColor = (isDark ? Colors.black : Colors.black).withValues(
+      alpha: isDark ? 0.28 : 0.14,
+    );
     final shadowBlur = selected ? 12.0 : 9.0;
     final shadowOffset = selected ? const Offset(0, 3) : const Offset(0, 2);
     final shadowSpread = selected ? 0.4 : 0.2;
@@ -59,62 +60,84 @@ class StepNode extends StatelessWidget {
                 ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                step.label.isNotEmpty ? step.label : step.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context)
-                    .textTheme
-                    .labelLarge
-                    ?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                step.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelSmall,
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(Icons.arrow_forward, size: 14),
-                  const SizedBox(width: 4),
-                  Text(
-                    step.next?.toString() ?? '—',
-                    style: Theme.of(context).textTheme.labelSmall,
-                  ),
-                ],
-              ),
-              if (step.branchLogic.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    for (final entry in step.branchLogic.entries)
-                      for (final v in entry.value.entries)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.orange.shade400),
-                          ),
-                          child: Text(
-                            '${v.key} → ${v.value}',
+          // Оборачиваем содержимое в прокрутку и жёстко ограничиваем высоту
+          // равной доступной высоте контейнера (исключает RenderFlex overflow)
+          clipBehavior: Clip.hardEdge,
+          child: LayoutBuilder(
+            builder: (ctx, cons) {
+              final h = cons.maxHeight.isFinite ? cons.maxHeight : null;
+              return SizedBox(
+                height: h,
+                child: SingleChildScrollView(
+                  primary: false,
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        step.label.isNotEmpty ? step.label : step.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        step.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.arrow_forward, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            step.next?.toString() ?? '—',
                             style: Theme.of(context).textTheme.labelSmall,
                           ),
+                        ],
+                      ),
+                      if (step.branchLogic.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            for (final entry in step.branchLogic.entries)
+                              for (final v in entry.value.entries)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withValues(
+                                      alpha: 0.12,
+                                    ),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: Colors.orange.shade400,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '${v.key} → ${v.value}',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.labelSmall,
+                                  ),
+                                ),
+                          ],
                         ),
-                  ],
+                      ],
+                    ],
+                  ),
                 ),
-              ],
-            ],
+              );
+            },
           ),
         ),
         Positioned(

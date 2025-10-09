@@ -312,8 +312,8 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   Widget build(BuildContext context) {
     // Центрированная построчная раскладка (наш алгоритм)
     final cfg = ref.watch(dialogsConfigControllerProvider);
-    // Размер ноды подгоняем под StepNode (можно вынести в настройки)
-    const nodeSize = Size(240, 120);
+    // Размер ноды подгоняем под StepNode (увеличена высота для избежания overflow)
+    const nodeSize = Size(240, 180);
     final centered = computeCenteredLayout(
       cfg.steps,
       nodeSize: nodeSize,
