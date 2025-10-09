@@ -206,7 +206,7 @@ class AssistantApi {
       if (description != null && description.trim().isNotEmpty)
         'description': description.trim(),
       'config': {
-        'steps': stepsToBackendJson(steps),
+        'steps': steps.map((e) => e.toBackendJson()).toList(),
       },
       'metadata': metadata ?? <String, dynamic>{},
     };
@@ -237,7 +237,7 @@ class AssistantApi {
       'name': name,
       if (description != null) 'description': description,
       'config': {
-        'steps': stepsToBackendJson(steps),
+        'steps': steps.map((e) => e.toBackendJson()).toList(),
       },
       'metadata': metadata ?? <String, dynamic>{},
     };
