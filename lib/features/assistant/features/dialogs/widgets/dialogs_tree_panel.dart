@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:graphview/GraphView.dart';
 import 'package:vector_math/vector_math_64.dart' as vm;
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_editor_providers.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_providers.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/graph/graph_style.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/graph/dialogs_graph_builder.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_tree_canvas.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_node.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_toolbar_panel.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_props.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/utils/graph_cycles.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/back_edge_route.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/route_side_by_side.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/route_side_by_side_left.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/widgets/back_edges/route_top_right_bypass.dart';
+// import 'package:sentralix_app/features/assistant/features/dialogs/utils/graph_cycles.dart';
+// back-edges отрисовка больше не используется в центрированной раскладке
+import 'package:sentralix_app/features/assistant/features/dialogs/graph/centered_layered_layout.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_centered_canvas.dart';
 
 /// Левая панель: дерево сценария
 class DialogsTreePanel extends ConsumerStatefulWidget {
@@ -23,160 +19,6 @@ class DialogsTreePanel extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<DialogsTreePanel> createState() => _DialogsTreePanelState();
-}
-
-/// Рисует обратные рёбра (back-edges), исключённые из GraphView, поверх холста.
-class _BackEdgesPainter extends CustomPainter {
-  _BackEdgesPainter({
-    required this.backEdges,
-    required this.nodeKeys,
-    required this.contentKey,
-    required this.color,
-  });
-
-  final List<MapEntry<int, int>> backEdges;
-  final Map<int, GlobalKey> nodeKeys;
-  final GlobalKey contentKey;
-  final Color color;
-
-  // helpers удалены (не используются)
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final contentCtx = contentKey.currentContext;
-    if (contentCtx == null) return;
-    final contentBox = contentCtx.findRenderObject() as RenderBox?;
-    if (contentBox == null || !contentBox.hasSize) return;
-
-    final edgePaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    Rect? nodeRect(GlobalKey key) {
-      final ctx = key.currentContext;
-      if (ctx == null) return null;
-      final box = ctx.findRenderObject() as RenderBox?;
-      if (box == null || !box.hasSize) return null;
-      final topLeft = box.localToGlobal(Offset.zero, ancestor: contentBox);
-      return topLeft & box.size;
-    }
-
-    // Общие границы графа и список прямоугольников нод (для детектора маршрута)
-    Rect? allBounds;
-    final List<Rect> allNodeRects = [];
-    for (final key in nodeKeys.values) {
-      final r = nodeRect(key);
-      if (r == null) continue;
-      allBounds = allBounds == null ? r : allBounds.expandToInclude(r);
-      allNodeRects.add(r);
-    }
-    final double routeX = (allBounds?.right ?? 0) + 20.0;
-
-    // Предрасчёт осей для вертикальных участков, чтобы параллельные рёбра не накладывались:
-    // группируем по базовой оси (для правых обходов это routeX, для крайних правых таргетов — right+20),
-    // сортируем по высоте источника и смещаем каждое следующее на +20px вправо
-    final Map<String, double> axisXForEdge = {};
-    final List<Map<String, dynamic>> items = [];
-    for (final e in backEdges) {
-      final fromKey = nodeKeys[e.key];
-      final toKey = nodeKeys[e.value];
-      if (fromKey == null || toKey == null) continue;
-      final fromRect = nodeRect(fromKey);
-      final toRect = nodeRect(toKey);
-      if (fromRect == null || toRect == null) continue;
-      final double xRight = toRect.right;
-      final bool isRightmostTarget =
-          xRight >= ((allBounds?.right ?? xRight) - 0.5);
-      final double baseX = isRightmostTarget ? (xRight + 20.0) : routeX;
-      final String edgeKey = '${e.key}->${e.value}';
-      items.add({'key': edgeKey, 'baseX': baseX, 'p0y': fromRect.center.dy});
-    }
-    final Map<String, List<Map<String, dynamic>>> groups = {};
-    for (final it in items) {
-      final String gk = (it['baseX'] as double).toStringAsFixed(1);
-      (groups[gk] ??= []).add(it);
-    }
-    for (final entry in groups.entries) {
-      final list = entry.value;
-      list.sort((a, b) => (a['p0y'] as double).compareTo(b['p0y'] as double));
-      for (var i = 0; i < list.length; i++) {
-        final double base = list[i]['baseX'] as double;
-        axisXForEdge[list[i]['key'] as String] = base + 20.0 * i;
-      }
-    }
-
-    // Отрисовка всех back-edges выбранными маршрутами
-    for (final e in backEdges) {
-      final fromKey = nodeKeys[e.key];
-      final toKey = nodeKeys[e.value];
-      if (fromKey == null || toKey == null) continue;
-      final fromRect = nodeRect(fromKey);
-      final toRect = nodeRect(toKey);
-      if (fromRect == null || toRect == null) continue;
-
-      final route = detectBackEdgeRoute(
-        fromRect: fromRect,
-        toRect: toRect,
-        allBounds: allBounds,
-        nodeRects: allNodeRects,
-      );
-      if (route == BackEdgeRoute.sideBySide) {
-        drawBackEdgeSideBySide(
-          canvas: canvas,
-          edgePaint: edgePaint,
-          fromRect: fromRect,
-          toRect: toRect,
-          color: color,
-        );
-        continue;
-      } else if (route == BackEdgeRoute.sideBySideLeft) {
-        drawBackEdgeSideBySideLeft(
-          canvas: canvas,
-          edgePaint: edgePaint,
-          fromRect: fromRect,
-          toRect: toRect,
-          color: color,
-        );
-        continue;
-      } else if (route == BackEdgeRoute.topRightBypass) {
-        drawBackEdgeTopRightBypass(
-          canvas: canvas,
-          edgePaint: edgePaint,
-          fromRect: fromRect,
-          toRect: toRect,
-          color: color,
-          allBounds: allBounds,
-          nodeRects: allNodeRects,
-        );
-        continue;
-      } else {
-        // По умолчанию — обход через верх и вправо (topRightBypass)
-        drawBackEdgeTopRightBypass(
-          canvas: canvas,
-          edgePaint: edgePaint,
-          fromRect: fromRect,
-          toRect: toRect,
-          color: color,
-          allBounds: allBounds,
-          nodeRects: allNodeRects,
-        );
-        continue;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _BackEdgesPainter oldDelegate) {
-    if (identical(backEdges, oldDelegate.backEdges) &&
-        identical(nodeKeys, oldDelegate.nodeKeys) &&
-        color == oldDelegate.color) {
-      return false;
-    }
-    return true;
-  }
 }
 
 class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
@@ -190,6 +32,10 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   bool _userInteracted = false; // Пользователь двигал/масштабировал граф
   bool _isProgrammaticTransform =
       false; // Внутреннее изменение матрицы (не считать за взаимодействие)
+
+  // Данные центрированной раскладки
+  CenteredLayoutResult? _lastComputedLayout;
+  Size _nodeSize = const Size(240, 120);
 
   @override
   void initState() {
@@ -316,23 +162,14 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
 
   /// Расчёт реальных границ графа по позициям нод в системе координат контента
   Rect? _computeNodesBounds() {
-    final contentCtx = _contentKey.currentContext;
-    if (contentCtx == null) return null;
-    final contentBox = contentCtx.findRenderObject() as RenderBox?;
-    if (contentBox == null || !contentBox.hasSize) return null;
-
+    // В новой раскладке считаем границы логически из координат layout
+    if (_lastComputedLayout == null) return null;
+    final layout = _lastComputedLayout!;
     Rect? bounds;
-    for (final entry in _nodeKeys.entries) {
-      final nodeCtx = entry.value.currentContext;
-      if (nodeCtx == null) continue;
-      final nodeBox = nodeCtx.findRenderObject() as RenderBox?;
-      if (nodeBox == null || !nodeBox.hasSize) continue;
-      final topLeft = nodeBox.localToGlobal(Offset.zero, ancestor: contentBox);
-      final rect = topLeft & nodeBox.size;
-      final b = bounds;
-      bounds = b == null ? rect : b.expandToInclude(rect);
-    }
-
+    layout.positions.forEach((_, pos) {
+      final rect = pos & _nodeSize;
+      bounds = bounds == null ? rect : bounds!.expandToInclude(rect);
+    });
     return bounds;
   }
 
@@ -473,25 +310,19 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
 
   @override
   Widget build(BuildContext context) {
-    // Строим граф сверху-вниз всегда (Sugiyama). Если есть циклы — исключаем обратные рёбра
+    // Центрированная построчная раскладка (наш алгоритм)
     final cfg = ref.watch(dialogsConfigControllerProvider);
-    final style = GraphStyle.sugiyamaTopBottom(
-      nodeSeparation: 20,
-      levelSeparation: 80,
+    // Размер ноды подгоняем под StepNode (можно вынести в настройки)
+    const nodeSize = Size(240, 120);
+    final centered = computeCenteredLayout(
+      cfg.steps,
+      nodeSize: nodeSize,
+      nodeSeparation: 32,
+      levelSeparation: 120,
+      padding: 80,
     );
-    final builder = DialogsGraphBuilder(style: style);
-    final bool cyclic = hasDialogCycles(cfg.steps);
-    Graph graph;
-    List<MapEntry<int, int>> backEdges = const [];
-    if (cyclic) {
-      backEdges = selectEdgesToOmit(cfg.steps);
-      final omit = backEdges.map((e) => '${e.key}->${e.value}').toSet();
-      graph = builder.buildFiltered(cfg.steps, omitEdges: omit);
-    } else {
-      graph = builder.build(cfg.steps);
-    }
-    if (backEdges.isNotEmpty) {}
-    final Algorithm algorithm = style.buildAlgorithm();
+    _lastComputedLayout = centered;
+    _nodeSize = nodeSize;
     final editor = ref.watch(dialogsEditorControllerProvider);
     // Чистим ключи старых нод, которых нет в текущем сценарии
     final currentIds = cfg.steps.map((e) => e.id).toSet();
@@ -509,24 +340,17 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
           // Динамический размер холста на основе фактических границ нод
           const double pad = 300.0;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            final bounds = _computeNodesBounds();
-            if (bounds != null && bounds.isFinite) {
-              final w = bounds.width + pad;
-              final h = bounds.height + pad;
-              final proposed = Size(
-                w < viewportSize.width ? viewportSize.width : w,
-                h < viewportSize.height ? viewportSize.height : h,
-              );
-              if ((_canvasSize.width - proposed.width).abs() > 1 ||
-                  (_canvasSize.height - proposed.height).abs() > 1) {
-                if (mounted) setState(() => _canvasSize = proposed);
-              }
-            } else {
-              final proposed = viewportSize;
-              if ((_canvasSize.width - proposed.width).abs() > 1 ||
-                  (_canvasSize.height - proposed.height).abs() > 1) {
-                if (mounted) setState(() => _canvasSize = proposed);
-              }
+            // Опираемся на рассчитанный размерами layout, чтобы избежать измерений RenderBox
+            final layout = _lastComputedLayout;
+            final proposed = layout == null
+                ? viewportSize
+                : Size(
+                    math.max(layout.canvasSize.width + pad, viewportSize.width),
+                    math.max(layout.canvasSize.height + pad, viewportSize.height),
+                  );
+            if ((_canvasSize.width - proposed.width).abs() > 1 ||
+                (_canvasSize.height - proposed.height).abs() > 1) {
+              if (mounted) setState(() => _canvasSize = proposed);
             }
             // Гарантированный запуск вписывания после пересчёта размеров (только до взаимодействия пользователя)
             final stepsCount = cfg.steps.length;
@@ -545,9 +369,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
               (viewportSize.height - (_lastViewportSize!.height)).abs() > 8;
           if (hasSteps &&
               !_userInteracted &&
-              (!_didAutoFit ||
-                  sizeChanged ||
-                  _lastFittedStepsCount != cfg.steps.length)) {
+              (!_didAutoFit || sizeChanged || _lastFittedStepsCount != cfg.steps.length)) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _fitAndCenter(viewportSize);
             });
@@ -574,25 +396,12 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                   ),
                 ),
                 // Сам холст с графом
-                DialogsTreeCanvas(
-                  graph: graph,
-                  algorithm: algorithm,
-                  canvasSize: _canvasSize == Size.zero
-                      ? viewportSize
-                      : _canvasSize,
+                DialogsCenteredCanvas(
+                  layout: centered,
+                  nodeSize: nodeSize,
                   transformationController: _tc,
                   contentKey: _contentKey,
-                  interactive: true,
-                  foregroundPainter: backEdges.isNotEmpty
-                      ? _BackEdgesPainter(
-                          backEdges: backEdges,
-                          nodeKeys: _nodeKeys,
-                          contentKey: _contentKey,
-                          color: Theme.of(context).colorScheme.primary,
-                        )
-                      : null,
-                  nodeBuilder: (Node n) {
-                    final id = n.key!.value as int;
+                  buildNode: (int id, Key? _) {
                     final step = cfg.steps.firstWhere((e) => e.id == id);
                     final isSelected =
                         editor.selectedStepId == id ||
@@ -632,7 +441,6 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                                 .read(dialogsConfigControllerProvider)
                                 .steps;
                             if (steps.length == 1) {
-                              // Сценарий состоит из одного шага: подтверждение удаления всего сценария
                               final ok = await showDialog<bool>(
                                 context: context,
                                 builder: (ctx) => AlertDialog(
@@ -660,7 +468,6 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                                       dialogsConfigControllerProvider.notifier,
                                     )
                                     .deleteDialog();
-                                // Обновим список вкладок и сбросим выбранный id
                                 ref.invalidate(dialogConfigsProvider);
                                 ref
                                         .read(
@@ -680,7 +487,6 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                               return;
                             }
 
-                            // Обычное удаление шага
                             final ok = await showDialog<bool>(
                               context: context,
                               builder: (ctx) => AlertDialog(
@@ -703,7 +509,6 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                               ),
                             );
                             if (ok == true) {
-                              // Удаляем через бизнес-контроллер и сохраняем с дебаунсом
                               ref
                                   .read(
                                     dialogsConfigControllerProvider.notifier,
@@ -714,7 +519,6 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                                     dialogsConfigControllerProvider.notifier,
                                   )
                                   .saveFullDebounced();
-                              // Сброс автофита
                               setState(() {
                                 _didAutoFit = false;
                                 _lastViewportSize = null;
