@@ -22,6 +22,7 @@ class CenteredLayoutResult {
 Map<int, int> normalizeLevels(
   List<DialogStep> steps,
   Map<int, Set<int>> outgoing,
+  Map<int, Set<int>> parents,
   Map<int, int> levelIn,
 ) {
   // Копия входных уровней
@@ -39,37 +40,22 @@ Map<int, int> normalizeLevels(
     print('[normalize] IN: edges=$edgeCount kMaxGap=$kMaxGap');
   }
 
-  // Двунаправленная релаксация до сходимости
+  // Релаксация child = 1 + max(parent) до сходимости
+  final ids = steps.map((e) => e.id).toList();
   for (int iter = 0; iter < steps.length * 3; iter++) {
     bool changed = false;
-    // Прямой проход: ограничение на ребёнка относительно родителя
-    for (final s in steps) {
-      final lp = level[s.id] ?? 0;
-      final outs = outgoing[s.id] ?? const <int>{};
-      for (final u in outs) {
-        final minC = lp + 1;
-        final maxC = lp + kMaxGap;
-        final lu = level[u] ?? 0;
-        int newLu = lu;
-        if (newLu < minC) newLu = minC;
-        if (newLu > maxC) newLu = maxC;
-        if (newLu != lu) {
-          level[u] = newLu;
-          changed = true;
-        }
+    for (final id in ids) {
+      final ps = parents[id] ?? const <int>{};
+      if (ps.isEmpty) continue; // корни остаются как есть (0 или текущее)
+      int maxParent = -1;
+      for (final p in ps) {
+        final lp = level[p] ?? 0;
+        if (lp > maxParent) maxParent = lp;
       }
-    }
-    // Обратный проход: ограничение на родителя относительно ребёнка
-    for (final s in steps) {
-      final lp = level[s.id] ?? 0;
-      final outs = outgoing[s.id] ?? const <int>{};
-      for (final u in outs) {
-        final lu = level[u] ?? 0;
-        final maxP = lu - 1; // parent не выше child-1
-        if (lp > maxP) {
-          level[s.id] = maxP < 0 ? 0 : maxP;
-          changed = true;
-        }
+      final desired = (maxParent < 0 ? 0 : maxParent + 1);
+      if ((level[id] ?? 0) != desired) {
+        level[id] = desired;
+        changed = true;
       }
     }
     if (!changed) break;
@@ -526,7 +512,7 @@ CenteredLayoutResult computeCenteredLayout(
   // И восстановим монотонность после этого шага (только подтягивание вверх)
   _enforceParentBeforeChild(steps, outgoing, level);
   // Финальная плотная нормализация уровней ПЕРЕД логом
-  final normalizedForLog = normalizeLevels(steps, outgoing, level);
+  final normalizedForLog = normalizeLevels(steps, outgoing, parents, level);
   level
     ..clear()
     ..addAll(normalizedForLog);
@@ -553,7 +539,7 @@ CenteredLayoutResult computeCenteredLayout(
   }
 
   // На всякий случай сохраняем плотность уровней 0..K перед группировкой
-  final normalizedForLayout = normalizeLevels(steps, outgoing, level);
+  final normalizedForLayout = normalizeLevels(steps, outgoing, parents, level);
   level
     ..clear()
     ..addAll(normalizedForLayout);
