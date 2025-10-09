@@ -16,15 +16,17 @@ class CenteredLayoutResult {
   });
 }
 
-
-
 /// Индексация шагов по id
 Map<int, DialogStep> _indexById(List<DialogStep> steps) => {
   for (final s in steps) s.id: s,
 };
 
+// ignore: unintended_html_in_doc_comment
 /// Построение словаря родителей: { childId -> Set<parentId> }
-Map<int, Set<int>> _buildParents(List<DialogStep> steps, Map<int, DialogStep> byId) {
+Map<int, Set<int>> _buildParents(
+  List<DialogStep> steps,
+  Map<int, DialogStep> byId,
+) {
   final parents = <int, Set<int>>{for (final s in steps) s.id: <int>{}};
   for (final s in steps) {
     if (s.next != null && s.next! > 0 && byId.containsKey(s.next)) {
@@ -41,8 +43,12 @@ Map<int, Set<int>> _buildParents(List<DialogStep> steps, Map<int, DialogStep> by
   return parents;
 }
 
+// ignore: unintended_html_in_doc_comment
 /// Построение исходящих рёбер: { fromId -> Set<toId> }
-Map<int, Set<int>> _buildOutgoing(List<DialogStep> steps, Map<int, DialogStep> byId) {
+Map<int, Set<int>> _buildOutgoing(
+  List<DialogStep> steps,
+  Map<int, DialogStep> byId,
+) {
   final outgoing = <int, Set<int>>{for (final s in steps) s.id: <int>{}};
   for (final s in steps) {
     if (s.next != null && s.next! > 0 && byId.containsKey(s.next)) {
@@ -156,8 +162,9 @@ void _enforceBranchExclusivity(
   Map<int, Set<int>> parents,
   Map<int, int> level,
 ) {
-  final branchIds = steps.where((s) => s.branchLogic.isNotEmpty).map((s) => s.id).toList()
-    ..sort();
+  final branchIds =
+      steps.where((s) => s.branchLogic.isNotEmpty).map((s) => s.id).toList()
+        ..sort();
   if (branchIds.isEmpty) return;
   // Гарантия: только корень остаётся на уровне 0
   for (final id in level.keys.toList()) {
@@ -195,8 +202,6 @@ void _compressLevels(Map<int, int> level) {
   level.updateAll((_, v) => rank[v]!);
 }
 
-
-
 /// Расчёт позиций для каждого узла по уровням с центрированием рядов
 Map<int, Offset> _computePositions(
   Map<int, List<int>> byLevel,
@@ -229,10 +234,8 @@ Map<int, Offset> _computePositions(
 }
 
 /// Формирование списков рёбер
-(List<MapEntry<int, int>> nextEdges, List<MapEntry<int, int>> branchEdges) _collectEdges(
-  List<DialogStep> steps,
-  Map<int, DialogStep> byId,
-) {
+(List<MapEntry<int, int>> nextEdges, List<MapEntry<int, int>> branchEdges)
+_collectEdges(List<DialogStep> steps, Map<int, DialogStep> byId) {
   final nextEdges = <MapEntry<int, int>>[];
   final branchEdges = <MapEntry<int, int>>[];
   for (final s in steps) {
@@ -252,10 +255,7 @@ Map<int, Offset> _computePositions(
 
 /// Барицентрическая сортировка внутри уровней (сверху-вниз):
 /// сортирует узлы текущего уровня по среднему индексу их родителей на предыдущем уровне
-void _barycentricSort(
-  Map<int, List<int>> byLevel,
-  Map<int, Set<int>> parents,
-) {
+void _barycentricSort(Map<int, List<int>> byLevel, Map<int, Set<int>> parents) {
   final levels = byLevel.keys.toList()..sort();
   if (levels.length < 2) return;
   // Построим индекс текущих порядков
@@ -263,7 +263,9 @@ void _barycentricSort(
   for (final l in levels) {
     final nodes = byLevel[l]!;
     final idx = <int, int>{};
-    for (int i = 0; i < nodes.length; i++) idx[nodes[i]] = i;
+    for (int i = 0; i < nodes.length; i++) {
+      idx[nodes[i]] = i;
+    }
     orderIndex[l] = idx;
   }
   for (int i = 1; i < levels.length; i++) {
@@ -278,7 +280,9 @@ void _barycentricSort(
           .where((p) => prevOrder.containsKey(p))
           .map((p) => prevOrder[p]!.toDouble())
           .toList();
-      baryA = idxA.isEmpty ? (orderIndex[l]?[a]?.toDouble() ?? 0) : (idxA.reduce((x, y) => x + y) / idxA.length);
+      baryA = idxA.isEmpty
+          ? (orderIndex[l]?[a]?.toDouble() ?? 0)
+          : (idxA.reduce((x, y) => x + y) / idxA.length);
 
       double baryB;
       final pb = parents[b] ?? const <int>{};
@@ -286,7 +290,9 @@ void _barycentricSort(
           .where((p) => prevOrder.containsKey(p))
           .map((p) => prevOrder[p]!.toDouble())
           .toList();
-      baryB = idxB.isEmpty ? (orderIndex[l]?[b]?.toDouble() ?? 0) : (idxB.reduce((x, y) => x + y) / idxB.length);
+      baryB = idxB.isEmpty
+          ? (orderIndex[l]?[b]?.toDouble() ?? 0)
+          : (idxB.reduce((x, y) => x + y) / idxB.length);
 
       final cmp = baryA.compareTo(baryB);
       if (cmp != 0) return cmp;
@@ -348,11 +354,16 @@ CenteredLayoutResult computeCenteredLayout(
   _barycentricSort(byLevel, parents);
 
   // Размещение branch слева в ряду (если есть другие ноды)
-  final branchSet = steps.where((s) => s.branchLogic.isNotEmpty).map((s) => s.id).toSet();
+  final branchSet = steps
+      .where((s) => s.branchLogic.isNotEmpty)
+      .map((s) => s.id)
+      .toSet();
   for (final l in byLevel.keys) {
     final nodes = byLevel[l]!;
     final atLevel = nodes.where((id) => branchSet.contains(id)).toList();
-    if (atLevel.isNotEmpty && nodes.length > 1 && nodes.first != atLevel.first) {
+    if (atLevel.isNotEmpty &&
+        nodes.length > 1 &&
+        nodes.first != atLevel.first) {
       nodes.remove(atLevel.first);
       nodes.insert(0, atLevel.first);
     }
@@ -362,7 +373,9 @@ CenteredLayoutResult computeCenteredLayout(
   final sortedLevels = byLevel.keys.toList()..sort();
   for (final l in sortedLevels) {
     final nodes = byLevel[l]!;
-    final branchIdsAtLevel = nodes.where((id) => branchSet.contains(id)).toList();
+    final branchIdsAtLevel = nodes
+        .where((id) => branchSet.contains(id))
+        .toList();
     final nodesFmt = nodes.map((id) {
       final ps = parents[id] ?? const <int>{};
       final plist = ps.toList()..sort();
@@ -373,12 +386,22 @@ CenteredLayoutResult computeCenteredLayout(
   }
 
   // Позиции и рёбра
-  final positions = _computePositions(byLevel, nodeSize, nodeSeparation, levelSeparation, padding);
+  final positions = _computePositions(
+    byLevel,
+    nodeSize,
+    nodeSeparation,
+    levelSeparation,
+    padding,
+  );
   final edges = _collectEdges(steps, byId);
 
   // Размер холста
-  final right = positions.values.map((o) => o.dx + nodeSize.width).fold<double>(0, math.max);
-  final bottom = positions.values.map((o) => o.dy + nodeSize.height).fold<double>(0, math.max);
+  final right = positions.values
+      .map((o) => o.dx + nodeSize.width)
+      .fold<double>(0, math.max);
+  final bottom = positions.values
+      .map((o) => o.dy + nodeSize.height)
+      .fold<double>(0, math.max);
   final canvasSize = Size(right + padding, bottom + padding);
 
   return CenteredLayoutResult(
