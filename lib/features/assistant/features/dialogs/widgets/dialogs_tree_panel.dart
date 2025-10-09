@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vector_math/vector_math_64.dart' as vm;
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_editor_providers.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_providers.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_node.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_toolbar_panel.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_props.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
@@ -323,7 +322,6 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
     );
     _lastComputedLayout = centered;
     _nodeSize = nodeSize;
-    final editor = ref.watch(dialogsEditorControllerProvider);
     // Чистим ключи старых нод, которых нет в текущем сценарии
     final currentIds = cfg.steps.map((e) => e.id).toSet();
     _nodeKeys.removeWhere((id, key) => !currentIds.contains(id));
@@ -346,7 +344,10 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                 ? viewportSize
                 : Size(
                     math.max(layout.canvasSize.width + pad, viewportSize.width),
-                    math.max(layout.canvasSize.height + pad, viewportSize.height),
+                    math.max(
+                      layout.canvasSize.height + pad,
+                      viewportSize.height,
+                    ),
                   );
             if ((_canvasSize.width - proposed.width).abs() > 1 ||
                 (_canvasSize.height - proposed.height).abs() > 1) {
@@ -369,7 +370,9 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
               (viewportSize.height - (_lastViewportSize!.height)).abs() > 8;
           if (hasSteps &&
               !_userInteracted &&
-              (!_didAutoFit || sizeChanged || _lastFittedStepsCount != cfg.steps.length)) {
+              (!_didAutoFit ||
+                  sizeChanged ||
+                  _lastFittedStepsCount != cfg.steps.length)) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _fitAndCenter(viewportSize);
             });
@@ -395,139 +398,107 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                         : 0.5,
                   ),
                 ),
-                // Сам холст с графом
-                DialogsCenteredCanvas(
+                // Сам холст с графом (новые ноды через фабрику)
+                DialogsCenteredCanvas.withFactory(
                   layout: centered,
                   nodeSize: nodeSize,
+                  steps: cfg.steps,
                   transformationController: _tc,
                   contentKey: _contentKey,
-                  buildNode: (int id, Key? _) {
-                    final step = cfg.steps.firstWhere((e) => e.id == id);
-                    final isSelected =
-                        editor.selectedStepId == id ||
-                        editor.linkStartStepId == id;
-                    final key = _nodeKeys.putIfAbsent(id, () => GlobalKey());
-                    return Material(
-                      key: key,
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => ref
-                            .read(dialogsEditorControllerProvider.notifier)
-                            .onNodeTap(id),
-                        onDoubleTap: () => _centerOnNode(id),
-                        child: StepNode(
-                          step: step,
-                          selected: isSelected,
-                          onAddNext: () {
-                            final notifier = ref.read(
-                              dialogsEditorControllerProvider.notifier,
-                            );
-                            final newId = notifier.addNextStep(id);
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              _centerOnNode(newId);
-                            });
-                          },
-                          onSettings: () async {
-                            ref
-                                .read(dialogsEditorControllerProvider.notifier)
-                                .selectStep(id);
-                            await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => StepProps(stepId: id),
-                            );
-                          },
-                          onDelete: () async {
-                            final steps = ref
-                                .read(dialogsConfigControllerProvider)
-                                .steps;
-                            if (steps.length == 1) {
-                              final ok = await showDialog<bool>(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  title: const Text('Удалить сценарий?'),
-                                  content: const Text(
-                                    'В сценарии только один шаг. Будет удалён ВЕСЬ сценарий. Действие необратимо.',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.of(ctx).pop(false),
-                                      child: const Text('Отмена'),
-                                    ),
-                                    FilledButton(
-                                      onPressed: () =>
-                                          Navigator.of(ctx).pop(true),
-                                      child: const Text('Удалить сценарий'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                              if (ok == true) {
-                                await ref
-                                    .read(
-                                      dialogsConfigControllerProvider.notifier,
-                                    )
-                                    .deleteDialog();
-                                ref.invalidate(dialogConfigsProvider);
-                                ref
-                                        .read(
-                                          selectedDialogConfigIdProvider
-                                              .notifier,
-                                        )
-                                        .state =
-                                    null;
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Сценарий удалён'),
-                                    ),
-                                  );
-                                }
-                              }
-                              return;
-                            }
-
-                            final ok = await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('Удалить шаг?'),
-                                content: Text(
-                                  'Шаг #$id будет удалён. Все переходы на этот шаг будут очищены.',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(ctx).pop(false),
-                                    child: const Text('Отмена'),
-                                  ),
-                                  FilledButton(
-                                    onPressed: () =>
-                                        Navigator.of(ctx).pop(true),
-                                    child: const Text('Удалить шаг'),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (ok == true) {
-                              ref
-                                  .read(
-                                    dialogsConfigControllerProvider.notifier,
-                                  )
-                                  .deleteStep(id);
-                              ref
-                                  .read(
-                                    dialogsConfigControllerProvider.notifier,
-                                  )
-                                  .saveFullDebounced();
-                              setState(() {
-                                _didAutoFit = false;
-                                _lastViewportSize = null;
-                              });
-                            }
-                          },
+                  onTap: (id) => ref
+                      .read(dialogsEditorControllerProvider.notifier)
+                      .onNodeTap(id),
+                  onOpenMenu: (id) async {
+                    ref
+                        .read(dialogsEditorControllerProvider.notifier)
+                        .selectStep(id);
+                    await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => StepProps(stepId: id),
+                    );
+                  },
+                  onAddNext: (id) {
+                    final notifier = ref.read(
+                      dialogsEditorControllerProvider.notifier,
+                    );
+                    final newId = notifier.addNextStep(id);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _centerOnNode(newId);
+                    });
+                  },
+                  onDelete: (id) async {
+                    final steps = ref
+                        .read(dialogsConfigControllerProvider)
+                        .steps;
+                    if (steps.length == 1) {
+                      final ok = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Удалить сценарий?'),
+                          content: const Text(
+                            'В сценарии только один шаг. Будет удалён ВЕСЬ сценарий. Действие необратимо.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(false),
+                              child: const Text('Отмена'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.of(ctx).pop(true),
+                              child: const Text('Удалить сценарий'),
+                            ),
+                          ],
                         ),
+                      );
+                      if (ok == true) {
+                        await ref
+                            .read(dialogsConfigControllerProvider.notifier)
+                            .deleteDialog();
+                        ref.invalidate(dialogConfigsProvider);
+                        ref
+                                .read(selectedDialogConfigIdProvider.notifier)
+                                .state =
+                            null;
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Сценарий удалён')),
+                          );
+                        }
+                      }
+                      return;
+                    }
+
+                    final ok = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Удалить шаг?'),
+                        content: Text(
+                          'Шаг #$id будет удалён. Все переходы на этот шаг будут очищены.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(false),
+                            child: const Text('Отмена'),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.of(ctx).pop(true),
+                            child: const Text('Удалить шаг'),
+                          ),
+                        ],
                       ),
                     );
+                    if (ok == true) {
+                      ref
+                          .read(dialogsConfigControllerProvider.notifier)
+                          .deleteStep(id);
+                      ref
+                          .read(dialogsConfigControllerProvider.notifier)
+                          .saveFullDebounced();
+                      setState(() {
+                        _didAutoFit = false;
+                        _lastViewportSize = null;
+                      });
+                    }
                   },
                 ),
 
