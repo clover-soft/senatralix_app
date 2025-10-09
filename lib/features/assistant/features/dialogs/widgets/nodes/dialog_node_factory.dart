@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_node_actions_panel.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/node_actions_panel.dart';
 import 'node_badges.dart';
 import 'dialog_node_widget.dart';
 import 'node_styles.dart';
