@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/canvas/painters/utils/back_edges_planner.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/canvas/painters/utils/ortho_turns.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/canvas/painters/utils/arrow_drawer.dart';
 
 /// Ортогональный пейнтер обратных рёбер (углы 90° со скруглениями)
 /// Выход из верхней грани источника, вход в верхнюю грань приёмника.
@@ -174,7 +175,17 @@ class BackEdgesPainterOrtho extends CustomPainter {
         path.lineTo(pp5.dx, pp5.dy);
 
         canvas.drawPath(path, _stroke);
-        _drawTriangleArrow(canvas, ep.dstTop);
+        drawTriangleArrowDown(
+          canvas: canvas,
+          tipPoint: ep.dstTop,
+          base: arrowTriangleBase,
+          height: arrowTriangleHeight,
+          filled: arrowTriangleFilled,
+          stroke: _stroke,
+          fill: _fill,
+          attachAtEdgeMid: arrowAttachAtEdgeMid,
+          strokeWidth: strokeWidth,
+        );
       }
       return;
     }
@@ -249,9 +260,17 @@ class BackEdgesPainterOrtho extends CustomPainter {
       path.lineTo(p5.dx, p5.dy);
 
       canvas.drawPath(path, _stroke);
-
-      // Стрелка (ориентирована вниз). Стыковка по центру верхней грани треугольника
-      _drawTriangleArrow(canvas, dstTop);
+      drawTriangleArrowDown(
+        canvas: canvas,
+        tipPoint: dstTop,
+        base: arrowTriangleBase,
+        height: arrowTriangleHeight,
+        filled: arrowTriangleFilled,
+        stroke: _stroke,
+        fill: _fill,
+        attachAtEdgeMid: arrowAttachAtEdgeMid,
+        strokeWidth: strokeWidth,
+      );
     }
   }
 
@@ -278,35 +297,7 @@ class BackEdgesPainterOrtho extends CustomPainter {
 
   // Удалена старая локальная реализация поворота (_addOrthoTurn, _filletTo) — используем utils/ortho_turns.dart
 
-  void _drawTriangleArrow(Canvas canvas, Offset tipPoint) {
-    // Для входа сверху стрелка ориентирована вниз.
-    final baseHalf = arrowTriangleBase / 2;
-    final tip = Offset(tipPoint.dx, tipPoint.dy - strokeWidth / 2);
-    final baseY = tip.dy - arrowTriangleHeight;
-    final baseLeft = Offset(tip.dx - baseHalf, baseY);
-    final baseRight = Offset(tip.dx + baseHalf, baseY);
-
-    final path = Path()
-      ..moveTo(tip.dx, tip.dy)
-      ..lineTo(baseRight.dx, baseRight.dy)
-      ..lineTo(baseLeft.dx, baseLeft.dy)
-      ..close();
-
-    if (arrowTriangleFilled) {
-      canvas.drawPath(path, _fill);
-    } else {
-      canvas.drawPath(path, _stroke);
-    }
-
-    if (arrowAttachAtEdgeMid) {
-      // Соединительная линия до центра верхней грани стрелки
-      final mid = Offset((baseLeft.dx + baseRight.dx) / 2, baseY);
-      final attach = Path()
-        ..moveTo(mid.dx, mid.dy)
-        ..lineTo(mid.dx, mid.dy + strokeWidth / 2);
-      canvas.drawPath(attach, _stroke);
-    }
-  }
+  // (удалено) локальный рисовальщик стрелки — используем utils/arrow_drawer.dart
 
   @override
   bool shouldRepaint(covariant BackEdgesPainterOrtho old) {

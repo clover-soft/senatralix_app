@@ -1,5 +1,5 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/canvas/painters/utils/arrow_drawer.dart';
 
 class EdgesPainter extends CustomPainter {
   EdgesPainter({
@@ -72,25 +72,20 @@ class EdgesPainter extends CustomPainter {
         ..cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, p1.dx, p1.dy);
       canvas.drawPath(path, paint);
 
-      // Стрелка по касательной в конце кривой
-      final tangent = Offset(p1.dx - c2.dx, p1.dy - c2.dy);
-      final len = math.max(1e-6, tangent.distance);
-      final ux = tangent.dx / len;
-      final uy = tangent.dy / len;
-      final baseAngle = math.atan2(uy, ux) + math.pi; // направление назад от кончика
-      final a = arrowDeg * math.pi / 180.0;
-      final leftAngle = baseAngle + a;
-      final rightAngle = baseAngle - a;
-      final left = Offset(
-        p1.dx + arrowLen * math.cos(leftAngle),
-        p1.dy + arrowLen * math.sin(leftAngle),
+      // Треугольная стрелка по касательной в конце кривой
+      final fill = Paint()
+        ..color = color
+        ..style = PaintingStyle.fill;
+      drawTriangleArrowAlong(
+        canvas: canvas,
+        tipPoint: p1,
+        tangent: Offset(p1.dx - c2.dx, p1.dy - c2.dy),
+        base: 8.0,
+        height: 12.0,
+        filled: true,
+        stroke: paint,
+        fill: fill,
       );
-      final right = Offset(
-        p1.dx + arrowLen * math.cos(rightAngle),
-        p1.dy + arrowLen * math.sin(rightAngle),
-      );
-      canvas.drawLine(p1, left, paint);
-      canvas.drawLine(p1, right, paint);
     }
   }
 
