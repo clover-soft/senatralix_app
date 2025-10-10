@@ -47,6 +47,34 @@ void drawTriangleArrowAlong({
   canvas.drawPath(path, fill);
 }
 
+/// Возвращает координату середины основания треугольной стрелки вниз.
+Offset computeArrowBaseMidDown({
+  required Offset tipPoint,
+  required double height,
+  double strokeWidth = 1.0,
+}) {
+  final tip = Offset(tipPoint.dx, tipPoint.dy - strokeWidth / 2);
+  final baseY = tip.dy - height;
+  return Offset(tip.dx, baseY);
+}
+
+/// Возвращает координату середины основания треугольной стрелки,
+/// ориентированной по касательной (tipPoint, tangent, height).
+Offset computeArrowBaseMidAlong({
+  required Offset tipPoint,
+  required Offset tangent,
+  required double height,
+}) {
+  final len = tangent.distance == 0 ? 1.0 : tangent.distance;
+  final ux = tangent.dx / len;
+  final uy = tangent.dy / len;
+  final back = Offset(-ux, -uy);
+  return Offset(
+    tipPoint.dx + back.dx * height,
+    tipPoint.dy + back.dy * height,
+  );
+}
+
 /// Рисует треугольную стрелку, ориентированную строго вниз (как в ортогональных рёбрах).
 /// tipPoint — кончик стрелки (на входе сверху),
 /// base — ширина основания, height — высота треугольника.

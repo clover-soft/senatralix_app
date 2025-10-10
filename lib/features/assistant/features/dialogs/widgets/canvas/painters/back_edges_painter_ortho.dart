@@ -171,8 +171,13 @@ class BackEdgesPainterOrtho extends CustomPainter {
         _filletAtCorner(path, pp1, pp2, pp3);
         _filletAtCorner(path, pp2, pp3, pp4);
         _filletAtCorner(path, pp3, pp4, pp5);
-        // Финальный довод до pp5 (после последнего скругления)
-        path.lineTo(pp5.dx, pp5.dy);
+        // Финальный довод до середины основания стрелки
+        final baseMidPlanned = computeArrowBaseMidDown(
+          tipPoint: ep.dstTop,
+          height: arrowTriangleHeight,
+          strokeWidth: strokeWidth,
+        );
+        path.lineTo(baseMidPlanned.dx, baseMidPlanned.dy);
 
         canvas.drawPath(path, _stroke);
         drawTriangleArrowDown(
@@ -257,7 +262,12 @@ class BackEdgesPainterOrtho extends CustomPainter {
       _filletAtCorner(path, p1, p2, p3);
       _filletAtCorner(path, p2, p3, p4);
       _filletAtCorner(path, p3, p4, p5);
-      path.lineTo(p5.dx, p5.dy);
+      final baseMid = computeArrowBaseMidDown(
+        tipPoint: dstTop,
+        height: arrowTriangleHeight,
+        strokeWidth: strokeWidth,
+      );
+      path.lineTo(baseMid.dx, baseMid.dy);
 
       canvas.drawPath(path, _stroke);
       drawTriangleArrowDown(

@@ -66,22 +66,32 @@ class EdgesPainter extends CustomPainter {
       final c1 = Offset(p0.dx, p0.dy + curvature);
       final c2 = Offset(p1.dx, p1.dy - curvature);
 
-      // Кривая
+      // Середина основания стрелки (для стыковки линии)
+      final arrowTangent = Offset(p1.dx - c2.dx, p1.dy - c2.dy);
+      final arrowHeight = 12.0;
+      final arrowBase = 8.0;
+      final baseMid = computeArrowBaseMidAlong(
+        tipPoint: p1,
+        tangent: arrowTangent,
+        height: arrowHeight,
+      );
+
+      // Кривая доводится до середины основания стрелки
       final path = Path()
         ..moveTo(p0.dx, p0.dy)
-        ..cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, p1.dx, p1.dy);
+        ..cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, baseMid.dx, baseMid.dy);
       canvas.drawPath(path, paint);
 
-      // Треугольная стрелка по касательной в конце кривой
+      // Треугольная стрелка по касательной
       final fill = Paint()
         ..color = color
         ..style = PaintingStyle.fill;
       drawTriangleArrowAlong(
         canvas: canvas,
         tipPoint: p1,
-        tangent: Offset(p1.dx - c2.dx, p1.dy - c2.dy),
-        base: 8.0,
-        height: 12.0,
+        tangent: arrowTangent,
+        base: arrowBase,
+        height: arrowHeight,
         filled: true,
         stroke: paint,
         fill: fill,
