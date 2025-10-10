@@ -27,7 +27,8 @@ void addOrthoTurn(
   required double radius,
   required double minSegment,
   bool enableLog = true,
-  bool? verticalFirst, // если задан, принудительно задаёт порядок: true => V→H, false => H→V
+  bool?
+  verticalFirst, // если задан, принудительно задаёт порядок: true => V→H, false => H→V
 }) {
   final ax = a.dx, ay = a.dy;
   final bx = b.dx, by = b.dy;
@@ -43,7 +44,9 @@ void addOrthoTurn(
     // Для скругления это всегда внутренний филет относительно угла
     final turnZ = (useHFirst ? sx * sy : -sx * sy);
     final turnDir = turnZ > 0 ? 'left' : 'right';
-    debugPrint('[OrthoFillet] type=fillet-inner  order=${useHFirst ? 'H→V' : 'V→H'}  turn=$turnDir');
+    debugPrint(
+      '[OrthoFillet] type=fillet-inner  order=${useHFirst ? 'H→V' : 'V→H'}  turn=$turnDir',
+    );
   }
   if (useHFirst) {
     final pH = Offset(ax + sx * math.min(radius, dx.abs()), ay);
@@ -84,6 +87,10 @@ void addOrthoFilletFromSegments(
   required double minSegment,
   bool enableLog = true,
 }) {
+  // Переключатель из 8 вариантов (0..7):
+  // бит0: 0=inner, 1=outer
+  // бит1: 0=свип по умолчанию, 1=инвертировать свип
+  // бит2: 0=стартовый угол по кардинали (вверх/вниз/влево/вправо), 1=старт по atan2
   final corner = inEnd; // предполагаем inEnd == outStart
   // Единичные направления (по осям)
   final inVec = Offset(
@@ -114,8 +121,11 @@ void addOrthoFilletFromSegments(
   final availableOut = outgoingVertical
       ? (outEnd.dy - corner.dy).abs()
       : (outEnd.dx - corner.dx).abs();
-  final localR = [radius, availableIn, availableOut]
-      .reduce((a, b) => a < b ? a : b);
+  final localR = [
+    radius,
+    availableIn,
+    availableOut,
+  ].reduce((a, b) => a < b ? a : b);
   if (localR <= 0) {
     path.lineTo(corner.dx, corner.dy);
     return;
@@ -140,51 +150,53 @@ void addOrthoFilletFromSegments(
   final crossZ = inVec.dx * outVec.dy - inVec.dy * outVec.dx;
   final turnLeft = crossZ > 0;
 
-  // Определяем начальный угол по позиции a относительно центра corner
-  double startAngle;
-  if ((a.dx - corner.dx).abs() < 1e-6 && a.dy < corner.dy) {
-    startAngle = -math.pi / 2; // вверх
-  } else if ((a.dx - corner.dx).abs() < 1e-6 && a.dy > corner.dy) {
-    startAngle = math.pi / 2; // вниз
-  } else if (a.dx > corner.dx && (a.dy - corner.dy).abs() < 1e-6) {
-    startAngle = 0.0; // вправо
-  } else {
-    startAngle = math.pi; // влево
-  }
+  // Пользовательские переключатели (меняются вручную при подгонке визуала):
+  // kUseOuter — направление радиуса: false=inner (центр в corner), true=outer (центр вынесен)
+  // kDir — направление обхода (0..3). Зарезервировано на будущее; в геометрии четверти для фиксированных a/b
+  // единственно корректный обход — кратчайший от a к b вокруг выбранного центра.
+  // Поэтому kDir сейчас не влияет (оставлен как точка расширения интерфейса).
+  const bool kUseOuter = true;
+  const int kDir = 0; // 0..3 (пока без эффекта)
 
-  // В Flutter положительный sweep — по часовой
-  final sweep = turnLeft ? -math.pi / 2 : math.pi / 2;
-  final rect = Rect.fromCircle(center: corner, radius: localR);
+  // 0 - дуга обходит от угла поворота
+  final useOuter = kUseOuter;
+
+  // Центр дуги
+  // inner: центр в самом угле
+  // outer: центр сдвинут так, чтобы векторы center->a и center->b были ортогональны и длиной R:
+  // center = corner + (outVec - inVec) * R
+  final center = useOuter
+      ? Offset(
+          corner.dx + (outVec.dx - inVec.dx) * localR,
+          corner.dy + (outVec.dy - inVec.dy) * localR,
+        )
+      : corner;
+
+  // Стартовый угол: от центра к точке a (начало дуги всегда a)
+  double startAngle = math.atan2(a.dy - center.dy, a.dx - center.dx);
+
+  // Угол к конечной точке b относительно того же центра
+  final endAngle = math.atan2(b.dy - center.dy, b.dx - center.dx);
+  // Кратчайший поворот от startAngle к endAngle в диапазон (-pi, pi]
+  double delta = endAngle - startAngle;
+  while (delta <= -math.pi) delta += 2 * math.pi;
+  while (delta > math.pi) delta -= 2 * math.pi;
+  // Должно быть четверть окружности: выбираем знак дельты, модуль = pi/2
+  final sign = delta == 0.0 ? 1.0 : (delta > 0 ? 1.0 : -1.0);
+  final baseSweep = sign * (math.pi / 2);
+  // Управление направлением обхода: kDir=0/2 — как посчитано; kDir=1/3 — инверсия
+  final sweep = (kDir == 0 || kDir == 2) ? baseSweep : -baseSweep;
+
+  final rect = Rect.fromCircle(center: center, radius: localR);
   path.arcTo(rect, startAngle, sweep, false);
-  // Фиксируем окончание дуги строго в b
   path.lineTo(b.dx, b.dy);
-
   if (enableLog && kDebugMode) {
     final side = (outgoingHorizontal
-            ? (outVec.dx > 0 ? 'R' : 'L')
-            : (inVec.dx > 0 ? 'R' : 'L'));
-    debugPrint('[Fillet] side=$side turn=${turnLeft ? 'left' : 'right'} R=${localR.toStringAsFixed(1)}');
-  }
-}
-// Прямая с проверкой минимальной длины (для устойчивости)
-void _lineOrSegment(
-  Path path,
-  Offset a,
-  Offset b, {
-  required bool isVertical,
-  required double minSegment,
-}) {
-  final dx = (b.dx - a.dx).abs();
-  final dy = (b.dy - a.dy).abs();
-  if (isVertical) {
-    final l = dy < minSegment
-        ? (b.dy > a.dy ? a.dy + minSegment : a.dy - minSegment)
-        : b.dy;
-    path.lineTo(a.dx, l);
-  } else {
-    final l = dx < minSegment
-        ? (b.dx > a.dx ? a.dx + minSegment : a.dx - minSegment)
-        : b.dx;
-    path.lineTo(l, a.dy);
+        ? (outVec.dx > 0 ? 'R' : 'L')
+        : (inVec.dx > 0 ? 'R' : 'L'));
+    final sw = sweep > 0 ? '+90' : '-90';
+    debugPrint(
+      '[Fillet] side=$side turn=${turnLeft ? 'left' : 'right'} R=${localR.toStringAsFixed(1)} ${useOuter ? 'outer' : 'inner'} dir=${kDir == 0 || kDir == 2 ? 'base' : 'inv'} sweep=$sw',
+    );
   }
 }

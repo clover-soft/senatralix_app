@@ -24,6 +24,7 @@ class BackEdgesPainterOrtho extends CustomPainter {
   final double arrowTriangleBase;
   final double arrowTriangleHeight;
   final bool logOrthoTurns;
+  final int filletVariant; // 0..3 ориентация дуги
 
   final Paint _stroke;
   final Paint _fill;
@@ -49,6 +50,7 @@ class BackEdgesPainterOrtho extends CustomPainter {
     required this.arrowTriangleBase,
     required this.arrowTriangleHeight,
     required this.logOrthoTurns,
+    this.filletVariant = 2,
     this.plan,
   }) : _stroke = Paint()
          ..color = color
@@ -148,9 +150,18 @@ class BackEdgesPainterOrtho extends CustomPainter {
         // Нормализация точек из планера: приводим к ортогональному шаблону
         // Берём более «высокую» (меньшую по Y) из p1/p2 для уровня первой полки, чтобы избежать наложения
         final double shelfY = (p1.dy < p2.dy) ? p1.dy : p2.dy;
-        final pp1 = Offset(p1.dx, shelfY); // вертикальный подъём от srcTop до shelfY
-        final pp2 = Offset(p2.dx, shelfY); // горизонтальная полка на уровне shelfY
-        final pp3 = Offset(pp2.dx, p3.dy); // вертикальный подъём/спуск до уровня подхода
+        final pp1 = Offset(
+          p1.dx,
+          shelfY,
+        ); // вертикальный подъём от srcTop до shelfY
+        final pp2 = Offset(
+          p2.dx,
+          shelfY,
+        ); // горизонтальная полка на уровне shelfY
+        final pp3 = Offset(
+          pp2.dx,
+          p3.dy,
+        ); // вертикальный подъём/спуск до уровня подхода
         final pp4 = Offset(p4.dx, pp3.dy); // горизонталь до оси входа
         final pp5 = p5; // вертикаль вниз к стрелке
 
@@ -256,7 +267,9 @@ class BackEdgesPainterOrtho extends CustomPainter {
   void _filletAtCorner(Path path, Offset prev, Offset corner, Offset next) {
     if (logOrthoTurns) {
       // ignore: avoid_print
-      print('[Corner] prev=(${prev.dx.toStringAsFixed(1)}, ${prev.dy.toStringAsFixed(1)}) corner=(${corner.dx.toStringAsFixed(1)}, ${corner.dy.toStringAsFixed(1)}) next=(${next.dx.toStringAsFixed(1)}, ${next.dy.toStringAsFixed(1)})');
+      print(
+        '[Corner] prev=(${prev.dx.toStringAsFixed(1)}, ${prev.dy.toStringAsFixed(1)}) corner=(${corner.dx.toStringAsFixed(1)}, ${corner.dy.toStringAsFixed(1)}) next=(${next.dx.toStringAsFixed(1)}, ${next.dy.toStringAsFixed(1)})',
+      );
     }
     addOrthoFilletFromSegments(
       path,
@@ -322,6 +335,7 @@ class BackEdgesPainterOrtho extends CustomPainter {
         arrowTriangleFilled != old.arrowTriangleFilled ||
         arrowTriangleBase != old.arrowTriangleBase ||
         arrowTriangleHeight != old.arrowTriangleHeight ||
-        logOrthoTurns != old.logOrthoTurns;
+        logOrthoTurns != old.logOrthoTurns ||
+        filletVariant != old.filletVariant;
   }
 }
