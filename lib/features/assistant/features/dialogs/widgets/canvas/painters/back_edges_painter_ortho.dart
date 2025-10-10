@@ -145,13 +145,24 @@ class BackEdgesPainterOrtho extends CustomPainter {
         final p4 = ep.points[3];
         final p5 = ep.points[4];
 
+        // Нормализация точек из планера: приводим к ортогональному шаблону
+        // Берём более «высокую» (меньшую по Y) из p1/p2 для уровня первой полки, чтобы избежать наложения
+        final double shelfY = (p1.dy < p2.dy) ? p1.dy : p2.dy;
+        final pp1 = Offset(p1.dx, shelfY); // вертикальный подъём от srcTop до shelfY
+        final pp2 = Offset(p2.dx, shelfY); // горизонтальная полка на уровне shelfY
+        final pp3 = Offset(pp2.dx, p3.dy); // вертикальный подъём/спуск до уровня подхода
+        final pp4 = Offset(p4.dx, pp3.dy); // горизонталь до оси входа
+        final pp5 = p5; // вертикаль вниз к стрелке
+
         final path = Path();
         _moveTo(path, srcTop);
-        _lineOrFillet(path, srcTop, p1, isVertical: true);
-        addOrthoTurn(path, p1, p2, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
-        addOrthoTurn(path, p2, p3, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
-        addOrthoTurn(path, p3, p4, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
-        addOrthoTurn(path, p4, p5, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
+        // Скругления в 4 углах по тройкам точек с нормализованными точками
+        _filletAtCorner(path, srcTop, pp1, pp2);
+        _filletAtCorner(path, pp1, pp2, pp3);
+        _filletAtCorner(path, pp2, pp3, pp4);
+        _filletAtCorner(path, pp3, pp4, pp5);
+        // Финальный довод до pp5 (после последнего скругления)
+        path.lineTo(pp5.dx, pp5.dy);
 
         canvas.drawPath(path, _stroke);
         _drawTriangleArrow(canvas, ep.dstTop);
@@ -222,11 +233,11 @@ class BackEdgesPainterOrtho extends CustomPainter {
       // Строим ортогональный путь со скруглениями
       final path = Path();
       _moveTo(path, srcTop);
-      _lineOrFillet(path, srcTop, p1, isVertical: true);
-      addOrthoTurn(path, p1, p2, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
-      addOrthoTurn(path, p2, p3, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
-      addOrthoTurn(path, p3, p4, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
-      addOrthoTurn(path, p4, p5, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
+      _filletAtCorner(path, srcTop, p1, p2);
+      _filletAtCorner(path, p1, p2, p3);
+      _filletAtCorner(path, p2, p3, p4);
+      _filletAtCorner(path, p3, p4, p5);
+      path.lineTo(p5.dx, p5.dy);
 
       canvas.drawPath(path, _stroke);
 
@@ -240,27 +251,26 @@ class BackEdgesPainterOrtho extends CustomPainter {
     path.moveTo(p.dx, p.dy);
   }
 
-  // Прямая с проверкой минимальной длины (для устойчивости)
-  void _lineOrFillet(
-    Path path,
-    Offset a,
-    Offset b, {
-    required bool isVertical,
-  }) {
-    final dx = (b.dx - a.dx).abs();
-    final dy = (b.dy - a.dy).abs();
-    if (isVertical) {
-      final l = dy < minSegment
-          ? (b.dy > a.dy ? a.dy + minSegment : a.dy - minSegment)
-          : b.dy;
-      path.lineTo(a.dx, l);
-    } else {
-      final l = dx < minSegment
-          ? (b.dx > a.dx ? a.dx + minSegment : a.dx - minSegment)
-          : b.dx;
-      path.lineTo(l, a.dy);
+  // Скругление в угловой точке corner между отрезками prev->corner и corner->next
+  // Делегируем построение новой функции addOrthoFilletFromSegments
+  void _filletAtCorner(Path path, Offset prev, Offset corner, Offset next) {
+    if (logOrthoTurns) {
+      // ignore: avoid_print
+      print('[Corner] prev=(${prev.dx.toStringAsFixed(1)}, ${prev.dy.toStringAsFixed(1)}) corner=(${corner.dx.toStringAsFixed(1)}, ${corner.dy.toStringAsFixed(1)}) next=(${next.dx.toStringAsFixed(1)}, ${next.dy.toStringAsFixed(1)})');
     }
+    addOrthoFilletFromSegments(
+      path,
+      inStart: prev,
+      inEnd: corner,
+      outStart: corner,
+      outEnd: next,
+      radius: cornerRadius,
+      minSegment: minSegment,
+      enableLog: logOrthoTurns,
+    );
   }
+
+  // (удалено) _lineOrFillet — больше не используется
 
   // Удалена старая локальная реализация поворота (_addOrthoTurn, _filletTo) — используем utils/ortho_turns.dart
 
