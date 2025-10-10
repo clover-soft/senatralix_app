@@ -141,6 +141,7 @@ class DialogsCenteredCanvas extends StatelessWidget {
                 ...layout.nextEdges,
                 ...layout.branchEdges,
               ],
+              renderSettings: renderSettings,
               color: renderSettings.backEdgeColor,
               strokeWidth: renderSettings.backEdgeStrokeWidth,
             ),

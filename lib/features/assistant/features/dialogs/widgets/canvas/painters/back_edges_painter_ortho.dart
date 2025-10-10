@@ -1,0 +1,359 @@
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/canvas/painters/utils/back_edges_planner.dart';
+
+/// Ортогональный пейнтер обратных рёбер (углы 90° со скруглениями)
+/// Выход из верхней грани источника, вход в верхнюю грань приёмника.
+class BackEdgesPainterOrtho extends CustomPainter {
+  final Map<int, Offset> positions;
+  final Size nodeSize;
+  final List<MapEntry<int, int>> allEdges;
+  final Color color;
+  final double strokeWidth;
+  final double cornerRadius;
+  final double verticalClearance;
+  final double horizontalClearance;
+  final double exitOffset;
+  final double approachOffset;
+  final double exitFactor;
+  final double approachFactor;
+  final bool approachFromTopOnly;
+  final double minSegment;
+  final bool arrowAttachAtEdgeMid;
+  final bool arrowTriangleFilled;
+  final double arrowTriangleBase;
+  final double arrowTriangleHeight;
+
+  final Paint _stroke;
+  final Paint _fill;
+  final BackEdgesPlan? plan;
+
+  BackEdgesPainterOrtho({
+    required this.positions,
+    required this.nodeSize,
+    required this.allEdges,
+    required this.color,
+    required this.strokeWidth,
+    required this.cornerRadius,
+    required this.verticalClearance,
+    required this.horizontalClearance,
+    required this.exitOffset,
+    required this.approachOffset,
+    required this.exitFactor,
+    required this.approachFactor,
+    required this.approachFromTopOnly,
+    required this.minSegment,
+    required this.arrowAttachAtEdgeMid,
+    required this.arrowTriangleFilled,
+    required this.arrowTriangleBase,
+    required this.arrowTriangleHeight,
+    this.plan,
+  }) : _stroke = Paint()
+         ..color = color
+         ..style = PaintingStyle.stroke
+         ..strokeWidth = strokeWidth
+         ..strokeCap = StrokeCap.round
+         ..strokeJoin = StrokeJoin.round,
+       _fill = Paint()
+         ..color = color
+         ..style = PaintingStyle.fill;
+
+  // Группировка нод по Y-уровням (рядам)
+  List<List<int>> _computeRows() {
+    final entries = positions.entries.toList()
+      ..sort((a, b) => a.value.dy.compareTo(b.value.dy));
+    const double eps = 0.5; // допуск по Y
+    final rows = <List<int>>[];
+    double? currentY;
+    for (final e in entries) {
+      if (currentY == null || (e.value.dy - currentY).abs() > eps) {
+        rows.add([e.key]);
+        currentY = e.value.dy;
+      } else {
+        rows.last.add(e.key);
+      }
+    }
+    return rows;
+  }
+
+  // Экстенты (minX, maxX) для каждого ряда, в координатах левых/правых границ нод
+  Map<int, (double, double)> _computeRowExtents(List<List<int>> rows) {
+    final map = <int, (double, double)>{};
+    for (var i = 0; i < rows.length; i++) {
+      final minX = rows[i]
+          .map((id) => positions[id]!.dx)
+          .reduce((a, b) => a < b ? a : b);
+      final maxRight = rows[i]
+          .map((id) => positions[id]!.dx + nodeSize.width)
+          .reduce((a, b) => a > b ? a : b);
+      map[i] = (minX, maxRight);
+    }
+    return map;
+  }
+
+  int _findRowIndexForY(List<List<int>> rows, double y) {
+    const double eps = 0.5;
+    for (var i = 0; i < rows.length; i++) {
+      final any = rows[i].first;
+      if ((positions[any]!.dy - y).abs() <= eps) return i;
+    }
+    // fallback: ближайший
+    double best = double.infinity;
+    int idx = 0;
+    for (var i = 0; i < rows.length; i++) {
+      final any = rows[i].first;
+      final d = (positions[any]!.dy - y).abs();
+      if (d < best) {
+        best = d;
+        idx = i;
+      }
+    }
+    return idx;
+  }
+
+  int? _findWidestUpperRowIndex(
+    List<List<int>> rows,
+    Map<int, (double, double)> extents,
+    double srcY,
+  ) {
+    int? bestIdx;
+    double bestWidth = -1;
+    for (var i = 0; i < rows.length; i++) {
+      final y = positions[rows[i].first]!.dy;
+      if (y >= srcY) continue; // только верхние ряды
+      final (minX, maxRight) = extents[i]!;
+      final width = maxRight - minX;
+      if (width > bestWidth) {
+        bestWidth = width;
+        bestIdx = i;
+      }
+    }
+    return bestIdx;
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Если есть централизованный план — рисуем строго по нему
+    if (plan != null) {
+      for (final ep in plan!.edgePlans.values) {
+        final srcTop = ep.srcTop;
+        final p1 = ep.points[0];
+        final p2 = ep.points[1];
+        final p3 = ep.points[2];
+        final p4 = ep.points[3];
+        final p5 = ep.points[4];
+
+        final path = Path();
+        _moveTo(path, srcTop);
+        _lineOrFillet(path, srcTop, p1, isVertical: true);
+        _filletTo(path, p1, p2, cornerRadius);
+        _lineOrFillet(path, p1, p2, isVertical: false);
+        _filletTo(path, p2, p3, cornerRadius);
+        _lineOrFillet(path, p2, p3, isVertical: true);
+        _filletTo(path, p3, p4, cornerRadius);
+        _lineOrFillet(path, p3, p4, isVertical: false);
+        _filletTo(path, p4, p5, cornerRadius);
+
+        canvas.drawPath(path, _stroke);
+        _drawTriangleArrow(canvas, ep.dstTop);
+      }
+      return;
+    }
+    // Подготовим ряды (группировка по Y) и экстенты рядов
+    final rows = _computeRows();
+    final rowExtents = _computeRowExtents(rows);
+
+    for (final e in allEdges) {
+      final from = positions[e.key];
+      final to = positions[e.value];
+      if (from == null || to == null) continue;
+
+      // Выход и вход по верхней грани с учётом факторов 0..1 (по умолчанию 0.75)
+      final srcTop = Offset(
+        from.dx + nodeSize.width * exitFactor + exitOffset,
+        from.dy,
+      );
+      final dstTop = Offset(
+        to.dx + nodeSize.width * approachFactor + approachOffset,
+        to.dy,
+      );
+
+      // Шаг 1: подняться вверх от источника на lift из настроек (ортогональный подъём)
+      final double lift = verticalClearance > 0 ? verticalClearance : 20.0;
+      final p1 = srcTop.translate(0, -lift);
+
+      // Определим индекс ряда источника и его «сторону» (лево/право/центр→право)
+      final srcRowIdx = _findRowIndexForY(rows, from.dy);
+      // Центр ряда по X — медиана центров нод
+      final rowCenters =
+          rows[srcRowIdx]
+              .map((id) => positions[id]!.dx + nodeSize.width / 2)
+              .toList()
+            ..sort();
+      final medianX = rowCenters[rowCenters.length ~/ 2];
+      final srcCenterX = from.dx + nodeSize.width / 2;
+      final goLeft = srcCenterX < medianX;
+
+      // Выберем самый широкий ряд С ВЕРХУ (только ряды с y < from.dy)
+      final widestUpperRowIdx = _findWidestUpperRowIndex(
+        rows,
+        rowExtents,
+        from.dy,
+      );
+      // Если нет рядов сверху — используем экстент текущего ряда
+      final extent = widestUpperRowIdx != null
+          ? rowExtents[widestUpperRowIdx]!
+          : rowExtents[srcRowIdx]!;
+      // Граница ряда с выносом 20px
+      const double overshoot = 20.0;
+      final shelfY = p1.dy; // полка идёт на высоте p1
+      final shelfX = goLeft ? (extent.$1 - overshoot) : (extent.$2 + overshoot);
+      final p2 = Offset(shelfX, shelfY);
+
+      // Шаг 3: от края ряда повернуть вверх и подняться до уровня (topY приёмника - 20)
+      final upToY = dstTop.dy - lift;
+      final p3 = Offset(p2.dx, upToY);
+
+      // Шаг 4: повернуть к приёмнику и идти горизонтально до оси входа (dstTop.dx)
+      final p4 = Offset(dstTop.dx, p3.dy);
+
+      // Шаг 5: повернуть вниз к стрелке (dstTop)
+      final p5 = dstTop;
+
+      // Строим ортогональный путь со скруглениями
+      final path = Path();
+      _moveTo(path, srcTop);
+      _lineOrFillet(path, srcTop, p1, isVertical: true);
+      _filletTo(path, p1, p2, cornerRadius);
+      _lineOrFillet(path, p1, p2, isVertical: false);
+      _filletTo(path, p2, p3, cornerRadius);
+      _lineOrFillet(path, p2, p3, isVertical: true);
+      _filletTo(path, p3, p4, cornerRadius);
+      _lineOrFillet(path, p3, p4, isVertical: false);
+      _filletTo(path, p4, p5, cornerRadius);
+
+      canvas.drawPath(path, _stroke);
+
+      // Стрелка (ориентирована вниз). Стыковка по центру верхней грани треугольника
+      _drawTriangleArrow(canvas, dstTop);
+    }
+  }
+
+  // Перемещение пера
+  void _moveTo(Path path, Offset p) {
+    path.moveTo(p.dx, p.dy);
+  }
+
+  // Прямая с проверкой минимальной длины (для устойчивости)
+  void _lineOrFillet(
+    Path path,
+    Offset a,
+    Offset b, {
+    required bool isVertical,
+  }) {
+    final dx = (b.dx - a.dx).abs();
+    final dy = (b.dy - a.dy).abs();
+    if (isVertical) {
+      final l = dy < minSegment
+          ? (b.dy > a.dy ? a.dy + minSegment : a.dy - minSegment)
+          : b.dy;
+      path.lineTo(a.dx, l);
+    } else {
+      final l = dx < minSegment
+          ? (b.dx > a.dx ? a.dx + minSegment : a.dx - minSegment)
+          : b.dx;
+      path.lineTo(l, a.dy);
+    }
+  }
+
+  // Скруглённый переход из a к b (четверть окружности при смене направления)
+  void _filletTo(Path path, Offset a, Offset b, double r) {
+    final ax = a.dx, ay = a.dy;
+    final bx = b.dx, by = b.dy;
+    final isTurn = (ax != bx) && (ay != by);
+    if (!isTurn || r <= 0) {
+      path.lineTo(bx, by);
+      return;
+    }
+    final dx = bx - ax;
+    final dy = by - ay;
+    final sx = dx >= 0 ? 1.0 : -1.0;
+    final sy = dy >= 0 ? 1.0 : -1.0;
+
+    // Выбираем направление поворота и рисуем дугу четверти окружности
+    final useHFirst = (dx.abs() >= dy.abs());
+    if (useHFirst) {
+      final pH = Offset(ax + sx * math.min(r, dx.abs()), ay);
+      path.lineTo(pH.dx, pH.dy);
+      final rect = Rect.fromCircle(
+        center: Offset(pH.dx, pH.dy + sy * r),
+        radius: r,
+      );
+      final startAngle = sy > 0 ? -math.pi / 2 : math.pi / 2;
+      final sweepAngle = sx > 0 ? math.pi / 2 : -math.pi / 2;
+      path.addArc(rect, startAngle, sweepAngle);
+      path.lineTo(bx, by);
+    } else {
+      final pV = Offset(ax, ay + sy * math.min(r, dy.abs()));
+      path.lineTo(pV.dx, pV.dy);
+      final rect = Rect.fromCircle(
+        center: Offset(pV.dx + sx * r, pV.dy),
+        radius: r,
+      );
+      final startAngle = sx > 0 ? math.pi : 0.0;
+      final sweepAngle = sy > 0 ? math.pi / 2 : -math.pi / 2;
+      path.addArc(rect, startAngle, sweepAngle);
+      path.lineTo(bx, by);
+    }
+  }
+
+  void _drawTriangleArrow(Canvas canvas, Offset tipPoint) {
+    // Для входа сверху стрелка ориентирована вниз.
+    final baseHalf = arrowTriangleBase / 2;
+    final tip = Offset(tipPoint.dx, tipPoint.dy - strokeWidth / 2);
+    final baseY = tip.dy - arrowTriangleHeight;
+    final baseLeft = Offset(tip.dx - baseHalf, baseY);
+    final baseRight = Offset(tip.dx + baseHalf, baseY);
+
+    final path = Path()
+      ..moveTo(tip.dx, tip.dy)
+      ..lineTo(baseRight.dx, baseRight.dy)
+      ..lineTo(baseLeft.dx, baseLeft.dy)
+      ..close();
+
+    if (arrowTriangleFilled) {
+      canvas.drawPath(path, _fill);
+    } else {
+      canvas.drawPath(path, _stroke);
+    }
+
+    if (arrowAttachAtEdgeMid) {
+      // Соединительная линия до центра верхней грани стрелки
+      final mid = Offset((baseLeft.dx + baseRight.dx) / 2, baseY);
+      final attach = Path()
+        ..moveTo(mid.dx, mid.dy)
+        ..lineTo(mid.dx, mid.dy + strokeWidth / 2);
+      canvas.drawPath(attach, _stroke);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant BackEdgesPainterOrtho old) {
+    return positions != old.positions ||
+        nodeSize != old.nodeSize ||
+        allEdges != old.allEdges ||
+        color != old.color ||
+        strokeWidth != old.strokeWidth ||
+        cornerRadius != old.cornerRadius ||
+        verticalClearance != old.verticalClearance ||
+        horizontalClearance != old.horizontalClearance ||
+        exitOffset != old.exitOffset ||
+        approachOffset != old.approachOffset ||
+        approachFromTopOnly != old.approachFromTopOnly ||
+        minSegment != old.minSegment ||
+        arrowAttachAtEdgeMid != old.arrowAttachAtEdgeMid ||
+        arrowTriangleFilled != old.arrowTriangleFilled ||
+        arrowTriangleBase != old.arrowTriangleBase ||
+        arrowTriangleHeight != old.arrowTriangleHeight;
+  }
+}

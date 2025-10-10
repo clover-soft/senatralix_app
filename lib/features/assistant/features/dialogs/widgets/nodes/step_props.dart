@@ -5,9 +5,9 @@ import 'package:sentralix_app/features/assistant/features/dialogs/providers/dial
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
 import 'package:sentralix_app/features/assistant/features/slots/providers/slots_providers.dart';
 import 'package:sentralix_app/features/assistant/features/slots/models/dialog_slot.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_simple_props.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_router_props.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_action_item.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/step_simple_props.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/step_router_props.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/step_action_item.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -73,7 +73,9 @@ class StepProps extends ConsumerWidget {
         final branchSlotKey = branchMap.keys.first; // ожидается один ключ
         final branchSlotId = int.tryParse(branchSlotKey);
         if (branchSlotId != null) {
-          final already = exitActions.any((a) => a.slotId == branchSlotId && a.clear);
+          final already = exitActions.any(
+            (a) => a.slotId == branchSlotId && a.clear,
+          );
           if (!already) {
             // Удалим возможные другие действия по этому слоту и добавим clear
             exitActions.removeWhere((a) => a.slotId == branchSlotId);
