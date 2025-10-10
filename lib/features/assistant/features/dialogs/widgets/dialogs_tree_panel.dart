@@ -5,10 +5,8 @@ import 'package:vector_math/vector_math_64.dart' as vm;
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_editor_providers.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_providers.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_toolbar_panel.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/widgets/step_props.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/step_props.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
-// import 'package:sentralix_app/features/assistant/features/dialogs/utils/graph_cycles.dart';
-// back-edges отрисовка больше не используется в центрированной раскладке
 import 'package:sentralix_app/features/assistant/features/dialogs/graph/centered_layered_layout.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_centered_canvas.dart';
 
