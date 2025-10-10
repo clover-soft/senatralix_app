@@ -88,6 +88,9 @@ class RenderSettings {
   final double arrowTriangleBase; // ширина основания
   final double arrowTriangleHeight; // высота
 
+  /// Логирование утилиты поворотов ортогональных рёбер
+  final bool logOrthoTurns;
+
   const RenderSettings({
     this.nextEdgeColor = Colors.black,
     this.branchEdgeColor = const Color(0xFFFF9800), // цвет ветвления
@@ -137,5 +140,7 @@ class RenderSettings {
         3, // максимальное число "шагов" смещения p2.x при разведении подходов
     this.orthoApproachEchelonSpacingY = 6.0, // микро-сдвиг подходов по Y
     this.orthoApproachMaxLanesY = 3, // количество уровней микро-эшелона по Y
+    this.logOrthoTurns =
+        true, // логирование утилиты поворотов ортогональных рёбер
   });
 }

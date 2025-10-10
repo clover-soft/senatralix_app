@@ -13,6 +13,7 @@ class BackEdgesLayer extends StatelessWidget {
     required this.renderSettings,
     this.color = const Color(0xFFEA4335),
     this.strokeWidth = 1.8,
+    this.usePlanner = true,
   });
 
   final Map<int, Offset> positions;
@@ -21,6 +22,7 @@ class BackEdgesLayer extends StatelessWidget {
   final RenderSettings renderSettings;
   final Color color; // устаревающее поле, сохраняем для совместимости
   final double strokeWidth; // устаревающее поле, сохраняем для совместимости
+  final bool usePlanner;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +38,7 @@ class BackEdgesLayer extends StatelessWidget {
 
     // Если выбран Ortho-стиль — заранее строим план разведения полок
     BackEdgesPlan? plan;
-    if (renderSettings.backEdgeStyle == BackEdgeStyle.ortho) {
+    if (renderSettings.backEdgeStyle == BackEdgeStyle.ortho && usePlanner) {
       plan = const BackEdgesPlanner().computePlan(
         positions: positions,
         nodeSize: nodeSize,
@@ -80,6 +82,7 @@ class BackEdgesLayer extends StatelessWidget {
                   arrowTriangleFilled: renderSettings.arrowTriangleFilled,
                   arrowTriangleBase: renderSettings.arrowTriangleBase,
                   arrowTriangleHeight: renderSettings.arrowTriangleHeight,
+                  logOrthoTurns: renderSettings.logOrthoTurns,
                   plan: plan,
                 )
               : BackEdgesPainter(

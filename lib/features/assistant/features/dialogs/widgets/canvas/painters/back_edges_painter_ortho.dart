@@ -1,6 +1,6 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/canvas/painters/utils/back_edges_planner.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/widgets/canvas/painters/utils/ortho_turns.dart';
 
 /// Ортогональный пейнтер обратных рёбер (углы 90° со скруглениями)
 /// Выход из верхней грани источника, вход в верхнюю грань приёмника.
@@ -23,6 +23,7 @@ class BackEdgesPainterOrtho extends CustomPainter {
   final bool arrowTriangleFilled;
   final double arrowTriangleBase;
   final double arrowTriangleHeight;
+  final bool logOrthoTurns;
 
   final Paint _stroke;
   final Paint _fill;
@@ -47,6 +48,7 @@ class BackEdgesPainterOrtho extends CustomPainter {
     required this.arrowTriangleFilled,
     required this.arrowTriangleBase,
     required this.arrowTriangleHeight,
+    required this.logOrthoTurns,
     this.plan,
   }) : _stroke = Paint()
          ..color = color
@@ -146,13 +148,10 @@ class BackEdgesPainterOrtho extends CustomPainter {
         final path = Path();
         _moveTo(path, srcTop);
         _lineOrFillet(path, srcTop, p1, isVertical: true);
-        _filletTo(path, p1, p2, cornerRadius);
-        _lineOrFillet(path, p1, p2, isVertical: false);
-        _filletTo(path, p2, p3, cornerRadius);
-        _lineOrFillet(path, p2, p3, isVertical: true);
-        _filletTo(path, p3, p4, cornerRadius);
-        _lineOrFillet(path, p3, p4, isVertical: false);
-        _filletTo(path, p4, p5, cornerRadius);
+        addOrthoTurn(path, p1, p2, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
+        addOrthoTurn(path, p2, p3, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
+        addOrthoTurn(path, p3, p4, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
+        addOrthoTurn(path, p4, p5, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
 
         canvas.drawPath(path, _stroke);
         _drawTriangleArrow(canvas, ep.dstTop);
@@ -224,13 +223,10 @@ class BackEdgesPainterOrtho extends CustomPainter {
       final path = Path();
       _moveTo(path, srcTop);
       _lineOrFillet(path, srcTop, p1, isVertical: true);
-      _filletTo(path, p1, p2, cornerRadius);
-      _lineOrFillet(path, p1, p2, isVertical: false);
-      _filletTo(path, p2, p3, cornerRadius);
-      _lineOrFillet(path, p2, p3, isVertical: true);
-      _filletTo(path, p3, p4, cornerRadius);
-      _lineOrFillet(path, p3, p4, isVertical: false);
-      _filletTo(path, p4, p5, cornerRadius);
+      addOrthoTurn(path, p1, p2, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
+      addOrthoTurn(path, p2, p3, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
+      addOrthoTurn(path, p3, p4, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
+      addOrthoTurn(path, p4, p5, radius: cornerRadius, minSegment: minSegment, enableLog: logOrthoTurns);
 
       canvas.drawPath(path, _stroke);
 
@@ -266,46 +262,7 @@ class BackEdgesPainterOrtho extends CustomPainter {
     }
   }
 
-  // Скруглённый переход из a к b (четверть окружности при смене направления)
-  void _filletTo(Path path, Offset a, Offset b, double r) {
-    final ax = a.dx, ay = a.dy;
-    final bx = b.dx, by = b.dy;
-    final isTurn = (ax != bx) && (ay != by);
-    if (!isTurn || r <= 0) {
-      path.lineTo(bx, by);
-      return;
-    }
-    final dx = bx - ax;
-    final dy = by - ay;
-    final sx = dx >= 0 ? 1.0 : -1.0;
-    final sy = dy >= 0 ? 1.0 : -1.0;
-
-    // Выбираем направление поворота и рисуем дугу четверти окружности
-    final useHFirst = (dx.abs() >= dy.abs());
-    if (useHFirst) {
-      final pH = Offset(ax + sx * math.min(r, dx.abs()), ay);
-      path.lineTo(pH.dx, pH.dy);
-      final rect = Rect.fromCircle(
-        center: Offset(pH.dx, pH.dy + sy * r),
-        radius: r,
-      );
-      final startAngle = sy > 0 ? -math.pi / 2 : math.pi / 2;
-      final sweepAngle = sx > 0 ? math.pi / 2 : -math.pi / 2;
-      path.addArc(rect, startAngle, sweepAngle);
-      path.lineTo(bx, by);
-    } else {
-      final pV = Offset(ax, ay + sy * math.min(r, dy.abs()));
-      path.lineTo(pV.dx, pV.dy);
-      final rect = Rect.fromCircle(
-        center: Offset(pV.dx + sx * r, pV.dy),
-        radius: r,
-      );
-      final startAngle = sx > 0 ? math.pi : 0.0;
-      final sweepAngle = sy > 0 ? math.pi / 2 : -math.pi / 2;
-      path.addArc(rect, startAngle, sweepAngle);
-      path.lineTo(bx, by);
-    }
-  }
+  // Удалена старая локальная реализация поворота (_addOrthoTurn, _filletTo) — используем utils/ortho_turns.dart
 
   void _drawTriangleArrow(Canvas canvas, Offset tipPoint) {
     // Для входа сверху стрелка ориентирована вниз.
@@ -354,6 +311,7 @@ class BackEdgesPainterOrtho extends CustomPainter {
         arrowAttachAtEdgeMid != old.arrowAttachAtEdgeMid ||
         arrowTriangleFilled != old.arrowTriangleFilled ||
         arrowTriangleBase != old.arrowTriangleBase ||
-        arrowTriangleHeight != old.arrowTriangleHeight;
+        arrowTriangleHeight != old.arrowTriangleHeight ||
+        logOrthoTurns != old.logOrthoTurns;
   }
 }

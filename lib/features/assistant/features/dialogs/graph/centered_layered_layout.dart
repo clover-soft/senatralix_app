@@ -314,6 +314,7 @@ CenteredLayoutResult computeCenteredLayout(
   double nodeSeparation = 32,
   double levelSeparation = 120,
   double padding = 80,
+  bool logLayout = false,
 }) {
   // Пустой вход — пустой результат
   if (steps.isEmpty) {
@@ -370,19 +371,21 @@ CenteredLayoutResult computeCenteredLayout(
   }
 
   // Лог: список рядов с идентификаторами нод и branch-нод
-  final sortedLevels = byLevel.keys.toList()..sort();
-  for (final l in sortedLevels) {
-    final nodes = byLevel[l]!;
-    final branchIdsAtLevel = nodes
-        .where((id) => branchSet.contains(id))
-        .toList();
-    final nodesFmt = nodes.map((id) {
-      final ps = parents[id] ?? const <int>{};
-      final plist = ps.toList()..sort();
-      return '$id(${plist.join(',')})';
-    }).toList();
-    // ignore: avoid_print
-    print('[layout] row l=$l nodes=$nodesFmt branchIds=$branchIdsAtLevel');
+  if (logLayout) {
+    final sortedLevels = byLevel.keys.toList()..sort();
+    for (final l in sortedLevels) {
+      final nodes = byLevel[l]!;
+      final branchIdsAtLevel = nodes
+          .where((id) => branchSet.contains(id))
+          .toList();
+      final nodesFmt = nodes.map((id) {
+        final ps = parents[id] ?? const <int>{};
+        final plist = ps.toList()..sort();
+        return '$id(${plist.join(',')})';
+      }).toList();
+      // ignore: avoid_print
+      print('[layout] row l=$l nodes=$nodesFmt branchIds=$branchIdsAtLevel');
+    }
   }
 
   // Позиции и рёбра

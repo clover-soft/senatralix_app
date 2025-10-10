@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 
 /// DTO: информация о ряду
 class RowInfo {
@@ -131,8 +130,12 @@ class BackEdgesPlanner {
     bool debug = false,
   }) {
     if (debug) {
-      debugPrint('[Planner] computePlan: nodes=${positions.length}, edges=${allEdges.length}');
-      debugPrint('[Planner] settings: exitFactor=$exitFactor, approachFactor=$approachFactor, exitOffset=$exitOffset, approachOffset=$approachOffset, lift=$lift, overshoot=$overshoot, shelfSpacing=$shelfSpacing, shelfMaxLanes=$shelfMaxLanes, approachSpacingX=$approachSpacingX, approachMaxPush=$approachMaxPush, approachEchelonSpacingY=$approachEchelonSpacingY, approachMaxLanesY=$approachMaxLanesY');
+      debugPrint(
+        '[Planner] computePlan: nodes=${positions.length}, edges=${allEdges.length}',
+      );
+      debugPrint(
+        '[Planner] settings: exitFactor=$exitFactor, approachFactor=$approachFactor, exitOffset=$exitOffset, approachOffset=$approachOffset, lift=$lift, overshoot=$overshoot, shelfSpacing=$shelfSpacing, shelfMaxLanes=$shelfMaxLanes, approachSpacingX=$approachSpacingX, approachMaxPush=$approachMaxPush, approachEchelonSpacingY=$approachEchelonSpacingY, approachMaxLanesY=$approachMaxLanesY',
+      );
     }
 
     // 1) Ряды
@@ -140,7 +143,9 @@ class BackEdgesPlanner {
     final rowInfos = _rowInfos(rows, positions, nodeSize);
     if (debug) {
       for (final r in rowInfos) {
-        debugPrint('[Planner] Row #${r.index}: y=${r.y.toStringAsFixed(1)} nodes=${r.nodeIds.length} minX=${r.minX.toStringAsFixed(1)} maxX=${r.maxX.toStringAsFixed(1)} width=${r.width.toStringAsFixed(1)}');
+        debugPrint(
+          '[Planner] Row #${r.index}: y=${r.y.toStringAsFixed(1)} nodes=${r.nodeIds.length} minX=${r.minX.toStringAsFixed(1)} maxX=${r.maxX.toStringAsFixed(1)} width=${r.width.toStringAsFixed(1)}',
+        );
       }
     }
 
@@ -154,28 +159,58 @@ class BackEdgesPlanner {
       final to = positions[e.value]!;
       if (!(from.dy > to.dy)) continue; // только back-edges вверх
 
-      final srcTop = Offset(from.dx + nodeSize.width * exitFactor + exitOffset, from.dy);
-      final dstTop = Offset(to.dx + nodeSize.width * approachFactor + approachOffset, to.dy);
+      final srcTop = Offset(
+        from.dx + nodeSize.width * exitFactor + exitOffset,
+        from.dy,
+      );
+      final dstTop = Offset(
+        to.dx + nodeSize.width * approachFactor + approachOffset,
+        to.dy,
+      );
       final p1 = srcTop.translate(0, -lift);
 
       final srcRowIdx = _findRowIndexForY(rows, positions, from.dy);
-      final rowCenters = rows[srcRowIdx].map((id) => positions[id]!.dx + nodeSize.width / 2).toList()..sort();
+      final rowCenters =
+          rows[srcRowIdx]
+              .map((id) => positions[id]!.dx + nodeSize.width / 2)
+              .toList()
+            ..sort();
       final medianX = rowCenters[rowCenters.length ~/ 2];
       final srcCenterX = from.dx + nodeSize.width / 2;
       final toLeft = srcCenterX < medianX;
 
-      final widestUpper = _findWidestUpperRowIndex(rows, positions, nodeSize, from.dy);
+      final widestUpper = _findWidestUpperRowIndex(
+        rows,
+        positions,
+        nodeSize,
+        from.dy,
+      );
       final shelfRowIdx = widestUpper ?? srcRowIdx;
       final extent = _rowExtent(rows[shelfRowIdx], positions, nodeSize);
       final shelfX = toLeft ? (extent.$1 - overshoot) : (extent.$2 + overshoot);
       final baseShelfY = p1.dy;
       final approachY = dstTop.dy - lift;
 
-      pre.add(_PreEdge(e, from, to, srcTop, dstTop, srcRowIdx, toLeft, shelfRowIdx, shelfX, baseShelfY, approachY));
+      pre.add(
+        _PreEdge(
+          e,
+          from,
+          to,
+          srcTop,
+          dstTop,
+          srcRowIdx,
+          toLeft,
+          shelfRowIdx,
+          shelfX,
+          baseShelfY,
+          approachY,
+        ),
+      );
     }
 
     // 3) Построим интервалы подходов (независимы от lane)
-    final approachIntervals = <MapEntry<int, int>, (double y, double x1, double x2)>{};
+    final approachIntervals =
+        <MapEntry<int, int>, (double y, double x1, double x2)>{};
     for (final pe in pre) {
       final ax1 = math.min(pe.shelfX, pe.dstTop.dx);
       final ax2 = math.max(pe.shelfX, pe.dstTop.dx);
@@ -183,7 +218,10 @@ class BackEdgesPlanner {
     }
 
     // 4) Подбираем lane для каждой полки, избегая совпадений с подходами и уже занятыми полками на том же y
-    final usedShelves = <(double y, double x1, double x2)>[]; // для проверки перекрытий полка-полка
+    final usedShelves =
+        <
+          (double y, double x1, double x2)
+        >[]; // для проверки перекрытий полка-полка
     for (final pe in pre) {
       int lane = _laneHash(pe.edge, pe.shelfRowIdx, pe.toLeft, shelfMaxLanes);
       double shelfY = pe.baseShelfY - lane * shelfSpacing;
@@ -199,7 +237,10 @@ class BackEdgesPlanner {
         approachIntervals.forEach((edgeA, a) {
           if (edgeA == pe.edge) return; // свой подход не сравниваем
           if ((shelfY - a.$1).abs() <= 0.5) {
-            final overlap = math.max(0.0, math.min(sx2, a.$3) - math.max(sx1, a.$2));
+            final overlap = math.max(
+              0.0,
+              math.min(sx2, a.$3) - math.max(sx1, a.$2),
+            );
             if (overlap > 1.0) {
               conflict = true;
             }
@@ -208,7 +249,10 @@ class BackEdgesPlanner {
         // Против уже занятых полок
         for (final u in usedShelves) {
           if ((shelfY - u.$1).abs() <= 0.5) {
-            final overlap = math.max(0.0, math.min(sx2, u.$3) - math.max(sx1, u.$2));
+            final overlap = math.max(
+              0.0,
+              math.min(sx2, u.$3) - math.max(sx1, u.$2),
+            );
             if (overlap > 1.0) {
               conflict = true;
               break;
@@ -242,29 +286,33 @@ class BackEdgesPlanner {
       plans[pe.edge] = plan;
 
       if (debug) {
-        debugPrint('[Planner][Edge ${pe.edge.key}->${pe.edge.value}] laneResolved=${changed ? 'yes' : 'no'} lane=$lane shelfY=${shelfY.toStringAsFixed(1)} (base=${pe.baseShelfY.toStringAsFixed(1)}) approachY=${pe.approachY.toStringAsFixed(1)}');
+        debugPrint(
+          '[Planner][Edge ${pe.edge.key}->${pe.edge.value}] laneResolved=${changed ? 'yes' : 'no'} lane=$lane shelfY=${shelfY.toStringAsFixed(1)} (base=${pe.baseShelfY.toStringAsFixed(1)}) approachY=${pe.approachY.toStringAsFixed(1)}',
+        );
       }
 
       usedShelves.add((shelfY, sx1, sx2));
 
-      shelves.add(ShelfSegment(
-        rowIndex: pe.shelfRowIdx,
-        toLeft: pe.toLeft,
-        lane: lane,
-        y: shelfY,
-        x1: sx1,
-        x2: sx2,
-        edges: [pe.edge],
-      ));
+      shelves.add(
+        ShelfSegment(
+          rowIndex: pe.shelfRowIdx,
+          toLeft: pe.toLeft,
+          lane: lane,
+          y: shelfY,
+          x1: sx1,
+          x2: sx2,
+          edges: [pe.edge],
+        ),
+      );
     }
 
     // 5) Разведение подходов по X на одном уровне approachY (без изменения Y)
     // Группируем планы по уровню подхода
     final byApproachY = <double, List<EdgePlan>>{};
-    plans.values.forEach((ep) {
+    for (var ep in plans.values) {
       final y = ep.points[2].dy; // p3.y
       byApproachY.putIfAbsent(y, () => []).add(ep);
-    });
+    }
 
     byApproachY.forEach((y, list) {
       // сортируем по dstTop.x, чтобы формировать интервалы слева направо
@@ -273,7 +321,9 @@ class BackEdgesPlanner {
       for (final ep in list) {
         final baseP2 = ep.points[1];
         final dstX = ep.dstTop.dx;
-        final dir = (dstX - baseP2.dx) >= 0 ? -1.0 : 1.0; // толкаем от приёмника
+        final dir = (dstX - baseP2.dx) >= 0
+            ? -1.0
+            : 1.0; // толкаем от приёмника
         Offset chosenP2 = baseP2;
         bool placed = false;
         for (int k = 0; k <= approachMaxPush; k++) {
@@ -282,8 +332,14 @@ class BackEdgesPlanner {
           final x2 = math.max(candX, dstX);
           bool overlaps = false;
           for (final occ in occupied) {
-            final overlap = math.max(0.0, math.min(x2, occ.$2) - math.max(x1, occ.$1));
-            if (overlap > 1.0) { overlaps = true; break; }
+            final overlap = math.max(
+              0.0,
+              math.min(x2, occ.$2) - math.max(x1, occ.$1),
+            );
+            if (overlap > 1.0) {
+              overlaps = true;
+              break;
+            }
           }
           if (!overlaps) {
             chosenP2 = Offset(candX, baseP2.dy);
@@ -299,7 +355,9 @@ class BackEdgesPlanner {
           occupied.add((x1, x2));
         }
         if (chosenP2.dx != baseP2.dx && debug) {
-          debugPrint('[Planner][Approach resolve] edge ${ep.edge.key}->${ep.edge.value} y=${y.toStringAsFixed(1)} p2.x ${baseP2.dx.toStringAsFixed(1)} -> ${chosenP2.dx.toStringAsFixed(1)}');
+          debugPrint(
+            '[Planner][Approach resolve] edge ${ep.edge.key}->${ep.edge.value} y=${y.toStringAsFixed(1)} p2.x ${baseP2.dx.toStringAsFixed(1)} -> ${chosenP2.dx.toStringAsFixed(1)}',
+          );
         }
         // Обновляем точки ep с новым p2.x
         final p3 = ep.points[2];
@@ -317,14 +375,15 @@ class BackEdgesPlanner {
         final laneY = nextLane % math.max(1, approachMaxLanesY);
         nextLane++;
         // смещаем p3.y (и p4.y) на -laneY*spacingY, затем короткий вертикальный стык до dstTop.y сохранится в p5
-        final p2 = ep.points[1];
         final p3 = ep.points[2];
         final newP3 = Offset(p3.dx, baseY - laneY * approachEchelonSpacingY);
         final newP4 = Offset(ep.dstTop.dx, newP3.dy);
         ep.points[2] = newP3;
         ep.points[3] = newP4;
         if (debug && laneY != 0) {
-          debugPrint('[Planner][Approach laneY] edge ${ep.edge.key}->${ep.edge.value} baseY=${baseY.toStringAsFixed(1)} -> ${newP3.dy.toStringAsFixed(1)} laneY=$laneY');
+          debugPrint(
+            '[Planner][Approach laneY] edge ${ep.edge.key}->${ep.edge.value} baseY=${baseY.toStringAsFixed(1)} -> ${newP3.dy.toStringAsFixed(1)} laneY=$laneY',
+          );
         }
       }
     });
@@ -332,7 +391,9 @@ class BackEdgesPlanner {
     if (debug) {
       debugPrint('[Planner] Shelves total: ${shelves.length}');
       for (final s in shelves) {
-        debugPrint('[Planner][Shelf] row=${s.rowIndex} side=${s.toLeft ? 'L' : 'R'} lane=${s.lane} y=${s.y.toStringAsFixed(1)} x1=${s.x1.toStringAsFixed(1)} x2=${s.x2.toStringAsFixed(1)} edges=${s.edges.length}');
+        debugPrint(
+          '[Planner][Shelf] row=${s.rowIndex} side=${s.toLeft ? 'L' : 'R'} lane=${s.lane} y=${s.y.toStringAsFixed(1)} x1=${s.x1.toStringAsFixed(1)} x2=${s.x2.toStringAsFixed(1)} edges=${s.edges.length}',
+        );
       }
       debugPrint('[Planner] EdgePlans: ${plans.length}');
 
@@ -340,15 +401,17 @@ class BackEdgesPlanner {
       final Map<String, List<MapEntry<int, int>>> shelfLevelGroups = {};
       final Map<String, List<MapEntry<int, int>>> approachLevelGroups = {};
       // Также соберём интервалы по X для полок и подходов
-      final Map<MapEntry<int, int>, (double y, double x1, double x2)> shelfIntervals = {};
-      final Map<MapEntry<int, int>, (double y, double x1, double x2)> approachIntervals = {};
+      final Map<MapEntry<int, int>, (double y, double x1, double x2)>
+      shelfIntervals = {};
+      final Map<MapEntry<int, int>, (double y, double x1, double x2)>
+      approachIntervals = {};
       plans.forEach((edge, ep) {
-        final p1 = ep.points[0]; // base shelf level
         final p2 = ep.points[1]; // фактический уровень полки (после lane)
         final p3 = ep.points[2]; // уровень горизонтального подхода
-        final p4 = ep.points[3];
         final hShelfKey = p2.dy.toStringAsFixed(1); // фактический уровень полки
-        final hApproachKey = p3.dy.toStringAsFixed(1); // уровень горизонтального подхода перед входом
+        final hApproachKey = p3.dy.toStringAsFixed(
+          1,
+        ); // уровень горизонтального подхода перед входом
         shelfLevelGroups.putIfAbsent(hShelfKey, () => []).add(edge);
         approachLevelGroups.putIfAbsent(hApproachKey, () => []).add(edge);
 
@@ -366,14 +429,18 @@ class BackEdgesPlanner {
       debugPrint('[Planner] Horizontal overlap (Shelf levels):');
       shelfLevelGroups.forEach((k, v) {
         if (v.length > 1) {
-          debugPrint('  • y=$k  edges: ${v.map((e) => '${e.key}->${e.value}').join(', ')}');
+          debugPrint(
+            '  • y=$k  edges: ${v.map((e) => '${e.key}->${e.value}').join(', ')}',
+          );
         }
       });
 
       debugPrint('[Planner] Horizontal overlap (Approach levels):');
       approachLevelGroups.forEach((k, v) {
         if (v.length > 1) {
-          debugPrint('  • y=$k  edges: ${v.map((e) => '${e.key}->${e.value}').join(', ')}');
+          debugPrint(
+            '  • y=$k  edges: ${v.map((e) => '${e.key}->${e.value}').join(', ')}',
+          );
         }
       });
 
@@ -384,9 +451,14 @@ class BackEdgesPlanner {
         approachIntervals.forEach((edgeA, a) {
           if (identical(edgeS, edgeA)) return; // не сравниваем с самим собой
           if ((s.$1 - a.$1).abs() <= epsY) {
-            final overlap = math.max(0.0, math.min(s.$3, a.$3) - math.max(s.$2, a.$2));
+            final overlap = math.max(
+              0.0,
+              math.min(s.$3, a.$3) - math.max(s.$2, a.$2),
+            );
             if (overlap > 1.0) {
-              debugPrint('  • y=${s.$1.toStringAsFixed(1)}  shelf=${edgeS.key}->${edgeS.value} [${s.$2.toStringAsFixed(1)}, ${s.$3.toStringAsFixed(1)}]  vs  approach=${edgeA.key}->${edgeA.value} [${a.$2.toStringAsFixed(1)}, ${a.$3.toStringAsFixed(1)}]  overlap=${overlap.toStringAsFixed(1)}');
+              debugPrint(
+                '  • y=${s.$1.toStringAsFixed(1)}  shelf=${edgeS.key}->${edgeS.value} [${s.$2.toStringAsFixed(1)}, ${s.$3.toStringAsFixed(1)}]  vs  approach=${edgeA.key}->${edgeA.value} [${a.$2.toStringAsFixed(1)}, ${a.$3.toStringAsFixed(1)}]  overlap=${overlap.toStringAsFixed(1)}',
+              );
             }
           }
         });
@@ -398,7 +470,8 @@ class BackEdgesPlanner {
 
   // ----------------- helpers -----------------
   List<List<int>> _computeRows(Map<int, Offset> positions) {
-    final entries = positions.entries.toList()..sort((a, b) => a.value.dy.compareTo(b.value.dy));
+    final entries = positions.entries.toList()
+      ..sort((a, b) => a.value.dy.compareTo(b.value.dy));
     const eps = 0.5;
     final rows = <List<int>>[];
     double? currentY;
@@ -413,23 +486,47 @@ class BackEdgesPlanner {
     return rows;
   }
 
-  List<RowInfo> _rowInfos(List<List<int>> rows, Map<int, Offset> positions, Size nodeSize) {
+  List<RowInfo> _rowInfos(
+    List<List<int>> rows,
+    Map<int, Offset> positions,
+    Size nodeSize,
+  ) {
     final result = <RowInfo>[];
     for (var i = 0; i < rows.length; i++) {
       final y = positions[rows[i].first]!.dy;
       final extent = _rowExtent(rows[i], positions, nodeSize);
-      result.add(RowInfo(index: i, y: y, nodeIds: rows[i], minX: extent.$1, maxX: extent.$2));
+      result.add(
+        RowInfo(
+          index: i,
+          y: y,
+          nodeIds: rows[i],
+          minX: extent.$1,
+          maxX: extent.$2,
+        ),
+      );
     }
     return result;
   }
 
-  (double, double) _rowExtent(List<int> row, Map<int, Offset> positions, Size nodeSize) {
-    final minX = row.map((id) => positions[id]!.dx).reduce((a, b) => a < b ? a : b);
-    final maxRight = row.map((id) => positions[id]!.dx + nodeSize.width).reduce((a, b) => a > b ? a : b);
+  (double, double) _rowExtent(
+    List<int> row,
+    Map<int, Offset> positions,
+    Size nodeSize,
+  ) {
+    final minX = row
+        .map((id) => positions[id]!.dx)
+        .reduce((a, b) => a < b ? a : b);
+    final maxRight = row
+        .map((id) => positions[id]!.dx + nodeSize.width)
+        .reduce((a, b) => a > b ? a : b);
     return (minX, maxRight);
   }
 
-  int _findRowIndexForY(List<List<int>> rows, Map<int, Offset> positions, double y) {
+  int _findRowIndexForY(
+    List<List<int>> rows,
+    Map<int, Offset> positions,
+    double y,
+  ) {
     const eps = 0.5;
     for (var i = 0; i < rows.length; i++) {
       final any = rows[i].first;
@@ -469,13 +566,19 @@ class BackEdgesPlanner {
     return bestIdx;
   }
 
-  int _laneHash(MapEntry<int, int> e, int shelfRowIdx, bool toLeft, int maxLanes) {
+  int _laneHash(
+    MapEntry<int, int> e,
+    int shelfRowIdx,
+    bool toLeft,
+    int maxLanes,
+  ) {
     // JS-safe: 32-битный FNV-1a с маской, чтобы оставаться < 2^31
     int h = 0x811C9DC5; // 2166136261
     void mix(int v) {
       h ^= v;
       h = (h * 0x01000193) & 0x7fffffff; // *16777619 и маска на 31 бит
     }
+
     mix(e.key);
     mix(e.value);
     mix(shelfRowIdx);
