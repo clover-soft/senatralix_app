@@ -7,7 +7,7 @@ import 'package:sentralix_app/features/assistant/features/dialogs/settings/rende
 import 'package:sentralix_app/features/assistant/features/dialogs/settings/feature_flags.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/dialog_node_factory.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/node_styles.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/feature_styles.dart';
 
 class DialogsCenteredCanvas extends StatelessWidget {
   const DialogsCenteredCanvas({
@@ -145,16 +145,16 @@ class DialogsCenteredCanvas extends StatelessWidget {
             positions: layout.positions,
             nodeSize: nodeSize,
             edges: nextVisible,
-            color: renderSettings.nextEdgeColor,
-            strokeWidth: renderSettings.nextEdgeStrokeWidth,
+            color: nodeStyles.nextEdgeColor,
+            strokeWidth: nodeStyles.nextEdgeStrokeWidth,
           ),
           // Рёбра branch (оранжевые)
           EdgesLayer(
             positions: layout.positions,
             nodeSize: nodeSize,
             edges: branchVisible,
-            color: renderSettings.branchEdgeColor,
-            strokeWidth: renderSettings.branchEdgeStrokeWidth,
+            color: nodeStyles.branchEdgeColor,
+            strokeWidth: nodeStyles.branchEdgeStrokeWidth,
           ),
           // Обратные рёбра (идущие вверх): рисуем отдельным слоем
           if (flags.showBackEdges)
@@ -166,8 +166,8 @@ class DialogsCenteredCanvas extends StatelessWidget {
                 ...layout.branchEdges,
               ],
               renderSettings: renderSettings,
-              color: renderSettings.backEdgeColor,
-              strokeWidth: renderSettings.backEdgeStrokeWidth,
+              color: nodeStyles.backEdgeColor,
+              strokeWidth: nodeStyles.backEdgeStrokeWidth,
             ),
           // Узлы
           NodesLayer(

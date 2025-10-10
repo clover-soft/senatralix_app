@@ -9,6 +9,7 @@ import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/graph/centered_layered_layout.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_centered_canvas.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/feature_styles.dart';
 
 /// Левая панель: дерево сценария
 class DialogsTreePanel extends ConsumerStatefulWidget {
@@ -38,31 +39,6 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   void initState() {
     super.initState();
     _tc.addListener(_onTcChanged);
-    // Слушаем изменения бизнес-состояния (steps): при любом апдейте пересобираем/рефитим граф
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ref.listen(dialogsConfigControllerProvider, (prev, next) {
-        if (!mounted) return;
-        // Если список шагов изменился (по длине или ссылке) — сбрасываем автофит
-        final prevLen = prev?.steps.length ?? -1;
-        final nextLen = next.steps.length;
-        if (identical(prev?.steps, next.steps) && prevLen == nextLen) return;
-        setState(() {
-          _didAutoFit = false;
-          _lastViewportSize = null;
-        });
-      });
-      // При смене выбранного сценария — также сбрасываем автофит, чтобы вписать новый граф
-      ref.listen(selectedDialogConfigIdProvider, (prev, next) {
-        if (!mounted) return;
-        setState(() {
-          _didAutoFit = false;
-          _lastViewportSize = null;
-          _lastFittedStepsCount = null;
-          _userInteracted = false;
-        });
-      });
-    });
   }
 
   void _onTcChanged() {
@@ -309,8 +285,31 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   Widget build(BuildContext context) {
     // Центрированная построчная раскладка (наш алгоритм)
     final cfg = ref.watch(dialogsConfigControllerProvider);
-    // Размер ноды подгоняем под StepNode (увеличена высота для избежания overflow)
-    const nodeSize = Size(240, 180);
+    // Слушаем изменения бизнес-состояния в рамках build (требование Riverpod)
+    ref.listen(dialogsConfigControllerProvider, (prev, next) {
+      if (!mounted) return;
+      // Если список шагов изменился (по длине или ссылке) — сбрасываем автофит
+      final prevLen = prev?.steps.length ?? -1;
+      final nextLen = next.steps.length;
+      if (identical(prev?.steps, next.steps) && prevLen == nextLen) return;
+      setState(() {
+        _didAutoFit = false;
+        _lastViewportSize = null;
+      });
+    });
+    // При смене выбранного сценария — также сбрасываем автофит, чтобы вписать новый граф
+    ref.listen(selectedDialogConfigIdProvider, (prev, next) {
+      if (!mounted) return;
+      setState(() {
+        _didAutoFit = false;
+        _lastViewportSize = null;
+        _lastFittedStepsCount = null;
+        _userInteracted = false;
+      });
+    });
+    // Размер ноды берём из NodeStyles, чтобы ширина/высота управлялись стилями
+    final nodeStyles = const NodeStyles();
+    final nodeSize = Size(nodeStyles.cardWidth, nodeStyles.cardHeight);
     final centered = computeCenteredLayout(
       cfg.steps,
       nodeSize: nodeSize,
@@ -403,6 +402,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                   steps: cfg.steps,
                   transformationController: _tc,
                   contentKey: _contentKey,
+                  styles: nodeStyles,
                   onTap: (id) => ref
                       .read(dialogsEditorControllerProvider.notifier)
                       .onNodeTap(id),

@@ -3,7 +3,7 @@ import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/node_actions_panel.dart';
 import 'node_badges.dart';
 import 'dialog_node_widget.dart';
-import 'node_styles.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/feature_styles.dart';
 
 /// Фабрика виджета ноды по модели DialogStep
 class DialogNodeFactory {
@@ -24,13 +24,31 @@ class DialogNodeFactory {
 
     final badges = <NodeBadge>[];
     if (isRoot) {
-      badges.add(const NodeBadge(text: 'root', background: Color(0xFFE0F2FE), color: Color(0xFF0369A1)));
+      badges.add(
+        const NodeBadge(
+          text: 'корень',
+          background: Color(0xFFE0F2FE),
+          color: Color(0xFF0369A1),
+        ),
+      );
     }
     if (isBranch) {
-      badges.add(const NodeBadge(text: 'branch', background: Color(0xFFFFF3E0), color: Color(0xFFEF6C00)));
+      badges.add(
+        const NodeBadge(
+          text: 'ветвление',
+          background: Color(0xFFFFF3E0),
+          color: Color(0xFFEF6C00),
+        ),
+      );
     }
     if (step.next != null && step.next! > 0 && step.branchLogic.isEmpty) {
-      badges.add(const NodeBadge(text: 'next', background: Color(0xFFEFF6FF), color: Color(0xFF1D4ED8)));
+      badges.add(
+        const NodeBadge(
+          text: 'следующий шаг',
+          background: Color(0xFFEFF6FF),
+          color: Color(0xFF1D4ED8),
+        ),
+      );
     }
 
     final trailing = DialogsNodeActionsPanel(
