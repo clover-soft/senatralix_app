@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Глобальные стилевые настройки подфичи Dialogs
 /// Содержит параметры карточек нод и настройки рёбер графа
-class NodeStyles {
+class SubfeatureStyles {
   // Базовые цвета карточек нод
   final Color background;
   final Color border;
@@ -47,7 +47,7 @@ class NodeStyles {
   final double branchEdgeStrokeWidth;
   final double backEdgeStrokeWidth;
 
-  const NodeStyles({
+  const SubfeatureStyles({
     // Карточка
     this.background = const Color.fromARGB(255, 205, 235, 197),
     this.border = const Color.fromARGB(255, 132, 156, 135),
@@ -57,7 +57,7 @@ class NodeStyles {
     this.padding = const EdgeInsets.all(12),
     this.borderRadius = 20,
     this.borderWidth = 6,
-    this.cardWidth = 260,
+    this.cardWidth = 280,
     this.cardHeight = 160,
 
     // Типографика

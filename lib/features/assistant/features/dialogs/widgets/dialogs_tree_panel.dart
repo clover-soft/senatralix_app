@@ -9,7 +9,7 @@ import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/graph/centered_layered_layout.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_centered_canvas.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/feature_styles.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/subfeature_styles.dart';
 
 /// Левая панель: дерево сценария
 class DialogsTreePanel extends ConsumerStatefulWidget {
@@ -226,8 +226,8 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
         .length;
   }
 
-  void _centerOnNode(int id) {
-    if (_userInteracted) return;
+  void _centerOnNode(int id, {bool force = false}) {
+    if (_userInteracted && !force) return;
     final nodeKey = _nodeKeys[id];
     if (nodeKey == null) {
       return;
@@ -307,9 +307,12 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
         _userInteracted = false;
       });
     });
-    // Размер ноды берём из NodeStyles, чтобы ширина/высота управлялись стилями
-    final nodeStyles = const NodeStyles();
-    final nodeSize = Size(nodeStyles.cardWidth, nodeStyles.cardHeight);
+    // Размер ноды берём из SubfeatureStyles, чтобы ширина/высота управлялись стилями
+    final subfeatureStyles = const SubfeatureStyles();
+    final nodeSize = Size(
+      subfeatureStyles.cardWidth,
+      subfeatureStyles.cardHeight,
+    );
     final centered = computeCenteredLayout(
       cfg.steps,
       nodeSize: nodeSize,
@@ -402,10 +405,18 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                   steps: cfg.steps,
                   transformationController: _tc,
                   contentKey: _contentKey,
-                  styles: nodeStyles,
+                  styles: subfeatureStyles,
+                  getNodeKey: (id) =>
+                      _nodeKeys.putIfAbsent(id, () => GlobalKey()),
                   onTap: (id) => ref
                       .read(dialogsEditorControllerProvider.notifier)
                       .onNodeTap(id),
+                  onDoubleTap: (id) {
+                    // Центрирование камеры на выбранную ноду без вписывания
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _centerOnNode(id, force: true);
+                    });
+                  },
                   onOpenMenu: (id) async {
                     ref
                         .read(dialogsEditorControllerProvider.notifier)

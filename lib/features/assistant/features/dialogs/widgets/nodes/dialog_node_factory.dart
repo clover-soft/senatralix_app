@@ -3,7 +3,7 @@ import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/node_actions_panel.dart';
 import 'node_badges.dart';
 import 'dialog_node_widget.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/feature_styles.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/subfeature_styles.dart';
 
 /// Фабрика виджета ноды по модели DialogStep
 class DialogNodeFactory {
@@ -17,7 +17,7 @@ class DialogNodeFactory {
     VoidCallback? onOpenMenu,
     VoidCallback? onAddNext,
     VoidCallback? onDelete,
-    NodeStyles styles = const NodeStyles(),
+    SubfeatureStyles styles = const SubfeatureStyles(),
   }) {
     final isBranch = step.branchLogic.isNotEmpty;
     final isRoot = step.id == 1;
@@ -51,8 +51,10 @@ class DialogNodeFactory {
       );
     }
 
+    // Кнопку добавления шага показываем только если нет next и нет ветвлений
+    final bool hasNext = step.next != null && step.next! > 0;
     final trailing = DialogsNodeActionsPanel(
-      onAddNext: onAddNext,
+      onAddNext: (hasNext || isBranch) ? null : onAddNext,
       onSettings: onOpenMenu,
       onDelete: onDelete,
     );

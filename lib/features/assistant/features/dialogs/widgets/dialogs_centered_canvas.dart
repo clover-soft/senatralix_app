@@ -7,7 +7,7 @@ import 'package:sentralix_app/features/assistant/features/dialogs/settings/rende
 import 'package:sentralix_app/features/assistant/features/dialogs/settings/feature_flags.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/dialog_node_factory.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/feature_styles.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/subfeature_styles.dart';
 
 class DialogsCenteredCanvas extends StatelessWidget {
   const DialogsCenteredCanvas({
@@ -21,11 +21,13 @@ class DialogsCenteredCanvas extends StatelessWidget {
     this.flags = const FeatureFlags(),
     this.steps,
     this.factory = const DialogNodeFactory(),
-    this.nodeStyles = const NodeStyles(),
+    this.subfeatureStyles = const SubfeatureStyles(),
     this.onNodeTap,
     this.onNodeOpenMenu,
     this.onNodeAddNext,
     this.onNodeDelete,
+    this.onNodeDoubleTap,
+    this.getNodeKey,
   });
 
   /// Удобный конструктор: создаёт buildNode из списка шагов через DialogNodeFactory
@@ -35,11 +37,13 @@ class DialogsCenteredCanvas extends StatelessWidget {
     required Size nodeSize,
     required List<DialogStep> steps,
     DialogNodeFactory factory = const DialogNodeFactory(),
-    NodeStyles styles = const NodeStyles(),
+    SubfeatureStyles styles = const SubfeatureStyles(),
     void Function(int id)? onTap,
     void Function(int id)? onOpenMenu,
     void Function(int id)? onAddNext,
     void Function(int id)? onDelete,
+    void Function(int id)? onDoubleTap,
+    Key? Function(int id)? getNodeKey,
     TransformationController? transformationController,
     Key? contentKey,
     RenderSettings renderSettings = const RenderSettings(),
@@ -58,6 +62,8 @@ class DialogsCenteredCanvas extends StatelessWidget {
             styles: styles,
             onTap: onTap == null ? null : () => onTap(id),
             onOpenMenu: onOpenMenu == null ? null : () => onOpenMenu(id),
+            onAddNext: onAddNext == null ? null : () => onAddNext(id),
+            onDelete: onDelete == null ? null : () => onDelete(id),
           ),
         );
       },
@@ -69,6 +75,8 @@ class DialogsCenteredCanvas extends StatelessWidget {
       onNodeOpenMenu: onOpenMenu,
       onNodeAddNext: onAddNext,
       onNodeDelete: onDelete,
+      onNodeDoubleTap: onDoubleTap,
+      getNodeKey: getNodeKey,
     );
   }
 
@@ -81,54 +89,69 @@ class DialogsCenteredCanvas extends StatelessWidget {
   final FeatureFlags flags;
   final List<DialogStep>? steps;
   final DialogNodeFactory factory;
-  final NodeStyles nodeStyles;
+  final SubfeatureStyles subfeatureStyles;
   final void Function(int id)? onNodeTap;
   final void Function(int id)? onNodeOpenMenu;
   final void Function(int id)? onNodeAddNext;
   final void Function(int id)? onNodeDelete;
+  final void Function(int id)? onNodeDoubleTap;
+  final Key? Function(int id)? getNodeKey;
 
   @override
   Widget build(BuildContext context) {
     // Готовим билдер нод: либо внешний, либо фабричный из steps
-    final Widget Function(int, Key?) nodeBuilder = buildNode ?? (steps != null
-        ? (int id, Key? key) {
-            final step = steps!.firstWhere((s) => s.id == id, orElse: () => steps!.first);
-            return KeyedSubtree(
-              key: key,
-              child: factory.buildNodeFromStep(
-                step,
-                styles: nodeStyles,
-                onTap: onNodeTap == null ? null : () => onNodeTap!(id),
-                onOpenMenu: onNodeOpenMenu == null ? null : () => onNodeOpenMenu!(id),
-                onAddNext: onNodeAddNext == null ? null : () => onNodeAddNext!(id),
-                onDelete: onNodeDelete == null ? null : () => onNodeDelete!(id),
-              ),
-            );
-          }
-        : (int id, Key? key) => const SizedBox());
+    final Widget Function(int, Key?) nodeBuilder =
+        buildNode ??
+        (steps != null
+            ? (int id, Key? key) {
+                final step = steps!.firstWhere(
+                  (s) => s.id == id,
+                  orElse: () => steps!.first,
+                );
+                return KeyedSubtree(
+                  key: key,
+                  child: factory.buildNodeFromStep(
+                    step,
+                    styles: subfeatureStyles,
+                    onTap: onNodeTap == null ? null : () => onNodeTap!(id),
+                    onOpenMenu: onNodeOpenMenu == null
+                        ? null
+                        : () => onNodeOpenMenu!(id),
+                    onAddNext: onNodeAddNext == null
+                        ? null
+                        : () => onNodeAddNext!(id),
+                    onDelete: onNodeDelete == null
+                        ? null
+                        : () => onNodeDelete!(id),
+                  ),
+                );
+              }
+            : (int id, Key? key) => const SizedBox());
 
     // Если рисуем обратные рёбра отдельным слоем и стиль Ortho, исключаем дубли в EdgesLayer
-    final bool excludeUpBack = flags.showBackEdges &&
+    final bool excludeUpBack =
+        flags.showBackEdges &&
         renderSettings.backEdgeStyle == BackEdgeStyle.ortho;
     final List<MapEntry<int, int>> nextVisible = excludeUpBack
         ? layout.nextEdges
-            .where((e) {
-              final from = layout.positions[e.key];
-              final to = layout.positions[e.value];
-              if (from == null || to == null) return true;
-              return from.dy <= to.dy; // не рисуем вверх идущие — их рисует BackEdgesLayer
-            })
-            .toList(growable: false)
+              .where((e) {
+                final from = layout.positions[e.key];
+                final to = layout.positions[e.value];
+                if (from == null || to == null) return true;
+                return from.dy <=
+                    to.dy; // не рисуем вверх идущие — их рисует BackEdgesLayer
+              })
+              .toList(growable: false)
         : layout.nextEdges;
     final List<MapEntry<int, int>> branchVisible = excludeUpBack
         ? layout.branchEdges
-            .where((e) {
-              final from = layout.positions[e.key];
-              final to = layout.positions[e.value];
-              if (from == null || to == null) return true;
-              return from.dy <= to.dy;
-            })
-            .toList(growable: false)
+              .where((e) {
+                final from = layout.positions[e.key];
+                final to = layout.positions[e.value];
+                if (from == null || to == null) return true;
+                return from.dy <= to.dy;
+              })
+              .toList(growable: false)
         : layout.branchEdges;
 
     final content = RepaintBoundary(
@@ -145,35 +168,34 @@ class DialogsCenteredCanvas extends StatelessWidget {
             positions: layout.positions,
             nodeSize: nodeSize,
             edges: nextVisible,
-            color: nodeStyles.nextEdgeColor,
-            strokeWidth: nodeStyles.nextEdgeStrokeWidth,
+            color: subfeatureStyles.nextEdgeColor,
+            strokeWidth: subfeatureStyles.nextEdgeStrokeWidth,
           ),
           // Рёбра branch (оранжевые)
           EdgesLayer(
             positions: layout.positions,
             nodeSize: nodeSize,
             edges: branchVisible,
-            color: nodeStyles.branchEdgeColor,
-            strokeWidth: nodeStyles.branchEdgeStrokeWidth,
+            color: subfeatureStyles.branchEdgeColor,
+            strokeWidth: subfeatureStyles.branchEdgeStrokeWidth,
           ),
           // Обратные рёбра (идущие вверх): рисуем отдельным слоем
           if (flags.showBackEdges)
             BackEdgesLayer(
               positions: layout.positions,
               nodeSize: nodeSize,
-              allEdges: [
-                ...layout.nextEdges,
-                ...layout.branchEdges,
-              ],
+              allEdges: [...layout.nextEdges, ...layout.branchEdges],
               renderSettings: renderSettings,
-              color: nodeStyles.backEdgeColor,
-              strokeWidth: nodeStyles.backEdgeStrokeWidth,
+              color: subfeatureStyles.backEdgeColor,
+              strokeWidth: subfeatureStyles.backEdgeStrokeWidth,
             ),
           // Узлы
           NodesLayer(
             positions: layout.positions,
             nodeSize: nodeSize,
             buildNode: nodeBuilder,
+            onDoubleTap: onNodeDoubleTap,
+            getNodeKey: getNodeKey,
           ),
         ],
       ),
