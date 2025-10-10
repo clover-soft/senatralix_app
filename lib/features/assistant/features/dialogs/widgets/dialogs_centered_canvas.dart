@@ -107,6 +107,30 @@ class DialogsCenteredCanvas extends StatelessWidget {
           }
         : (int id, Key? key) => const SizedBox());
 
+    // Если рисуем обратные рёбра отдельным слоем и стиль Ortho, исключаем дубли в EdgesLayer
+    final bool excludeUpBack = flags.showBackEdges &&
+        renderSettings.backEdgeStyle == BackEdgeStyle.ortho;
+    final List<MapEntry<int, int>> nextVisible = excludeUpBack
+        ? layout.nextEdges
+            .where((e) {
+              final from = layout.positions[e.key];
+              final to = layout.positions[e.value];
+              if (from == null || to == null) return true;
+              return from.dy <= to.dy; // не рисуем вверх идущие — их рисует BackEdgesLayer
+            })
+            .toList(growable: false)
+        : layout.nextEdges;
+    final List<MapEntry<int, int>> branchVisible = excludeUpBack
+        ? layout.branchEdges
+            .where((e) {
+              final from = layout.positions[e.key];
+              final to = layout.positions[e.value];
+              if (from == null || to == null) return true;
+              return from.dy <= to.dy;
+            })
+            .toList(growable: false)
+        : layout.branchEdges;
+
     final content = RepaintBoundary(
       key: contentKey,
       child: Stack(
@@ -120,7 +144,7 @@ class DialogsCenteredCanvas extends StatelessWidget {
           EdgesLayer(
             positions: layout.positions,
             nodeSize: nodeSize,
-            edges: layout.nextEdges,
+            edges: nextVisible,
             color: renderSettings.nextEdgeColor,
             strokeWidth: renderSettings.nextEdgeStrokeWidth,
           ),
@@ -128,7 +152,7 @@ class DialogsCenteredCanvas extends StatelessWidget {
           EdgesLayer(
             positions: layout.positions,
             nodeSize: nodeSize,
-            edges: layout.branchEdges,
+            edges: branchVisible,
             color: renderSettings.branchEdgeColor,
             strokeWidth: renderSettings.branchEdgeStrokeWidth,
           ),
