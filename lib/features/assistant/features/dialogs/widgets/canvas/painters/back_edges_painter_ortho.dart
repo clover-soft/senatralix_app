@@ -23,7 +23,6 @@ class BackEdgesPainterOrtho extends CustomPainter {
   final bool arrowTriangleFilled;
   final double arrowTriangleBase;
   final double arrowTriangleHeight;
-  final bool logOrthoTurns;
   final int filletVariant; // 0..3 ориентация дуги
 
   final Paint _stroke;
@@ -49,7 +48,6 @@ class BackEdgesPainterOrtho extends CustomPainter {
     required this.arrowTriangleFilled,
     required this.arrowTriangleBase,
     required this.arrowTriangleHeight,
-    required this.logOrthoTurns,
     this.filletVariant = 2,
     this.plan,
   }) : _stroke = Paint()
@@ -265,12 +263,6 @@ class BackEdgesPainterOrtho extends CustomPainter {
   // Скругление в угловой точке corner между отрезками prev->corner и corner->next
   // Делегируем построение новой функции addOrthoFilletFromSegments
   void _filletAtCorner(Path path, Offset prev, Offset corner, Offset next) {
-    if (logOrthoTurns) {
-      // ignore: avoid_print
-      print(
-        '[Corner] prev=(${prev.dx.toStringAsFixed(1)}, ${prev.dy.toStringAsFixed(1)}) corner=(${corner.dx.toStringAsFixed(1)}, ${corner.dy.toStringAsFixed(1)}) next=(${next.dx.toStringAsFixed(1)}, ${next.dy.toStringAsFixed(1)})',
-      );
-    }
     addOrthoFilletFromSegments(
       path,
       inStart: prev,
@@ -279,7 +271,6 @@ class BackEdgesPainterOrtho extends CustomPainter {
       outEnd: next,
       radius: cornerRadius,
       minSegment: minSegment,
-      enableLog: logOrthoTurns,
     );
   }
 
@@ -335,7 +326,6 @@ class BackEdgesPainterOrtho extends CustomPainter {
         arrowTriangleFilled != old.arrowTriangleFilled ||
         arrowTriangleBase != old.arrowTriangleBase ||
         arrowTriangleHeight != old.arrowTriangleHeight ||
-        logOrthoTurns != old.logOrthoTurns ||
         filletVariant != old.filletVariant;
   }
 }

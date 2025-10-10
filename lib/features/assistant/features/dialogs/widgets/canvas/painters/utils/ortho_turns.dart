@@ -85,12 +85,8 @@ void addOrthoFilletFromSegments(
   required Offset outEnd, // B2
   required double radius,
   required double minSegment,
-  bool enableLog = true,
 }) {
-  // Переключатель из 8 вариантов (0..7):
-  // бит0: 0=inner, 1=outer
-  // бит1: 0=свип по умолчанию, 1=инвертировать свип
-  // бит2: 0=стартовый угол по кардинали (вверх/вниз/влево/вправо), 1=старт по atan2
+  final enableLog = kDebugMode;
   final corner = inEnd; // предполагаем inEnd == outStart
   // Единичные направления (по осям)
   final inVec = Offset(
@@ -150,27 +146,12 @@ void addOrthoFilletFromSegments(
   final crossZ = inVec.dx * outVec.dy - inVec.dy * outVec.dx;
   final turnLeft = crossZ > 0;
 
-  // Пользовательские переключатели (меняются вручную при подгонке визуала):
-  // kUseOuter — направление радиуса: false=inner (центр в corner), true=outer (центр вынесен)
-  // kDir — направление обхода (0..3). Зарезервировано на будущее; в геометрии четверти для фиксированных a/b
-  // единственно корректный обход — кратчайший от a к b вокруг выбранного центра.
-  // Поэтому kDir сейчас не влияет (оставлен как точка расширения интерфейса).
-  const bool kUseOuter = true;
-  const int kDir = 0; // 0..3 (пока без эффекта)
-
-  // 0 - дуга обходит от угла поворота
-  final useOuter = kUseOuter;
-
-  // Центр дуги
-  // inner: центр в самом угле
-  // outer: центр сдвинут так, чтобы векторы center->a и center->b были ортогональны и длиной R:
+  // Центр дуги (outer): выбираем так, чтобы векторы center->a и center->b были ортогональны и длиной R:
   // center = corner + (outVec - inVec) * R
-  final center = useOuter
-      ? Offset(
-          corner.dx + (outVec.dx - inVec.dx) * localR,
-          corner.dy + (outVec.dy - inVec.dy) * localR,
-        )
-      : corner;
+  final center = Offset(
+    corner.dx + (outVec.dx - inVec.dx) * localR,
+    corner.dy + (outVec.dy - inVec.dy) * localR,
+  );
 
   // Стартовый угол: от центра к точке a (начало дуги всегда a)
   double startAngle = math.atan2(a.dy - center.dy, a.dx - center.dx);
@@ -179,13 +160,16 @@ void addOrthoFilletFromSegments(
   final endAngle = math.atan2(b.dy - center.dy, b.dx - center.dx);
   // Кратчайший поворот от startAngle к endAngle в диапазон (-pi, pi]
   double delta = endAngle - startAngle;
-  while (delta <= -math.pi) delta += 2 * math.pi;
-  while (delta > math.pi) delta -= 2 * math.pi;
+  while (delta <= -math.pi) {
+    delta += 2 * math.pi;
+  }
+  while (delta > math.pi) {
+    delta -= 2 * math.pi;
+  }
   // Должно быть четверть окружности: выбираем знак дельты, модуль = pi/2
   final sign = delta == 0.0 ? 1.0 : (delta > 0 ? 1.0 : -1.0);
   final baseSweep = sign * (math.pi / 2);
-  // Управление направлением обхода: kDir=0/2 — как посчитано; kDir=1/3 — инверсия
-  final sweep = (kDir == 0 || kDir == 2) ? baseSweep : -baseSweep;
+  final sweep = baseSweep; // кратчайшая четверть к b
 
   final rect = Rect.fromCircle(center: center, radius: localR);
   path.arcTo(rect, startAngle, sweep, false);
@@ -194,9 +178,8 @@ void addOrthoFilletFromSegments(
     final side = (outgoingHorizontal
         ? (outVec.dx > 0 ? 'R' : 'L')
         : (inVec.dx > 0 ? 'R' : 'L'));
-    final sw = sweep > 0 ? '+90' : '-90';
     debugPrint(
-      '[Fillet] side=$side turn=${turnLeft ? 'left' : 'right'} R=${localR.toStringAsFixed(1)} ${useOuter ? 'outer' : 'inner'} dir=${kDir == 0 || kDir == 2 ? 'base' : 'inv'} sweep=$sw',
+      '[Fillet] side=$side turn=${turnLeft ? 'left' : 'right'} R=${localR.toStringAsFixed(1)}',
     );
   }
 }

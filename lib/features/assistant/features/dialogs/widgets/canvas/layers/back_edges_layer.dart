@@ -82,7 +82,6 @@ class BackEdgesLayer extends StatelessWidget {
                   arrowTriangleFilled: renderSettings.arrowTriangleFilled,
                   arrowTriangleBase: renderSettings.arrowTriangleBase,
                   arrowTriangleHeight: renderSettings.arrowTriangleHeight,
-                  logOrthoTurns: renderSettings.logOrthoTurns,
                   plan: plan,
                 )
               : BackEdgesPainter(
