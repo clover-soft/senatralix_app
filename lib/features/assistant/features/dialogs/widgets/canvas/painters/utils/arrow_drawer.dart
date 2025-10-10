@@ -51,11 +51,9 @@ void drawTriangleArrowAlong({
 Offset computeArrowBaseMidDown({
   required Offset tipPoint,
   required double height,
-  double strokeWidth = 1.0,
 }) {
-  final tip = Offset(tipPoint.dx, tipPoint.dy - strokeWidth / 2);
-  final baseY = tip.dy - height;
-  return Offset(tip.dx, baseY);
+  final baseY = tipPoint.dy - height;
+  return Offset(tipPoint.dx, baseY);
 }
 
 /// Возвращает координату середины основания треугольной стрелки,
@@ -87,12 +85,9 @@ void drawTriangleArrowDown({
   required bool filled,
   required Paint stroke,
   required Paint fill,
-  bool attachAtEdgeMid = true,
-  double strokeWidth = 1.0,
 }) {
   final baseHalf = base / 2;
-  // Небольшая коррекция, чтобы контур стыковался со штрихом линии
-  final tip = Offset(tipPoint.dx, tipPoint.dy - strokeWidth / 2);
+  final tip = tipPoint;
   final baseY = tip.dy - height;
   final baseLeft = Offset(tip.dx - baseHalf, baseY);
   final baseRight = Offset(tip.dx + baseHalf, baseY);
@@ -103,6 +98,6 @@ void drawTriangleArrowDown({
     ..lineTo(baseLeft.dx, baseLeft.dy)
     ..close();
 
-  // Всегда рисуем залитый треугольник, без дополнительной соединительной линии
+  // Всегда рисуем залитый треугольник
   canvas.drawPath(path, fill);
 }

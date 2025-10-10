@@ -175,7 +175,6 @@ class BackEdgesPainterOrtho extends CustomPainter {
         final baseMidPlanned = computeArrowBaseMidDown(
           tipPoint: ep.dstTop,
           height: arrowTriangleHeight,
-          strokeWidth: strokeWidth,
         );
         path.lineTo(baseMidPlanned.dx, baseMidPlanned.dy);
 
@@ -188,8 +187,6 @@ class BackEdgesPainterOrtho extends CustomPainter {
           filled: arrowTriangleFilled,
           stroke: _stroke,
           fill: _fill,
-          attachAtEdgeMid: arrowAttachAtEdgeMid,
-          strokeWidth: strokeWidth,
         );
       }
       return;
@@ -265,7 +262,6 @@ class BackEdgesPainterOrtho extends CustomPainter {
       final baseMid = computeArrowBaseMidDown(
         tipPoint: dstTop,
         height: arrowTriangleHeight,
-        strokeWidth: strokeWidth,
       );
       path.lineTo(baseMid.dx, baseMid.dy);
 
@@ -278,8 +274,6 @@ class BackEdgesPainterOrtho extends CustomPainter {
         filled: arrowTriangleFilled,
         stroke: _stroke,
         fill: _fill,
-        attachAtEdgeMid: arrowAttachAtEdgeMid,
-        strokeWidth: strokeWidth,
       );
     }
   }

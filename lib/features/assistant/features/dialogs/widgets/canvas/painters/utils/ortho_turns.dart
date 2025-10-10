@@ -86,7 +86,6 @@ void addOrthoFilletFromSegments(
   required double radius,
   required double minSegment,
 }) {
-  final enableLog = kDebugMode;
   final corner = inEnd; // предполагаем inEnd == outStart
   // Единичные направления (по осям)
   final inVec = Offset(
@@ -142,10 +141,6 @@ void addOrthoFilletFromSegments(
   // Доводим прямую до a
   path.lineTo(a.dx, a.dy);
 
-  // Поворот (лево/право) через cross z
-  final crossZ = inVec.dx * outVec.dy - inVec.dy * outVec.dx;
-  final turnLeft = crossZ > 0;
-
   // Центр дуги (outer): выбираем так, чтобы векторы center->a и center->b были ортогональны и длиной R:
   // center = corner + (outVec - inVec) * R
   final center = Offset(
@@ -174,12 +169,4 @@ void addOrthoFilletFromSegments(
   final rect = Rect.fromCircle(center: center, radius: localR);
   path.arcTo(rect, startAngle, sweep, false);
   path.lineTo(b.dx, b.dy);
-  if (enableLog && kDebugMode) {
-    final side = (outgoingHorizontal
-        ? (outVec.dx > 0 ? 'R' : 'L')
-        : (inVec.dx > 0 ? 'R' : 'L'));
-    debugPrint(
-      '[Fillet] side=$side turn=${turnLeft ? 'left' : 'right'} R=${localR.toStringAsFixed(1)}',
-    );
-  }
 }

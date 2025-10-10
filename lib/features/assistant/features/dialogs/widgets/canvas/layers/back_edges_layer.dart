@@ -55,7 +55,6 @@ class BackEdgesLayer extends StatelessWidget {
         approachMaxPush: renderSettings.orthoApproachMaxPush,
         approachEchelonSpacingY: renderSettings.orthoApproachEchelonSpacingY,
         approachMaxLanesY: renderSettings.orthoApproachMaxLanesY,
-        debug: true,
       );
     }
 

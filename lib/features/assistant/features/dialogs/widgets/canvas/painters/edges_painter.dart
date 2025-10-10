@@ -55,12 +55,14 @@ class EdgesPainter extends CustomPainter {
       // Порты: выход снизу исходной ноды и вход сверху целевой ноды
       final p0 = Offset(
         fromPos.dx + nodeSize.width / 2 + dxSep,
-        fromPos.dy + nodeSize.height + portPadding,
+        fromPos.dy + nodeSize.height, // без отступа: выходим прямо из грани
       );
       final p1 = Offset(
         toPos.dx + nodeSize.width / 2 + dxSep,
         toPos.dy - portPadding,
       );
+      // Кончик стрелки должен лежать на верхней грани целевой ноды (без отступа)
+      final entryTip = Offset(p1.dx, toPos.dy);
 
       // Контрольные точки кубической Безье
       final c1 = Offset(p0.dx, p0.dy + curvature);
@@ -71,7 +73,7 @@ class EdgesPainter extends CustomPainter {
       final arrowHeight = 12.0;
       final arrowBase = 8.0;
       final baseMid = computeArrowBaseMidAlong(
-        tipPoint: p1,
+        tipPoint: entryTip,
         tangent: arrowTangent,
         height: arrowHeight,
       );
@@ -88,7 +90,7 @@ class EdgesPainter extends CustomPainter {
         ..style = PaintingStyle.fill;
       drawTriangleArrowAlong(
         canvas: canvas,
-        tipPoint: p1,
+        tipPoint: entryTip,
         tangent: arrowTangent,
         base: arrowBase,
         height: arrowHeight,
