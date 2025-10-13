@@ -84,6 +84,32 @@ class StepProps extends ConsumerWidget {
         }
       }
 
+      // Санитизация branchMap: оставить только существующие slotId и values
+      Map<String, Map<String, int>> sanitizeBranch(
+        Map<String, Map<String, int>> src,
+        List<DialogSlot> slots,
+      ) {
+        if (src.isEmpty) return const {};
+        if (slots.isEmpty) return src; // нет данных по слотам — ничего не меняем
+        final slotsById = {for (final s in slots) s.id.toString(): s};
+        final result = <String, Map<String, int>>{};
+        src.forEach((slotKey, mapping) {
+          final slot = slotsById[slotKey];
+          if (slot == null || slot.options.isEmpty) return;
+          final allowed = slot.options.toSet();
+          final filtered = <String, int>{};
+          mapping.forEach((value, nextId) {
+            if (allowed.contains(value)) filtered[value] = nextId;
+          });
+          if (filtered.isNotEmpty) result[slotKey] = filtered;
+        });
+        return result;
+      }
+
+      final sanitizedBranch = isRouter
+          ? sanitizeBranch(branchMap, availableSlots)
+          : <String, Map<String, int>>{};
+
       final updated = DialogStep(
         id: current.id,
         name: nameCtrl.text.trim(),
@@ -92,7 +118,7 @@ class StepProps extends ConsumerWidget {
         requiredSlotsIds: requiredIds,
         optionalSlotsIds: optionalIds,
         next: nextId,
-        branchLogic: isRouter ? branchMap : <String, Map<String, int>>{},
+        branchLogic: sanitizedBranch,
         onEnter: enterActions.isEmpty
             ? null
             : StepHookActions(setSlots: enterActions),

@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_config_controller.dart';
+import 'package:sentralix_app/features/assistant/features/slots/providers/slots_providers.dart';
+import 'package:sentralix_app/features/assistant/features/slots/models/dialog_slot.dart';
 
 /// Состояние редактора диалогов
 class DialogsEditorState {
@@ -134,14 +136,64 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
     final steps = List<DialogStep>.from(cfg.steps);
     final idx = steps.indexWhere((e) => e.id == updated.id);
     if (idx >= 0) {
-      steps[idx] = updated;
+      // Валидируем branchLogic против актуальных опций слотов (enum)
+      final slotsAsync = _read.read(dialogSlotsProvider);
+      final slots = slotsAsync.maybeWhen(
+        data: (s) => s,
+        orElse: () => const <DialogSlot>[],
+      );
+      final sanitizedBranch = _sanitizeBranchLogic(updated.branchLogic, slots);
+      final sanitized = DialogStep(
+        id: updated.id,
+        name: updated.name,
+        label: updated.label,
+        instructions: updated.instructions,
+        requiredSlotsIds: updated.requiredSlotsIds,
+        optionalSlotsIds: updated.optionalSlotsIds,
+        next: updated.next,
+        branchLogic: sanitizedBranch,
+        onEnter: updated.onEnter,
+        onExit: updated.onExit,
+      );
+
+      steps[idx] = sanitized;
       _read.read(dialogsConfigControllerProvider.notifier).updateSteps(steps);
       state = DialogsEditorState(
-        selectedStepId: updated.id,
+        selectedStepId: sanitized.id,
         linkStartStepId: state.linkStartStepId,
       );
       
     }
+  }
+
+  /// Очищает branchLogic от значений, которых больше нет в соответствующих слотах.
+  /// Оставляет только те пары slotId -> {value: nextId}, где slotId существует,
+  /// слот имеет опции и value входит в список options этого слота.
+  Map<String, Map<String, int>> _sanitizeBranchLogic(
+    Map<String, Map<String, int>> source,
+    List<DialogSlot> slots,
+  ) {
+    if (source.isEmpty) return const {};
+    if (slots.isEmpty) return source; // нет данных по слотам — ничего не меняем
+    final slotsById = {for (final s in slots) s.id.toString(): s};
+    final result = <String, Map<String, int>>{};
+    source.forEach((slotKey, mapping) {
+      final slot = slotsById[slotKey];
+      if (slot == null || slot.options.isEmpty) {
+        return; // слот отсутствует или без опций — вычищаем ветвление
+      }
+      final allowed = slot.options.toSet();
+      final filtered = <String, int>{};
+      mapping.forEach((value, nextId) {
+        if (allowed.contains(value)) {
+          filtered[value] = nextId;
+        }
+      });
+      if (filtered.isNotEmpty) {
+        result[slotKey] = filtered;
+      }
+    });
+    return result;
   }
 
   /// Добавить новую ноду (шаг) без связей

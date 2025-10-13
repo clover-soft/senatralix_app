@@ -10,6 +10,7 @@ import 'package:sentralix_app/features/assistant/features/dialogs/providers/dial
 import 'package:sentralix_app/features/assistant/features/dialogs/graph/centered_layered_layout.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/dialogs_centered_canvas.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/subfeature_styles.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/dnd/node_dnd.dart';
 
 /// Левая панель: дерево сценария
 class DialogsTreePanel extends ConsumerStatefulWidget {
@@ -31,6 +32,8 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   bool _isProgrammaticTransform =
       false; // Внутреннее изменение матрицы (не считать за взаимодействие)
 
+  late final NodeDndController _dndController;
+
   // Данные центрированной раскладки
   CenteredLayoutResult? _lastComputedLayout;
   Size _nodeSize = const Size(240, 120);
@@ -39,6 +42,9 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   void initState() {
     super.initState();
     _tc.addListener(_onTcChanged);
+    _dndController = NodeDndController(
+      repository: ProviderNodeSwapRepository(ref),
+    );
   }
 
   void _onTcChanged() {
@@ -55,6 +61,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   void dispose() {
     _tc.removeListener(_onTcChanged);
     _tc.dispose();
+    _dndController.dispose();
     super.dispose();
   }
 
@@ -398,8 +405,10 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                         : 0.5,
                   ),
                 ),
-                // Сам холст с графом (новые ноды через фабрику)
-                DialogsCenteredCanvas.withFactory(
+                // Сам холст с графом (новые ноды через фабрику) + обёртка DnD
+                NodeDndWrapper(
+                  controller: _dndController,
+                  child: DialogsCenteredCanvas.withFactory(
                   layout: centered,
                   nodeSize: nodeSize,
                   steps: cfg.steps,
@@ -509,6 +518,7 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                       });
                     }
                   },
+                ),
                 ),
 
                 // Панель управления справа

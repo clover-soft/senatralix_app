@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/features/assistant/api/assistant_api.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
+import 'package:sentralix_app/features/assistant/features/slots/models/dialog_slot.dart';
 
 /// Состояние конфигурации диалога
 class DialogsConfigState {
@@ -136,6 +137,11 @@ class DialogsConfigController extends StateNotifier<DialogsConfigState> {
     if (state.isSaving) return;
     state = state.copyWith(isSaving: true, clearError: true);
     try {
+      // Санитизация branchLogic по актуальным слотам перед отправкой
+      final sanitizedSteps = await _sanitizeStepsBranchLogic(state.steps);
+      if (!listEquals(state.steps, sanitizedSteps)) {
+        state = state.copyWith(steps: sanitizedSteps);
+      }
       await _api.updateDialogConfigFull(
         id: id,
         name: state.name,
@@ -149,6 +155,49 @@ class DialogsConfigController extends StateNotifier<DialogsConfigState> {
       state = state.copyWith(isSaving: false, error: '$e');
       
     }
+  }
+
+  Future<List<DialogStep>> _sanitizeStepsBranchLogic(List<DialogStep> steps) async {
+    if (steps.isEmpty) return steps;
+    List<dynamic> raw;
+    try {
+      raw = await _api.fetchDialogSlots();
+    } catch (_) {
+      return steps; // нет данных по слотам — ничего не меняем
+    }
+    final slots = raw.map((e) => DialogSlot.fromJson(e)).toList();
+    if (slots.isEmpty) return steps;
+    final slotsById = {for (final s in slots) s.id.toString(): s};
+
+    DialogStep sanitize(DialogStep s) {
+      if (s.branchLogic.isEmpty) return s;
+      final cleaned = <String, Map<String, int>>{};
+      s.branchLogic.forEach((slotKey, mapping) {
+        final slot = slotsById[slotKey];
+        if (slot == null || slot.options.isEmpty) return;
+        final allowed = slot.options.toSet();
+        final filtered = <String, int>{};
+        mapping.forEach((value, nextId) {
+          if (allowed.contains(value)) filtered[value] = nextId;
+        });
+        if (filtered.isNotEmpty) cleaned[slotKey] = filtered;
+      });
+      if (mapEquals(cleaned, s.branchLogic)) return s;
+      return DialogStep(
+        id: s.id,
+        name: s.name,
+        label: s.label,
+        instructions: s.instructions,
+        requiredSlotsIds: s.requiredSlotsIds,
+        optionalSlotsIds: s.optionalSlotsIds,
+        next: s.next,
+        branchLogic: cleaned,
+        onEnter: s.onEnter,
+        onExit: s.onExit,
+      );
+    }
+
+    return steps.map(sanitize).toList(growable: false);
   }
 
   /// Debounce-обертка над полным сохранением

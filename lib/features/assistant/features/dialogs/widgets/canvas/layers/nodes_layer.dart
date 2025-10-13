@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/dnd/node_dnd.dart';
 
 class NodesLayer extends StatelessWidget {
   const NodesLayer({
@@ -40,7 +41,13 @@ class NodesLayer extends StatelessWidget {
                 },
                 child: KeyedSubtree(
                   key: getNodeKey?.call(e.key) ?? Key(e.key.toString()),
-                  child: buildNode(e.key, Key(e.key.toString())),
+                  child: NodeDropTarget(
+                    nodeId: e.key,
+                    child: NodeDraggable(
+                      nodeId: e.key,
+                      child: buildNode(e.key, Key(e.key.toString())),
+                    ),
+                  ),
                 ),
               ),
             ),
