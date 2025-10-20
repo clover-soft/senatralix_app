@@ -7,17 +7,23 @@ import 'package:sentralix_app/features/assistant/features/sessions/styles/subfea
 /// Панель саммари по диалогу (справа на десктопе / снизу на мобиле)
 class TimelineSummaryPanel extends ConsumerWidget {
   final String internalId;
+
   /// Если true — панель размещена снизу под лентой; если false — справа от ленты
   final bool isBottom;
-  const TimelineSummaryPanel({super.key, required this.internalId, this.isBottom = false});
+  const TimelineSummaryPanel({
+    super.key,
+    required this.internalId,
+    this.isBottom = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ctx = ref.watch(timelineSummaryContextProvider(internalId));
     final theme = Theme.of(context);
     final styles = SubfeatureStyles.of(context);
-    final dividerColor = styles.summaryPanelDividerColor
-        .withOpacity(styles.summaryPanelDividerOpacity);
+    final dividerColor = styles.summaryPanelDividerColor.withValues(
+      alpha: styles.summaryPanelDividerOpacity,
+    );
     final topWidth = isBottom ? 10.0 : 0.0;
     final leftWidth = isBottom ? 0.0 : 10.0;
 
@@ -37,7 +43,9 @@ class TimelineSummaryPanel extends ConsumerWidget {
           children: [
             Text(
               'Ячейки памяти',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 12),
             Expanded(
@@ -105,18 +113,17 @@ class _CopyableSlotChipState extends State<_CopyableSlotChip> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Text(
-                widget.text,
-                style: widget.textStyle,
-                softWrap: true,
-              ),
+              child: Text(widget.text, style: widget.textStyle, softWrap: true),
             ),
             if (_hover) ...[
               const SizedBox(width: 6),
               IconButton(
                 tooltip: 'Скопировать',
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints.tightFor(width: 24, height: 24),
+                constraints: const BoxConstraints.tightFor(
+                  width: 24,
+                  height: 24,
+                ),
                 iconSize: 16,
                 icon: const Icon(Icons.copy_all_outlined),
                 onPressed: () async {
