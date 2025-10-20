@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/features/assistant/features/sessions/providers/timeline_provider.dart';
 import 'package:sentralix_app/features/assistant/features/sessions/styles/subfeature_styles.dart';
@@ -51,23 +52,83 @@ class TimelineSummaryPanel extends ConsumerWidget {
                         style: theme.textTheme.bodySmall,
                       ),
                     for (final e in ctx.entries)
-                      Container(
-                        constraints: const BoxConstraints(minWidth: 0, maxWidth: 320),
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-                        decoration: BoxDecoration(
-                          color: styles.systemBubble.background,
-                          borderRadius: styles.systemBubble.borderRadius,
-                        ),
-                        child: Text(
-                          '${e.key}: ${e.value}',
-                          style: styles.contentTextStyle.copyWith(color: styles.systemBubble.textColor),
-                          softWrap: true,
+                      _CopyableSlotChip(
+                        text: '${e.key}: ${e.value}',
+                        background: styles.systemBubble.background,
+                        radius: styles.systemBubble.borderRadius,
+                        textStyle: styles.contentTextStyle.copyWith(
+                          color: styles.systemBubble.textColor,
                         ),
                       ),
                   ],
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CopyableSlotChip extends StatefulWidget {
+  final String text;
+  final Color background;
+  final BorderRadius radius;
+  final TextStyle textStyle;
+  const _CopyableSlotChip({
+    required this.text,
+    required this.background,
+    required this.radius,
+    required this.textStyle,
+  });
+  @override
+  State<_CopyableSlotChip> createState() => _CopyableSlotChipState();
+}
+
+class _CopyableSlotChipState extends State<_CopyableSlotChip> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 0, maxWidth: 320),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+        decoration: BoxDecoration(
+          color: widget.background,
+          borderRadius: widget.radius,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                widget.text,
+                style: widget.textStyle,
+                softWrap: true,
+              ),
+            ),
+            if (_hover) ...[
+              const SizedBox(width: 6),
+              IconButton(
+                tooltip: 'Скопировать',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(width: 24, height: 24),
+                iconSize: 16,
+                icon: const Icon(Icons.copy_all_outlined),
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  await Clipboard.setData(ClipboardData(text: widget.text));
+                  if (!mounted) return;
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('Скопировано в буфер обмена')),
+                  );
+                },
+              ),
+            ],
           ],
         ),
       ),
