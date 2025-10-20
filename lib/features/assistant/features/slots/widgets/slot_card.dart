@@ -151,6 +151,32 @@ class SlotCard extends ConsumerWidget {
                     onPressed: isSystem
                         ? null
                         : () async {
+                            final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text('Удалить ячейку памяти?'),
+                                    content: Text(
+                                      'Вы действительно хотите удалить "${slot.label}"? Это действие нельзя отменить.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(ctx).pop(false),
+                                        child: const Text('Отмена'),
+                                      ),
+                                      FilledButton(
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: Theme.of(ctx).colorScheme.error,
+                                        ),
+                                        onPressed: () => Navigator.of(ctx).pop(true),
+                                        child: const Text('Удалить'),
+                                      ),
+                                    ],
+                                  ),
+                                ) ??
+                                false;
+
+                            if (!context.mounted || !confirm) return;
+
                             final api = ref.read(assistantApiProvider);
                             final selectedId = ref.read(selectedSlotIdProvider);
                             try {
