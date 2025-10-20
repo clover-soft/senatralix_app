@@ -77,9 +77,11 @@ class TimelineScreen extends ConsumerWidget {
                       builder: (context, constraints) {
                         final wide = constraints.maxWidth >= 1000;
                         final list = ListView.builder(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
+                          padding: EdgeInsets.only(
+                            left: 16,
+                            right: 16,
+                            top: 16,
+                            bottom: wide ? 16 : 0,
                           ),
                           itemCount: entries.length,
                           itemBuilder: (ctx, i) {
@@ -126,13 +128,12 @@ class TimelineScreen extends ConsumerWidget {
                         );
 
                         if (!wide) {
-                          // Мобильная/узкая: только лента, саммари снизу
+                          // Мобильная/узкая: лента сверху, саммари снизу, обе области гибкие
                           return Column(
                             children: [
-                              Expanded(child: list),
-                              const Divider(height: 1),
-                              SizedBox(
-                                height: 220,
+                              Flexible(flex: 2, child: list),
+                              Flexible(
+                                flex: 1,
                                 child: TimelineSummaryPanel(
                                   internalId: internalId,
                                 ),

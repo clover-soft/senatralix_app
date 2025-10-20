@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/features/assistant/features/sessions/providers/player_controller.dart';
 import 'package:sentralix_app/features/assistant/features/sessions/utils/download_saver.dart';
@@ -55,9 +54,7 @@ class _TimelinePlayerBarState extends ConsumerState<TimelinePlayerBar> {
         final fname = 'recording_${widget.internalId}_$ts.mp3';
         await saveRecording(url, suggestedFileName: fname);
         if (!mounted) return;
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Файл сохранён')),
-        );
+        messenger.showSnackBar(const SnackBar(content: Text('Файл сохранён')));
       } catch (e) {
         if (!mounted) return;
         messenger.showSnackBar(

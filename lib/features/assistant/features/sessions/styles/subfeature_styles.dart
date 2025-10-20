@@ -16,6 +16,7 @@ class SubfeatureStyles {
 
   // Фон правой панели саммари (должен перекрывать текстуру)
   final Color summaryPanelBackground;
+  final Color summaryPanelDividerColor;
 
   final BubbleStyle assistantBubble;
   final BubbleStyle userBubble;
@@ -40,6 +41,7 @@ class SubfeatureStyles {
     this.gradientOpacity = 0.06,
     required this.backgroundImageOpacity,
     required this.summaryPanelBackground,
+    required this.summaryPanelDividerColor,
     required this.assistantBubble,
     required this.userBubble,
     required this.systemBubble,
@@ -68,6 +70,7 @@ class SubfeatureStyles {
       gradientOpacity: 0.6,
       backgroundImageOpacity: 0.4,
       summaryPanelBackground: const Color(0xFFFDFDFE),
+      summaryPanelDividerColor: const Color.fromARGB(179, 203, 213, 225),
       assistantBubble: BubbleStyle(
         background: const Color.fromARGB(255, 236, 255, 208),
         textColor: const Color.fromARGB(255, 70, 70, 70),
@@ -153,6 +156,7 @@ class SubfeatureStyles {
       gradientOpacity: 0.6,
       backgroundImageOpacity: 0.4,
       summaryPanelBackground: const Color(0xFFFDFDFE),
+      summaryPanelDividerColor: const Color.fromARGB(179, 203, 213, 225),
       // пузыри как в light()
       assistantBubble: BubbleStyle(
         background: const Color.fromARGB(255, 236, 255, 208),

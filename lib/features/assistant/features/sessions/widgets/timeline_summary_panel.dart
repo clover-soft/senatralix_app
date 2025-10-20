@@ -13,10 +13,19 @@ class TimelineSummaryPanel extends ConsumerWidget {
     final ctx = ref.watch(timelineSummaryContextProvider(internalId));
     final theme = Theme.of(context);
     final styles = SubfeatureStyles.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(color: styles.summaryPanelBackground),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: styles.summaryPanelBackground,
+        border: Border(
+          top: BorderSide(
+            color: styles.summaryPanelDividerColor,
+            width: 10,
+          ),
+        ),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
