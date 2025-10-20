@@ -13,6 +13,7 @@ import 'package:sentralix_app/features/assistant/features/scripts/screens/script
 import 'package:sentralix_app/features/assistant/features/scripts/screens/script_command_editor_screen.dart';
 import 'package:sentralix_app/features/assistant/features/chat/screens/chat_screen.dart';
 import 'package:sentralix_app/features/assistant/features/sessions/screens/sessions_screen.dart';
+import 'package:sentralix_app/features/assistant/features/sessions/screens/timeline_screen.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/screens/dialogs_screen.dart';
 import 'package:sentralix_app/features/assistant/features/slots/screens/slots_screen.dart';
 
@@ -87,6 +88,11 @@ List<RouteBase> assistantRoutes() => [
     path: '/assistant/:assistantId/sessions',
     pageBuilder: (context, state) =>
         const MaterialPage(child: AssistantSessionsScreen()),
+  ),
+  GoRoute(
+    path: '/assistant/:assistantId/sessions/:internalId/timeline',
+    pageBuilder: (context, state) =>
+        const MaterialPage(child: TimelineScreen()),
   ),
   // Новые подфичи: сценарии и данные клиента (слоты)
   GoRoute(

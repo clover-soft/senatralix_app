@@ -745,4 +745,38 @@ class AssistantApi {
   Future<void> deleteThreadCommand(int id) async {
     await _client.delete<void>('/assistants/thread-commands/$id');
   }
+
+  /// Список тредов ассистента (чаты)
+  /// GET `/assistants/threads/?assistant_id=<id>&limit=<limit>&offset=<offset>&created_from=<iso>&created_to=<iso>`
+  Future<List<Map<String, dynamic>>> fetchAssistantThreads({
+    required String assistantId,
+    int limit = 10,
+    int offset = 0,
+    DateTime? createdFrom,
+    DateTime? createdTo,
+  }) async {
+    final query = <String, String>{
+      'assistant_id': assistantId,
+      'limit': '$limit',
+      'offset': '$offset',
+      if (createdFrom != null) 'created_from': createdFrom.toIso8601String(),
+      if (createdTo != null) 'created_to': createdTo.toIso8601String(),
+    };
+    final resp = await _client.get<dynamic>(
+      '/assistants/threads/',
+      query: query,
+    );
+    final data = resp.data;
+    return List<Map<String, dynamic>>.from(data as List);
+  }
+
+  /// Таймлайн треда (по internal_id)
+  /// GET `/assistants/threads/{internalId}/timeline`
+  Future<List<Map<String, dynamic>>> fetchThreadTimeline(String internalId) async {
+    final resp = await _client.get<dynamic>(
+      '/assistants/threads/$internalId/timeline',
+    );
+    final data = resp.data;
+    return List<Map<String, dynamic>>.from(data as List);
+  }
 }
