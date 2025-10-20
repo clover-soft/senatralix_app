@@ -17,6 +17,7 @@ class SubfeatureStyles {
   // Фон правой панели саммари (должен перекрывать текстуру)
   final Color summaryPanelBackground;
   final Color summaryPanelDividerColor;
+  final double summaryPanelDividerOpacity; // 0..1
 
   final BubbleStyle assistantBubble;
   final BubbleStyle userBubble;
@@ -27,8 +28,10 @@ class SubfeatureStyles {
 
   /// Заголовки внутри пузырей (например, подпись роли)
   final TextStyle headerTextStyle;
+
   /// Стиль временных меток (HH:mm:ss) внизу справа пузырей
   final TextStyle timeTextStyle;
+
   /// Стиль заголовка панели над плеером/тайтла
   final TextStyle titleBarTextStyle;
 
@@ -42,6 +45,7 @@ class SubfeatureStyles {
     required this.backgroundImageOpacity,
     required this.summaryPanelBackground,
     required this.summaryPanelDividerColor,
+    this.summaryPanelDividerOpacity = 0.7,
     required this.assistantBubble,
     required this.userBubble,
     required this.systemBubble,
@@ -70,7 +74,9 @@ class SubfeatureStyles {
       gradientOpacity: 0.6,
       backgroundImageOpacity: 0.4,
       summaryPanelBackground: const Color(0xFFFDFDFE),
-      summaryPanelDividerColor: const Color.fromARGB(179, 203, 213, 225),
+      // База цвета разделителя (непрозрачная), прозрачность отдельно
+      summaryPanelDividerColor: const Color.fromARGB(255, 69, 97, 67),
+      summaryPanelDividerOpacity: 0.5,
       assistantBubble: BubbleStyle(
         background: const Color.fromARGB(255, 236, 255, 208),
         textColor: const Color.fromARGB(255, 70, 70, 70),

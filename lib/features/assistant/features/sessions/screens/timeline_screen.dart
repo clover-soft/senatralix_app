@@ -136,6 +136,7 @@ class TimelineScreen extends ConsumerWidget {
                                 flex: 1,
                                 child: TimelineSummaryPanel(
                                   internalId: internalId,
+                                  isBottom: true,
                                 ),
                               ),
                             ],

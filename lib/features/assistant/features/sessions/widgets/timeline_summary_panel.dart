@@ -6,22 +6,27 @@ import 'package:sentralix_app/features/assistant/features/sessions/styles/subfea
 /// Панель саммари по диалогу (справа на десктопе / снизу на мобиле)
 class TimelineSummaryPanel extends ConsumerWidget {
   final String internalId;
-  const TimelineSummaryPanel({super.key, required this.internalId});
+  /// Если true — панель размещена снизу под лентой; если false — справа от ленты
+  final bool isBottom;
+  const TimelineSummaryPanel({super.key, required this.internalId, this.isBottom = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ctx = ref.watch(timelineSummaryContextProvider(internalId));
     final theme = Theme.of(context);
     final styles = SubfeatureStyles.of(context);
+    final dividerColor = styles.summaryPanelDividerColor
+        .withOpacity(styles.summaryPanelDividerOpacity);
+    final topWidth = isBottom ? 10.0 : 0.0;
+    final leftWidth = isBottom ? 0.0 : 10.0;
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: styles.summaryPanelBackground,
         border: Border(
-          top: BorderSide(
-            color: styles.summaryPanelDividerColor,
-            width: 10,
-          ),
+          top: BorderSide(color: dividerColor, width: topWidth),
+          left: BorderSide(color: dividerColor, width: leftWidth),
         ),
       ),
       child: Padding(
