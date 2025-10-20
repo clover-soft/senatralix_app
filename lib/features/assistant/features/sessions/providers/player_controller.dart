@@ -78,7 +78,6 @@ class PlayerController extends StateNotifier<PlayerViewState> {
 
   PlayerController(this._internalId) : super(const PlayerViewState()) {
     _player = AudioPlayer();
-    debugPrint('[PC] ctor for id=$_internalId');
     _bindStreams();
   }
 
@@ -89,7 +88,6 @@ class PlayerController extends StateNotifier<PlayerViewState> {
         ? audioUrl
         : 'https://api.sentralix.ru/assistants/threads/$_internalId/recording';
     try {
-      debugPrint('[PC] init: prepare source url=$_url');
       // Передаём куки для авторизованного запроса на Web
       final built = await buildAudioUriSource(
         _url!,
@@ -101,8 +99,7 @@ class PlayerController extends StateNotifier<PlayerViewState> {
       await _player.setAudioSource(_source!, preload: true);
       await _player.load();
       state = state.copyWith(initialized: true);
-    } catch (e, st) {
-      debugPrint('[PC] init error: $e\n$st');
+    } catch (e) {
       state = state.copyWith(error: e.toString());
     }
   }
@@ -120,49 +117,35 @@ class PlayerController extends StateNotifier<PlayerViewState> {
   void _bindStreams() {
     _posSub = _player.positionStream.listen((pos) {
       if (!state.isScrubbing) {
-        debugPrint('[PC] position=$pos');
         state = state.copyWith(position: pos);
       }
     });
     _durSub = _player.durationStream.listen((dur) {
-      debugPrint('[PC] duration=${dur ?? Duration.zero}');
       state = state.copyWith(duration: dur ?? Duration.zero);
     });
     _playerStateSub = _player.playerStateStream.listen((s) {
-      debugPrint(
-        '[PC] playerState processing=${s.processingState} playing=${s.playing}',
-      );
       state = state.copyWith(playing: s.playing);
     });
     _eventSub = _player.playbackEventStream.listen((e) {
-      debugPrint(
-        '[PC] event state=${e.processingState} upd=${e.updatePosition} buf=${e.bufferedPosition} dur=${e.duration} idx=${e.currentIndex}',
-      );
     });
     _discSub = _player.positionDiscontinuityStream.listen((d) {
-      debugPrint('[PC] discontinuity reason=${d.reason}');
     });
   }
 
   Future<void> toggle() async {
     if (!state.initialized) {
-      debugPrint('[PC] toggle: not initialized');
       return;
     }
     if (_player.playing) {
-      debugPrint('[PC] toggle: pause at ${_player.position}');
       await _player.pause();
       return;
     }
     final target = state.isScrubbing ? state.dragPosition : state.position;
     if (target > Duration.zero) {
-      debugPrint('[PC] toggle: seek to $target');
       await _player.seek(target);
     } else {
-      debugPrint('[PC] toggle: start from 0');
       await _player.seek(Duration.zero);
     }
-    debugPrint('[PC] toggle: play()');
     await _player.play();
   }
 
@@ -178,20 +161,17 @@ class PlayerController extends StateNotifier<PlayerViewState> {
 
   Future<void> stop() async {
     if (!state.initialized) return;
-    debugPrint('[PC] stop');
     await _player.pause();
     await _player.seek(Duration.zero);
   }
 
   Future<void> seek(Duration pos) async {
     if (!state.initialized) return;
-    debugPrint('[PC] seek to $pos');
     await _player.seek(pos);
   }
 
   Future<void> setSpeed(double v) async {
     if (!state.initialized) return;
-    debugPrint('[PC] speed=$v');
     await _player.setSpeed(v);
     state = state.copyWith(speed: v);
   }
@@ -199,7 +179,6 @@ class PlayerController extends StateNotifier<PlayerViewState> {
   void startScrub(double ms) {
     final pos = Duration(milliseconds: ms.toInt());
     state = state.copyWith(isScrubbing: true, dragPosition: pos);
-    debugPrint('[PC] scrub.start=$pos');
   }
 
   void updateScrub(double ms) {
@@ -210,7 +189,6 @@ class PlayerController extends StateNotifier<PlayerViewState> {
   Future<void> endScrub(double ms) async {
     final pos = Duration(milliseconds: ms.toInt());
     final wasPlaying = state.playing;
-    debugPrint('[PC] scrub.end target=$pos wasPlaying=$wasPlaying');
     if (wasPlaying) await _player.pause();
     await _player.seek(pos);
     state = state.copyWith(
@@ -223,7 +201,6 @@ class PlayerController extends StateNotifier<PlayerViewState> {
 
   @override
   void dispose() {
-    debugPrint('[PC] dispose');
     _posSub?.cancel();
     _durSub?.cancel();
     _playerStateSub?.cancel();

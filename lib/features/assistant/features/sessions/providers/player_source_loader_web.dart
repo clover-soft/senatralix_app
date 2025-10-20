@@ -43,7 +43,6 @@ Future<Uint8List> _downloadBytes(
   final finalUrl = resp.responseUrl ?? url;
   // print для наглядности в консоли браузера
   // ignore: avoid_print
-  print('[BlobLoader] GET $finalUrl status=$status');
   if (status != 200) {
     throw StateError('HTTP $status loading $finalUrl');
   }
