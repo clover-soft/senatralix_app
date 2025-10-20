@@ -22,6 +22,7 @@ class ScriptStepEditorDialog extends StatefulWidget {
 
 class _ScriptStepEditorDialogState extends State<ScriptStepEditorDialog> {
   final _formKey = GlobalKey<FormState>();
+  final ScrollController _scrollCtrl = ScrollController();
 
   late TextEditingController _nameController;
   late String _actionName;
@@ -72,6 +73,7 @@ class _ScriptStepEditorDialogState extends State<ScriptStepEditorDialog> {
   @override
   void dispose() {
     _nameController.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
   }
 
@@ -101,17 +103,22 @@ class _ScriptStepEditorDialogState extends State<ScriptStepEditorDialog> {
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if ((_currentPreset?.inputFields ?? []).isNotEmpty)
-                        ..._buildInputsSection(theme),
-                      if ((_currentPreset?.outputFields ?? []).isNotEmpty)
-                        ..._buildOutputsSection(theme),
-                      if ((_currentPreset?.optionFields ?? []).isNotEmpty)
-                        ..._buildOptionsSection(theme),
-                    ],
+                child: Scrollbar(
+                  controller: _scrollCtrl,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _scrollCtrl,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if ((_currentPreset?.inputFields ?? []).isNotEmpty)
+                          ..._buildInputsSection(theme),
+                        if ((_currentPreset?.outputFields ?? []).isNotEmpty)
+                          ..._buildOutputsSection(theme),
+                        if ((_currentPreset?.optionFields ?? []).isNotEmpty)
+                          ..._buildOptionsSection(theme),
+                      ],
+                    ),
                   ),
                 ),
               ),

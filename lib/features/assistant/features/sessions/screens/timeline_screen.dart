@@ -127,11 +127,16 @@ class TimelineScreen extends ConsumerWidget {
                           },
                         );
 
+                        final messages = Scrollbar(
+                          thumbVisibility: true,
+                          child: list,
+                        );
+
                         if (!wide) {
                           // Мобильная/узкая: лента сверху, саммари снизу, обе области гибкие
                           return Column(
                             children: [
-                              Flexible(flex: 2, child: list),
+                              Flexible(flex: 2, child: messages),
                               Flexible(
                                 flex: 1,
                                 child: TimelineSummaryPanel(
@@ -146,7 +151,7 @@ class TimelineScreen extends ConsumerWidget {
                         // Десктоп: двухпанельный
                         return Row(
                           children: [
-                            Expanded(child: list),
+                            Expanded(child: messages),
                             const VerticalDivider(width: 1),
                             SizedBox(
                               width: 340,
