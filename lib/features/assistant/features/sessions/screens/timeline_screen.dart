@@ -9,6 +9,8 @@ import 'package:sentralix_app/features/assistant/features/sessions/widgets/timel
 import 'package:sentralix_app/features/assistant/features/sessions/models/timeline_entry.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 import 'package:sentralix_app/features/assistant/features/sessions/styles/subfeature_styles.dart';
+import 'package:sentralix_app/features/assistant/features/sessions/widgets/timeline_title_bar.dart';
+import 'package:sentralix_app/features/assistant/features/sessions/providers/sessions_threads_provider.dart';
 
 class TimelineScreen extends ConsumerWidget {
   const TimelineScreen({super.key});
@@ -21,6 +23,29 @@ class TimelineScreen extends ConsumerWidget {
         GoRouterState.of(context).pathParameters['internalId'] ?? '';
 
     final async = ref.watch(timelineProvider(internalId));
+
+    // Дата/время начала звонка из таймлайна
+    DateTime? callStart;
+    callStart = async.maybeWhen(
+      data: (entries) => entries.isNotEmpty ? entries.first.sortTime : null,
+      orElse: () => null,
+    );
+    // Заголовок треда берём из списка тредов ассистента
+    final threadsAsync = ref.watch(sessionsThreadsProvider(assistantId));
+    final threadTitle = threadsAsync.maybeWhen(
+      data: (threads) {
+        String? title;
+        for (final t in threads) {
+          if (t.internalId == internalId) {
+            title = t.title;
+            break;
+          }
+        }
+        return title ?? (threads.isNotEmpty ? threads.first.title : 'Тред');
+      },
+      orElse: () => 'Тред',
+    );
+    // Длительность пока не используем в заголовке; при необходимости добавим позже
 
     return Scaffold(
       appBar: AssistantAppBar(
@@ -37,6 +62,7 @@ class TimelineScreen extends ConsumerWidget {
           // Контент экрана
           Column(
             children: [
+              TimelineTitleBar(title: threadTitle, callStart: callStart),
               TimelinePlayerBar(internalId: internalId),
               Expanded(
                 child: async.when(

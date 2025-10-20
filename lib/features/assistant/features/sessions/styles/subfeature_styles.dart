@@ -28,6 +28,8 @@ class SubfeatureStyles {
   final TextStyle headerTextStyle;
   /// Стиль временных меток (HH:mm:ss) внизу справа пузырей
   final TextStyle timeTextStyle;
+  /// Стиль заголовка панели над плеером/тайтла
+  final TextStyle titleBarTextStyle;
 
   const SubfeatureStyles({
     required this.chatBackground,
@@ -44,6 +46,7 @@ class SubfeatureStyles {
     required this.contentTextStyle,
     required this.headerTextStyle,
     required this.timeTextStyle,
+    required this.titleBarTextStyle,
   });
 
   /// Светлая тема для чата
@@ -119,6 +122,13 @@ class SubfeatureStyles {
         height: 1.1,
         fontWeight: FontWeight.w500,
         color: Color(0xA664748B), // приглушённый серый
+      ),
+      titleBarTextStyle: const TextStyle(
+        fontFamily: 'Open Sans',
+        fontSize: 18,
+        height: 1.2,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF0F172A),
       ),
     );
   }
@@ -196,6 +206,13 @@ class SubfeatureStyles {
         height: 1.1,
         fontWeight: FontWeight.w500,
         color: Color(0xA664748B),
+      ),
+      titleBarTextStyle: const TextStyle(
+        fontFamily: 'Open Sans',
+        fontSize: 18,
+        height: 1.2,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF0F172A),
       ),
     );
   }

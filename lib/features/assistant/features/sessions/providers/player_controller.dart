@@ -14,6 +14,7 @@ class PlayerViewState {
   final bool isScrubbing;
   final Duration dragPosition;
   final bool initialized;
+  final bool initAttempted;
   final String? error;
 
   const PlayerViewState({
@@ -24,6 +25,7 @@ class PlayerViewState {
     this.isScrubbing = false,
     this.dragPosition = Duration.zero,
     this.initialized = false,
+    this.initAttempted = false,
     this.error,
   });
 
@@ -35,6 +37,7 @@ class PlayerViewState {
     bool? isScrubbing,
     Duration? dragPosition,
     bool? initialized,
+    bool? initAttempted,
     String? error,
   }) {
     return PlayerViewState(
@@ -45,6 +48,7 @@ class PlayerViewState {
       isScrubbing: isScrubbing ?? this.isScrubbing,
       dragPosition: dragPosition ?? this.dragPosition,
       initialized: initialized ?? this.initialized,
+      initAttempted: initAttempted ?? this.initAttempted,
       error: error,
     );
   }
@@ -75,7 +79,8 @@ class PlayerController extends StateNotifier<PlayerViewState> {
   }
 
   Future<void> init({String? audioUrl}) async {
-    if (state.initialized) return;
+    if (state.initialized || state.initAttempted) return;
+    state = state.copyWith(initAttempted: true, error: null);
     _url = (audioUrl != null && audioUrl.isNotEmpty)
         ? audioUrl
         : 'https://api.sentralix.ru/assistants/threads/$_internalId/recording';
@@ -96,6 +101,12 @@ class PlayerController extends StateNotifier<PlayerViewState> {
       debugPrint('[PC] init error: $e\n$st');
       state = state.copyWith(error: e.toString());
     }
+  }
+
+  Future<void> retryInit({String? audioUrl}) async {
+    // Сброс и повторная попытка по явному вызову
+    state = state.copyWith(initAttempted: false, initialized: false, error: null);
+    await init(audioUrl: audioUrl);
   }
 
   void _bindStreams() {
