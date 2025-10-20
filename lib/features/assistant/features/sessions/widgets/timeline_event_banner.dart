@@ -5,7 +5,7 @@ import 'package:sentralix_app/features/assistant/features/sessions/styles/subfea
 /// Поперечные баннеры событий (Run/ToolCall/ThreadSlots)
 class TimelineEventBanner extends StatelessWidget {
   final Widget child;
-  const TimelineEventBanner._(this.child, {super.key});
+  const TimelineEventBanner._(this.child);
 
   factory TimelineEventBanner.run({required AssistantRunEntry run}) {
     return TimelineEventBanner._(_RunBanner(run: run));
@@ -57,7 +57,9 @@ class _ToolBanner extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   'Статус: ${log.status}  ·  Длительность: ${log.durationMs ?? 0} мс',
-                  style: styles.contentTextStyle.copyWith(color: text.withOpacity(0.9)),
+                  style: styles.contentTextStyle.copyWith(
+                    color: text.withValues(alpha: 0.9),
+                  ),
                 ),
               ],
             ),
@@ -97,7 +99,9 @@ class _RunBanner extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   'Tokens: in=${run.inputTokens ?? 0} • out=${run.outputTokens ?? 0}',
-                  style: styles.contentTextStyle.copyWith(color: text.withOpacity(0.9)),
+                  style: styles.contentTextStyle.copyWith(
+                    color: text.withValues(alpha: 0.9),
+                  ),
                 ),
               ],
             ),
@@ -116,7 +120,7 @@ class _SlotsBanner extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant,
+        color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: theme.dividerColor),
       ),

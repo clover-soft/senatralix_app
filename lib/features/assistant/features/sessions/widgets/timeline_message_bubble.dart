@@ -8,10 +8,12 @@ class TimelineMessageBubble extends StatelessWidget {
 
   /// Горизонтальное смещение хвостика от края пузыря (в пикселях)
   final double tailOffset;
+  final bool highlight;
   const TimelineMessageBubble({
     super.key,
     required this.message,
     this.tailOffset = -10,
+    this.highlight = false,
   });
 
   @override
@@ -26,9 +28,11 @@ class TimelineMessageBubble extends StatelessWidget {
         : isUser
             ? styles.userBubble
             : styles.systemBubble;
-    final border = bubbleStyle.borderWidth > 0
-        ? Border.all(color: bubbleStyle.borderColor, width: bubbleStyle.borderWidth)
-        : null;
+    final border = highlight
+        ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2)
+        : (bubbleStyle.borderWidth > 0
+            ? Border.all(color: bubbleStyle.borderColor, width: bubbleStyle.borderWidth)
+            : null);
     final headerStyle = styles.headerTextStyle.copyWith(color: bubbleStyle.textColor);
     final contentStyle = styles.contentTextStyle.copyWith(color: bubbleStyle.textColor);
 

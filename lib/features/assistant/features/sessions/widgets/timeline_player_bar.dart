@@ -7,7 +7,8 @@ import 'package:sentralix_app/features/assistant/features/sessions/providers/pla
 /// Панель плеера: Play/Pause, Stop, прогресс, скорость, сохранить
 class TimelinePlayerBar extends ConsumerStatefulWidget {
   final String internalId;
-  final String? audioUrl; // Необязательный URL. Если не задан, собирается из internalId
+  final String?
+  audioUrl; // Необязательный URL. Если не задан, собирается из internalId
   const TimelinePlayerBar({super.key, required this.internalId, this.audioUrl});
 
   @override
@@ -24,7 +25,9 @@ class _TimelinePlayerBarState extends ConsumerState<TimelinePlayerBar> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final state = ref.read(playerControllerProvider(widget.internalId));
-      final ctrl = ref.read(playerControllerProvider(widget.internalId).notifier);
+      final ctrl = ref.read(
+        playerControllerProvider(widget.internalId).notifier,
+      );
       if (!state.initialized && !state.initAttempted) {
         // Один вызов init после первого кадра
         unawaited(ctrl.init(audioUrl: widget.audioUrl));
@@ -42,12 +45,16 @@ class _TimelinePlayerBarState extends ConsumerState<TimelinePlayerBar> {
     void changeSpeed(double v) => ctrl.setSpeed(v);
 
     void saveFile() async {
+      final messenger = ScaffoldMessenger.of(context);
       final url = (widget.audioUrl != null && widget.audioUrl!.isNotEmpty)
           ? widget.audioUrl!
           : 'https://api.sentralix.ru/assistants/threads/${widget.internalId}/recording';
       await Clipboard.setData(ClipboardData(text: url));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ссылка на запись скопирована в буфер обмена')),
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Ссылка на запись скопирована в буфер обмена'),
+        ),
       );
     }
 
@@ -86,69 +93,69 @@ class _TimelinePlayerBarState extends ConsumerState<TimelinePlayerBar> {
                 ],
               )
             : Row(
-          children: [
-            IconButton(
-              tooltip: state.playing ? 'Пауза' : 'Воспроизведение',
-              onPressed: toggle,
-              icon: Icon(state.playing ? Icons.pause : Icons.play_arrow),
-            ),
-            IconButton(
-              tooltip: 'Стоп',
-              onPressed: stop,
-              icon: const Icon(Icons.stop),
-            ),
-            const SizedBox(width: 8),
-            // Текущее время
-            SizedBox(
-              width: 64,
-              child: Text(
-                fmt(Duration(milliseconds: current)),
-                textAlign: TextAlign.right,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Slider(
-                min: 0,
-                max: total > 0 ? total.toDouble() : 1.0,
-                value: total > 0 ? current.toDouble() : 0,
-                onChangeStart: (v) => ctrl.startScrub(v),
-                onChanged: (v) => ctrl.updateScrub(v),
-                onChangeEnd: (v) => ctrl.endScrub(v),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Общее время
-            SizedBox(
-              width: 64,
-              child: Text(
-                fmt(Duration(milliseconds: total > 0 ? total : 0)),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-            const SizedBox(width: 8),
-            DropdownButtonHideUnderline(
-              child: DropdownButton<double>(
-                value: state.speed,
-                items: const [
-                  DropdownMenuItem(value: 0.5, child: Text('0.5x')),
-                  DropdownMenuItem(value: 1.0, child: Text('1.0x')),
-                  DropdownMenuItem(value: 1.25, child: Text('1.25x')),
-                  DropdownMenuItem(value: 1.5, child: Text('1.5x')),
-                  DropdownMenuItem(value: 2.0, child: Text('2.0x')),
+                children: [
+                  IconButton(
+                    tooltip: state.playing ? 'Пауза' : 'Воспроизведение',
+                    onPressed: toggle,
+                    icon: Icon(state.playing ? Icons.pause : Icons.play_arrow),
+                  ),
+                  IconButton(
+                    tooltip: 'Стоп',
+                    onPressed: stop,
+                    icon: const Icon(Icons.stop),
+                  ),
+                  const SizedBox(width: 8),
+                  // Текущее время
+                  SizedBox(
+                    width: 64,
+                    child: Text(
+                      fmt(Duration(milliseconds: current)),
+                      textAlign: TextAlign.right,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Slider(
+                      min: 0,
+                      max: total > 0 ? total.toDouble() : 1.0,
+                      value: total > 0 ? current.toDouble() : 0,
+                      onChangeStart: (v) => ctrl.startScrub(v),
+                      onChanged: (v) => ctrl.updateScrub(v),
+                      onChangeEnd: (v) => ctrl.endScrub(v),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Общее время
+                  SizedBox(
+                    width: 64,
+                    child: Text(
+                      fmt(Duration(milliseconds: total > 0 ? total : 0)),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  DropdownButtonHideUnderline(
+                    child: DropdownButton<double>(
+                      value: state.speed,
+                      items: const [
+                        DropdownMenuItem(value: 0.5, child: Text('0.5x')),
+                        DropdownMenuItem(value: 1.0, child: Text('1.0x')),
+                        DropdownMenuItem(value: 1.25, child: Text('1.25x')),
+                        DropdownMenuItem(value: 1.5, child: Text('1.5x')),
+                        DropdownMenuItem(value: 2.0, child: Text('2.0x')),
+                      ],
+                      onChanged: (v) => v != null ? changeSpeed(v) : null,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: 'Сохранить файл',
+                    onPressed: saveFile,
+                    icon: const Icon(Icons.download),
+                  ),
                 ],
-                onChanged: (v) => v != null ? changeSpeed(v) : null,
               ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              tooltip: 'Сохранить файл',
-              onPressed: saveFile,
-              icon: const Icon(Icons.download),
-            ),
-          ],
-        ),
       ),
     );
   }

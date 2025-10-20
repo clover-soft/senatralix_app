@@ -12,7 +12,13 @@ enum DndActivation { immediate, longPress }
 typedef CanSwap = FutureOr<bool> Function(NodeId draggedId, NodeId targetId);
 typedef OnSwap = Future<void> Function(NodeId a, NodeId b);
 typedef FeedbackBuilder = Widget Function(BuildContext context, Widget child);
-typedef HoverDecorator = Widget Function(BuildContext context, Widget child, bool isHovered, bool isTargeted);
+typedef HoverDecorator =
+    Widget Function(
+      BuildContext context,
+      Widget child,
+      bool isHovered,
+      bool isTargeted,
+    );
 
 class NodeDndConfig {
   final DndActivation activation;
@@ -58,17 +64,17 @@ class ProviderNodeSwapRepository implements NodeSwapRepository {
     ctrl.saveFullDebounced();
   }
 
-  static List<DialogStep> _swapIdsAndReferences(List<DialogStep> steps, int a, int b) {
+  static List<DialogStep> _swapIdsAndReferences(
+    List<DialogStep> steps,
+    int a,
+    int b,
+  ) {
     // Перестановка id двух шагов и всех ссылок на них: fields id, next, branchLogic values
     DialogStep mapStep(DialogStep s) {
-      final newId = s.id == a
-          ? b
-          : (s.id == b ? a : s.id);
+      final newId = s.id == a ? b : (s.id == b ? a : s.id);
       final newNext = s.next == null
           ? null
-          : (s.next == a
-              ? b
-              : (s.next == b ? a : s.next));
+          : (s.next == a ? b : (s.next == b ? a : s.next));
 
       // branch_logic: Map<String, Map<String, int>> — заменяем только значения (id шагов)
       final Map<String, Map<String, int>> newBranch = {};
@@ -169,7 +175,11 @@ class NodeDndScope extends InheritedWidget {
 }
 
 class NodeDndWrapper extends StatelessWidget {
-  const NodeDndWrapper({super.key, required this.controller, required this.child});
+  const NodeDndWrapper({
+    super.key,
+    required this.controller,
+    required this.child,
+  });
   final NodeDndController controller;
   final Widget child;
 
@@ -178,10 +188,7 @@ class NodeDndWrapper extends StatelessWidget {
     return NodeDndScope(
       controller: controller,
       config: controller.config,
-      child: AnimatedBuilder(
-        animation: controller,
-        builder: (_, __) => child,
-      ),
+      child: AnimatedBuilder(animation: controller, builder: (_, __) => child),
     );
   }
 }
@@ -205,19 +212,18 @@ class NodeDraggable extends StatelessWidget {
 
     Widget dragWidget = Draggable<NodeId>(
       data: nodeId,
-      child: wrapped,
-      feedback: feedbackBuilder?.call(context, child) ?? Material(
-        color: Colors.transparent,
-        child: Opacity(
-          opacity: scope.config.draggedOpacity,
-          child: child,
-        ),
-      ),
+      feedback:
+          feedbackBuilder?.call(context, child) ??
+          Material(
+            color: Colors.transparent,
+            child: Opacity(opacity: scope.config.draggedOpacity, child: child),
+          ),
       childWhenDragging: Opacity(opacity: 0.35, child: child),
       onDragStarted: () => ctrl.startDrag(nodeId),
       onDraggableCanceled: (_, __) => ctrl.endDrag(),
       onDragEnd: (_) => ctrl.endDrag(),
       dragAnchorStrategy: childDragAnchorStrategy,
+      child: wrapped,
     );
 
     switch (activation) {
@@ -227,13 +233,15 @@ class NodeDraggable extends StatelessWidget {
         return LongPressDraggable<NodeId>(
           data: nodeId,
           delay: scope.config.longPressDelay,
-          feedback: feedbackBuilder?.call(context, child) ?? Material(
-            color: Colors.transparent,
-            child: Opacity(
-              opacity: scope.config.draggedOpacity,
-              child: child,
-            ),
-          ),
+          feedback:
+              feedbackBuilder?.call(context, child) ??
+              Material(
+                color: Colors.transparent,
+                child: Opacity(
+                  opacity: scope.config.draggedOpacity,
+                  child: child,
+                ),
+              ),
           childWhenDragging: Opacity(opacity: 0.35, child: child),
           onDragStarted: () => ctrl.startDrag(nodeId),
           onDragEnd: (_) => ctrl.endDrag(),
@@ -261,22 +269,29 @@ class NodeDropTarget extends StatelessWidget {
         animation: ctrl,
         builder: (ctx, _) {
           final isHovered = ctrl.hoveredTargetId == nodeId;
-          final isTargeted = ctrl.isDragging && ctrl.activeDraggedId != nodeId && isHovered;
-          final content = scope.config.hoverDecorator?.call(ctx, child, isHovered, isTargeted) ?? child;
+          final isTargeted =
+              ctrl.isDragging && ctrl.activeDraggedId != nodeId && isHovered;
+          final content =
+              scope.config.hoverDecorator?.call(
+                ctx,
+                child,
+                isHovered,
+                isTargeted,
+              ) ??
+              child;
           return content;
         },
       ),
     );
 
     return DragTarget<NodeId>(
-      onWillAccept: (dragged) {
-        if (dragged == null) return false;
-        if (dragged == nodeId) return false;
+      onWillAcceptWithDetails: (details) {
+        if (details.data == nodeId) return false;
         return true;
       },
-      onAccept: (dragged) async {
+      onAcceptWithDetails: (details) async {
         // Полная проверка прав/логики перенесена сюда (может быть async)
-        await ctrl.performSwap(dragged, nodeId);
+        await ctrl.performSwap(details.data, nodeId);
       },
       builder: (ctx, cand, rej) {
         return decorated;

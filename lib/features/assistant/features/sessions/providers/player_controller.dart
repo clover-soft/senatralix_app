@@ -54,9 +54,13 @@ class PlayerViewState {
   }
 }
 
-final playerControllerProvider = StateNotifierProvider.family<PlayerController, PlayerViewState, String>((ref, internalId) {
-  return PlayerController(internalId);
-});
+final playerControllerProvider =
+    StateNotifierProvider.family<PlayerController, PlayerViewState, String>((
+      ref,
+      internalId,
+    ) {
+      return PlayerController(internalId);
+    });
 
 class PlayerController extends StateNotifier<PlayerViewState> {
   final String _internalId;
@@ -85,7 +89,7 @@ class PlayerController extends StateNotifier<PlayerViewState> {
         ? audioUrl
         : 'https://api.sentralix.ru/assistants/threads/$_internalId/recording';
     try {
-      debugPrint('[PC] init: prepare source url=${_url}');
+      debugPrint('[PC] init: prepare source url=$_url');
       // Передаём куки для авторизованного запроса на Web
       final built = await buildAudioUriSource(
         _url!,
@@ -105,7 +109,11 @@ class PlayerController extends StateNotifier<PlayerViewState> {
 
   Future<void> retryInit({String? audioUrl}) async {
     // Сброс и повторная попытка по явному вызову
-    state = state.copyWith(initAttempted: false, initialized: false, error: null);
+    state = state.copyWith(
+      initAttempted: false,
+      initialized: false,
+      error: null,
+    );
     await init(audioUrl: audioUrl);
   }
 
@@ -121,11 +129,15 @@ class PlayerController extends StateNotifier<PlayerViewState> {
       state = state.copyWith(duration: dur ?? Duration.zero);
     });
     _playerStateSub = _player.playerStateStream.listen((s) {
-      debugPrint('[PC] playerState processing=${s.processingState} playing=${s.playing}');
+      debugPrint(
+        '[PC] playerState processing=${s.processingState} playing=${s.playing}',
+      );
       state = state.copyWith(playing: s.playing);
     });
     _eventSub = _player.playbackEventStream.listen((e) {
-      debugPrint('[PC] event state=${e.processingState} upd=${e.updatePosition} buf=${e.bufferedPosition} dur=${e.duration} idx=${e.currentIndex}');
+      debugPrint(
+        '[PC] event state=${e.processingState} upd=${e.updatePosition} buf=${e.bufferedPosition} dur=${e.duration} idx=${e.currentIndex}',
+      );
     });
     _discSub = _player.positionDiscontinuityStream.listen((d) {
       debugPrint('[PC] discontinuity reason=${d.reason}');
@@ -201,7 +213,11 @@ class PlayerController extends StateNotifier<PlayerViewState> {
     debugPrint('[PC] scrub.end target=$pos wasPlaying=$wasPlaying');
     if (wasPlaying) await _player.pause();
     await _player.seek(pos);
-    state = state.copyWith(position: pos, dragPosition: pos, isScrubbing: false);
+    state = state.copyWith(
+      position: pos,
+      dragPosition: pos,
+      isScrubbing: false,
+    );
     if (wasPlaying) await _player.play();
   }
 
@@ -223,4 +239,3 @@ class PlayerController extends StateNotifier<PlayerViewState> {
     super.dispose();
   }
 }
-
