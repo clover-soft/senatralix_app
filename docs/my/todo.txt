@@ -1,5 +1,5 @@
 Срочные:
- - Баг с перескакиванием на модель 5.1 (поправить бэкенд)
+ - Обязательно запрашивать подтверждение удаления ячейки памяти
  - Баг со сменой температуры (скорее всего приложенька)
  - Жесткий конфиг инструментов диалога (core)
  - Шаблоны инструментов для добавления ассистенту (управление диалогом и шагами)
@@ -8,6 +8,7 @@
 
 Краткосрочные:
  - История диалогов (продумать ui)
+ - Назначение базы знаний на шаг диалога
  - Эксперименты (продумать ui)
  - Вики проекта
  - Коннектор тг
@@ -54,3 +55,65 @@
 
 
 
+
+
+
+{
+  "action_name": "SelectTemplate",
+  "inputs": {
+    "templates": {
+      "literal": [
+        {
+          "template": "пользователя зовут {CRM_USER_NAME} {CRM_USER_SECOND_NAME}",
+          "required": [
+            "CRM_USER_NAME",
+            "CRM_USER_SECOND_NAME"
+          ]
+        },
+        {
+          "template": "пользователя зовут {CRM_USER_NAME}",
+          "required": [
+            "CRM_USER_NAME"
+          ]
+        },
+        {
+          "template": "имя пользователя неизвестно",
+          "required": []
+        }
+      ]
+    },
+    "missing_value": {
+      "literal": ""
+    }
+  },
+  "outputs": {
+    "to": "TEMP_USER_NAME_PHRASE"
+  },
+  "options": {
+    "on_error": "skip"
+  }
+}
+
+{
+  "action_name": "LLMProcessDialog",
+  "inputs": {
+    "model": { "literal": "yandexgpt" },
+    "max_tokens": { "literal": 350 },
+    "temperature": { "literal": 0.3 },
+    "prompt": { "literal": "Суммаризируй диалог кратко и по делу для CRM. Укажи суть намерения и ключевые детали." },
+    "system_message": { "literal": "Ты — ассистент отдела продаж. Формируй лаконичные конспекты." },
+    "last_n_messages": { "literal": 50 },
+    "include_roles": { "literal": true },
+    "wrap_dialog_as_user": { "literal": false }
+  },
+  "outputs": {
+    "to_slot_name": "DIALOG_SUMMARY"
+  },
+  "options": {
+    "on_error": "default",
+    "default_value": "",
+    "timeout_sec": 60,
+    "truncate_strategy": "tail",
+    "normalize_whitespace": true
+  }
+}

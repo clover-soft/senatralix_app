@@ -5,6 +5,7 @@ import 'normalize_phone_number_preset.dart';
 import 'select_template_preset.dart';
 import 'sleep_preset.dart';
 import 'generate_slots_system_message_preset.dart';
+import 'llm_process_dialog_preset.dart';
 
 /// Регистр всех доступных пресетов действий скрипта
 const List<ScriptActionPreset> kScriptActionPresets = <ScriptActionPreset>[
@@ -14,6 +15,7 @@ const List<ScriptActionPreset> kScriptActionPresets = <ScriptActionPreset>[
   selectTemplatePreset,
   createMessagePreset,
   generateSlotsSystemMessagePreset,
+  llmProcessDialogPreset,
 ];
 
 /// Быстрый поиск пресета по имени действия
