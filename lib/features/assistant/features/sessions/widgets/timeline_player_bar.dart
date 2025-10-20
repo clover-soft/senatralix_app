@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentralix_app/features/assistant/features/sessions/providers/player_controller.dart';
+import 'package:sentralix_app/features/assistant/features/sessions/utils/download_saver.dart';
 
 /// Панель плеера: Play/Pause, Stop, прогресс, скорость, сохранить
 class TimelinePlayerBar extends ConsumerStatefulWidget {
@@ -49,13 +50,20 @@ class _TimelinePlayerBarState extends ConsumerState<TimelinePlayerBar> {
       final url = (widget.audioUrl != null && widget.audioUrl!.isNotEmpty)
           ? widget.audioUrl!
           : 'https://api.sentralix.ru/assistants/threads/${widget.internalId}/recording';
-      await Clipboard.setData(ClipboardData(text: url));
-      if (!mounted) return;
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Ссылка на запись скопирована в буфер обмена'),
-        ),
-      );
+      try {
+        final ts = DateTime.now().toIso8601String().replaceAll(':', '-');
+        final fname = 'recording_${widget.internalId}_$ts.mp3';
+        await saveRecording(url, suggestedFileName: fname);
+        if (!mounted) return;
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Файл сохранён')),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        messenger.showSnackBar(
+          SnackBar(content: Text('Не удалось сохранить файл: $e')),
+        );
+      }
     }
 
     final total = state.duration.inMilliseconds;
