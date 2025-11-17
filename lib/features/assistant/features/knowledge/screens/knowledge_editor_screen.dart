@@ -5,13 +5,13 @@ import 'package:sentralix_app/features/assistant/features/knowledge/models/knowl
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/knowledge_edit_provider.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/assistant_knowledge_provider.dart';
+import 'package:sentralix_app/features/assistant/features/knowledge/providers/knowledge_preview_mode_provider.dart';
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_list_provider.dart';
 import 'package:sentralix_app/features/assistant/shared/widgets/assistant_fab.dart';
-import 'package:gpt_markdown/gpt_markdown.dart';
-import 'package:code_text_field/code_text_field.dart';
-import 'package:highlight/languages/markdown.dart' as hl;
+import 'package:sentralix_app/features/assistant/shared/widgets/knowledge_markdown_editor.dart';
+import 'package:sentralix_app/features/assistant/shared/widgets/knowledge_markdown_preview.dart';
 
 /// Экран редактирования источника знаний (вместо модалки)
 class KnowledgeEditorScreen extends ConsumerStatefulWidget {
@@ -24,8 +24,7 @@ class KnowledgeEditorScreen extends ConsumerStatefulWidget {
 
 class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
   bool _saving = false;
-  bool _preview = true;
-  CodeController? _codeCtrl;
+  TextEditingController? _codeCtrl;
 
   String? _req(String? v) =>
       (v == null || v.trim().isEmpty) ? 'Обязательное поле' : null;
@@ -144,8 +143,8 @@ class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
     final st = ref.watch(knowledgeEditProvider(item));
     final ctrl = ref.read(knowledgeEditProvider(item).notifier);
 
-    // Инициализируем/синхронизируем CodeController для markdown
-    _codeCtrl ??= CodeController(text: st.markdown, language: hl.markdown);
+    // Инициализируем/синхронизируем контроллер для markdown
+    _codeCtrl ??= TextEditingController(text: st.markdown);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_codeCtrl!.text != st.markdown) {
         _codeCtrl!.value = _codeCtrl!.value.copyWith(
@@ -155,10 +154,10 @@ class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
       }
     });
 
-    // Цвет фона редактора в соответствии с темой (приближен к дефолтным темам редакторов)
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final editorBg = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF6F8FA);
-    final editorTextColor = isDark ? Colors.white : Colors.black;
+    final previewEnabled = ref.watch(knowledgePreviewModeProvider(item.id));
+    final previewController = ref.read(
+      knowledgePreviewModeProvider(item.id).notifier,
+    );
 
     return Scaffold(
       appBar: AssistantAppBar(
@@ -260,100 +259,17 @@ class _KnowledgeEditorScreenState extends ConsumerState<KnowledgeEditorScreen> {
             // Переключатель предпросмотра Markdown (материал)
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              value: _preview,
-              onChanged: (v) => setState(() => _preview = v),
+              value: previewEnabled,
+              onChanged: (v) => previewController.state = v,
               title: const Text('Предпросмотр Markdown'),
             ),
             const SizedBox(height: 8),
-            if (_preview)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: editorBg,
-                  border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).dividerColor.withValues(alpha: 0.6),
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: SelectionArea(
-                  child: DefaultTextStyle(
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      color: editorTextColor,
-                    ),
-                    child: GptMarkdown(
-                      st.markdown,
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        color: editorTextColor,
-                      ),
-                    ),
-                  ),
-                ),
-              )
+            if (previewEnabled)
+              KnowledgeMarkdownPreview(markdown: st.markdown)
             else
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Текст в формате Markdown'),
-                  const SizedBox(height: 6),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: editorBg,
-                      border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).dividerColor.withValues(alpha: 0.6),
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: CodeTheme(
-                      data: CodeThemeData(
-                        styles: {'root': TextStyle(backgroundColor: editorBg)},
-                      ),
-                      child: SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.7,
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Theme(
-                            data: Theme.of(context).copyWith(
-                              textSelectionTheme: TextSelectionThemeData(
-                                selectionColor:
-                                    (isDark ? Colors.white : Colors.black87)
-                                        .withValues(alpha: 0.25),
-                                selectionHandleColor: isDark
-                                    ? Colors.white70
-                                    : Colors.black87,
-                              ),
-                            ),
-                            child: CodeField(
-                              controller: _codeCtrl!,
-                              textStyle: TextStyle(
-                                fontFamily: 'monospace',
-                                color: editorTextColor,
-                              ),
-                              cursorColor: isDark
-                                  ? Colors.white
-                                  : Colors.black87,
-                              expands: true,
-                              wrap: true,
-                              lineNumberStyle: const LineNumberStyle(width: 0),
-                              onChanged: ctrl.setMarkdown,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Текст в формате Markdown. Рекомендуется не слишком большие тексты.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
+              KnowledgeMarkdownEditor(
+                controller: _codeCtrl!,
+                onChanged: ctrl.setMarkdown,
               ),
           ],
         ),

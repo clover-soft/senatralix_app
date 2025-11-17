@@ -12,6 +12,7 @@ import 'package:sentralix_app/features/assistant/shared/widgets/param_block_card
 import 'package:sentralix_app/features/assistant/features/connectors/models/selection_options.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/models/dictor_options.dart';
 import 'package:sentralix_app/features/assistant/shared/widgets/assistant_fab.dart';
+import 'package:sentralix_app/features/assistant/shared/widgets/knowledge_markdown_editor.dart';
 
 class ConnectorDetailsScreen extends ConsumerWidget {
   const ConnectorDetailsScreen({super.key});
@@ -172,6 +173,8 @@ class ConnectorDetailsScreen extends ConsumerWidget {
               ? const EdgeInsets.all(16)
               : const EdgeInsets.all(12);
 
+          final bool isLlmFiller = st.fillerSelectionStrategy == 'llm';
+
           // Секции формы как карточки (4 группы)
           final sections = <Widget>[
             // 1) Основные настройки (ParamBlockCard с header)
@@ -239,7 +242,8 @@ class ConnectorDetailsScreen extends ConsumerWidget {
                         );
 
                         return DropdownButtonFormField<String>(
-                          initialValue: currentValue ??
+                          initialValue:
+                              currentValue ??
                               (allowed.isNotEmpty ? allowed.first : null),
                           items: items,
                           onChanged: (v) =>
@@ -317,49 +321,74 @@ class ConnectorDetailsScreen extends ConsumerWidget {
               ),
             ),
 
-            // 4) Филлеры (ParamBlockCard со списком + footer)
+            // 4) Филлеры (список или LLM-промпт)
             SizedBox(
               width: itemWidth,
               child: ParamBlockCard(
                 title: 'Филлеры',
                 contentPadding: contentPadding,
-                enableList: true,
-                items: st.fillerTextList,
-                onChanged: ctrl.setFillerList,
-                footer: Row(
+                enableList: !isLlmFiller,
+                items: isLlmFiller ? const <String>[] : st.fillerTextList,
+                onChanged: isLlmFiller ? null : ctrl.setFillerList,
+                footer: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: st.fillerSelectionStrategy,
-                        items: SelectionStrategyOptions.common
-                            .map(
-                              (o) => DropdownMenuItem<String>(
-                                value: o.value,
-                                child: Text(o.label),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (v) =>
-                            ctrl.setFillerStrategy(v ?? 'round_robin'),
-                        decoration: const InputDecoration(
-                          labelText: 'Стратегия выбора филлера',
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: st.fillerSelectionStrategy,
+                            items: SelectionStrategyOptions.filler
+                                .map(
+                                  (o) => DropdownMenuItem<String>(
+                                    value: o.value,
+                                    child: Text(o.label),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) =>
+                                ctrl.setFillerStrategy(v ?? 'round_robin'),
+                            decoration: const InputDecoration(
+                              labelText: 'Стратегия выбора филлера',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: st.softTimeoutMs.toString(),
+                            decoration: const InputDecoration(
+                              labelText: 'Таймаут филлера (мс)',
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (v) {
+                              final n = int.tryParse(v.trim());
+                              if (n != null) ctrl.setSoftTimeoutMs(n);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (isLlmFiller) ...[
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 360,
+                        child: KnowledgeMarkdownEditor(
+                          controller: TextEditingController(
+                            text: st.fillerTextList.isNotEmpty
+                                ? st.fillerTextList.first
+                                : '',
+                          ),
+                          onChanged: (value) {
+                            final v = value.trim();
+                            ctrl.setFillerList(
+                              v.isEmpty ? const <String>[] : <String>[v],
+                            );
+                          },
+                          flexible: true,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        initialValue: st.softTimeoutMs.toString(),
-                        decoration: const InputDecoration(
-                          labelText: 'Таймаут филлера (мс)',
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (v) {
-                          final n = int.tryParse(v.trim());
-                          if (n != null) ctrl.setSoftTimeoutMs(n);
-                        },
-                      ),
-                    ),
+                    ],
                   ],
                 ),
               ),

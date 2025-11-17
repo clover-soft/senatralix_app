@@ -16,12 +16,21 @@ class SelectionStrategyOptions {
     label: 'По кругу',
   );
   static const random = SelectorOption(value: 'random', label: 'Случайно');
+  static const llm = SelectorOption(value: 'llm', label: 'LLM (модель)');
 
   /// Универсальный список стратегий выбора
   static const List<SelectorOption> common = <SelectorOption>[
     first,
     roundRobin,
     random,
+  ];
+
+  /// Стратегии выбора для филлеров (включает режим LLM)
+  static const List<SelectorOption> filler = <SelectorOption>[
+    first,
+    roundRobin,
+    random,
+    llm,
   ];
 }
 
