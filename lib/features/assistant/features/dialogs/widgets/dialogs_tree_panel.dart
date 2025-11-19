@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:vector_math/vector_math_64.dart' as vm;
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_editor_providers.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_providers.dart';
@@ -292,6 +293,9 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
   Widget build(BuildContext context) {
     // Центрированная построчная раскладка (наш алгоритм)
     final cfg = ref.watch(dialogsConfigControllerProvider);
+    // assistantId из роута для передачи в модальные окна
+    final aId =
+        GoRouterState.of(context).pathParameters['assistantId'] ?? 'unknown';
     // Слушаем изменения бизнес-состояния в рамках build (требование Riverpod)
     ref.listen(dialogsConfigControllerProvider, (prev, next) {
       if (!mounted) return;
@@ -409,52 +413,90 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                 NodeDndWrapper(
                   controller: _dndController,
                   child: DialogsCenteredCanvas.withFactory(
-                  layout: centered,
-                  nodeSize: nodeSize,
-                  steps: cfg.steps,
-                  transformationController: _tc,
-                  contentKey: _contentKey,
-                  styles: subfeatureStyles,
-                  getNodeKey: (id) =>
-                      _nodeKeys.putIfAbsent(id, () => GlobalKey()),
-                  onTap: (id) => ref
-                      .read(dialogsEditorControllerProvider.notifier)
-                      .onNodeTap(id),
-                  onDoubleTap: (id) {
-                    // Центрирование камеры на выбранную ноду без вписывания
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _centerOnNode(id, force: true);
-                    });
-                  },
-                  onOpenMenu: (id) async {
-                    ref
+                    layout: centered,
+                    nodeSize: nodeSize,
+                    steps: cfg.steps,
+                    transformationController: _tc,
+                    contentKey: _contentKey,
+                    styles: subfeatureStyles,
+                    getNodeKey: (id) =>
+                        _nodeKeys.putIfAbsent(id, () => GlobalKey()),
+                    onTap: (id) => ref
                         .read(dialogsEditorControllerProvider.notifier)
-                        .selectStep(id);
-                    await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => StepProps(stepId: id),
-                    );
-                  },
-                  onAddNext: (id) {
-                    final notifier = ref.read(
-                      dialogsEditorControllerProvider.notifier,
-                    );
-                    final newId = notifier.addNextStep(id);
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _centerOnNode(newId);
-                    });
-                  },
-                  onDelete: (id) async {
-                    final steps = ref
-                        .read(dialogsConfigControllerProvider)
-                        .steps;
-                    if (steps.length == 1) {
+                        .onNodeTap(id),
+                    onDoubleTap: (id) {
+                      // Центрирование камеры на выбранную ноду без вписывания
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _centerOnNode(id, force: true);
+                      });
+                    },
+                    onOpenMenu: (id) async {
+                      ref
+                          .read(dialogsEditorControllerProvider.notifier)
+                          .selectStep(id);
+                      await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) =>
+                            StepProps(stepId: id, assistantId: aId),
+                      );
+                    },
+                    onAddNext: (id) {
+                      final notifier = ref.read(
+                        dialogsEditorControllerProvider.notifier,
+                      );
+                      final newId = notifier.addNextStep(id);
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _centerOnNode(newId);
+                      });
+                    },
+                    onDelete: (id) async {
+                      final steps = ref
+                          .read(dialogsConfigControllerProvider)
+                          .steps;
+                      if (steps.length == 1) {
+                        final ok = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Удалить сценарий?'),
+                            content: const Text(
+                              'В сценарии только один шаг. Будет удалён ВЕСЬ сценарий. Действие необратимо.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(false),
+                                child: const Text('Отмена'),
+                              ),
+                              FilledButton(
+                                onPressed: () => Navigator.of(ctx).pop(true),
+                                child: const Text('Удалить сценарий'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (ok == true) {
+                          await ref
+                              .read(dialogsConfigControllerProvider.notifier)
+                              .deleteDialog();
+                          ref.invalidate(dialogConfigsProvider);
+                          ref
+                                  .read(selectedDialogConfigIdProvider.notifier)
+                                  .state =
+                              null;
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Сценарий удалён')),
+                            );
+                          }
+                        }
+                        return;
+                      }
+
                       final ok = await showDialog<bool>(
                         context: context,
                         builder: (ctx) => AlertDialog(
-                          title: const Text('Удалить сценарий?'),
-                          content: const Text(
-                            'В сценарии только один шаг. Будет удалён ВЕСЬ сценарий. Действие необратимо.',
+                          title: const Text('Удалить шаг?'),
+                          content: Text(
+                            'Шаг #$id будет удалён. Все переходы на этот шаг будут очищены.',
                           ),
                           actions: [
                             TextButton(
@@ -463,62 +505,25 @@ class _DialogsTreePanelState extends ConsumerState<DialogsTreePanel> {
                             ),
                             FilledButton(
                               onPressed: () => Navigator.of(ctx).pop(true),
-                              child: const Text('Удалить сценарий'),
+                              child: const Text('Удалить шаг'),
                             ),
                           ],
                         ),
                       );
                       if (ok == true) {
-                        await ref
-                            .read(dialogsConfigControllerProvider.notifier)
-                            .deleteDialog();
-                        ref.invalidate(dialogConfigsProvider);
                         ref
-                                .read(selectedDialogConfigIdProvider.notifier)
-                                .state =
-                            null;
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Сценарий удалён')),
-                          );
-                        }
+                            .read(dialogsConfigControllerProvider.notifier)
+                            .deleteStep(id);
+                        ref
+                            .read(dialogsConfigControllerProvider.notifier)
+                            .saveFullDebounced();
+                        setState(() {
+                          _didAutoFit = false;
+                          _lastViewportSize = null;
+                        });
                       }
-                      return;
-                    }
-
-                    final ok = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Удалить шаг?'),
-                        content: Text(
-                          'Шаг #$id будет удалён. Все переходы на этот шаг будут очищены.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(ctx).pop(false),
-                            child: const Text('Отмена'),
-                          ),
-                          FilledButton(
-                            onPressed: () => Navigator.of(ctx).pop(true),
-                            child: const Text('Удалить шаг'),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (ok == true) {
-                      ref
-                          .read(dialogsConfigControllerProvider.notifier)
-                          .deleteStep(id);
-                      ref
-                          .read(dialogsConfigControllerProvider.notifier)
-                          .saveFullDebounced();
-                      setState(() {
-                        _didAutoFit = false;
-                        _lastViewportSize = null;
-                      });
-                    }
-                  },
-                ),
+                    },
+                  ),
                 ),
 
                 // Панель управления справа

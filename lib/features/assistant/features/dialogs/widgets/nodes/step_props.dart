@@ -7,20 +7,32 @@ import 'package:sentralix_app/features/assistant/features/slots/providers/slots_
 import 'package:sentralix_app/features/assistant/features/slots/models/dialog_slot.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/step_simple_props.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/step_router_props.dart';
+import 'package:sentralix_app/features/assistant/features/knowledge/models/knowledge_item.dart';
+import 'package:sentralix_app/features/assistant/features/knowledge/providers/assistant_knowledge_provider.dart';
+import 'package:sentralix_app/features/assistant/features/knowledge/providers/knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/step_action_item.dart';
 import 'dart:async';
 import 'dart:convert';
 
 class StepProps extends ConsumerWidget {
-  const StepProps({super.key, required this.stepId});
+  const StepProps({super.key, required this.stepId, required this.assistantId});
 
   final int stepId;
+  final String assistantId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cfg = ref.watch(dialogsConfigControllerProvider);
     final steps = cfg.steps;
     final current = steps.firstWhere((e) => e.id == stepId);
+
+    // ID ассистента приходит извне; запускаем загрузку/читаем список баз знаний через провайдеры
+    final kbAsync = ref.watch(assistantKnowledgeProvider(assistantId));
+    final knowledgeItems = ref.watch(
+      knowledgeProvider.select(
+        (s) => s.byAssistantId[assistantId] ?? const <KnowledgeBaseItem>[],
+      ),
+    );
 
     // Доступные ячейки памяти (слоты)
     final slotsAsync = ref.watch(dialogSlotsProvider);
@@ -34,6 +46,8 @@ class StepProps extends ConsumerWidget {
     final labelCtrl = TextEditingController(text: current.label);
     final instrCtrl = TextEditingController(text: current.instructions);
     int? nextId = current.next;
+    // Локальный выбор базы знаний (числовой ID)
+    int? selectedSearchIndexId = current.searchIndexId;
     // Локальные наборы выбранных ячеек памяти
     final Set<int> selectedOptional = {...current.optionalSlotsIds};
     final Set<int> selectedRequired = {...current.requiredSlotsIds};
@@ -90,7 +104,9 @@ class StepProps extends ConsumerWidget {
         List<DialogSlot> slots,
       ) {
         if (src.isEmpty) return const {};
-        if (slots.isEmpty) return src; // нет данных по слотам — ничего не меняем
+        if (slots.isEmpty) {
+          return src; // нет данных по слотам — ничего не меняем
+        }
         final slotsById = {for (final s in slots) s.id.toString(): s};
         final result = <String, Map<String, int>>{};
         src.forEach((slotKey, mapping) {
@@ -125,6 +141,7 @@ class StepProps extends ConsumerWidget {
         onExit: exitActions.isEmpty
             ? null
             : StepHookActions(setSlots: exitActions),
+        searchIndexId: selectedSearchIndexId,
       );
       // 1) Обновляем локальное состояние редактора (для мгновенной перерисовки графа)
       ref.read(dialogsEditorControllerProvider.notifier).updateStep(updated);
@@ -184,6 +201,52 @@ class StepProps extends ConsumerWidget {
                   decoration: const InputDecoration(
                     labelText: 'Инструкции / описание',
                   ),
+                ),
+                const SizedBox(height: 12),
+                // search_index_id (nullable, int) — комбобокс по списку баз знаний из провайдера
+                StatefulBuilder(
+                  builder: (context, setLocal) {
+                    final items = knowledgeItems;
+                    final dropdownItems = <DropdownMenuItem<int?>>[
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('— Не выбрано —'),
+                      ),
+                      ...items.map(
+                        (k) => DropdownMenuItem<int?>(
+                          value: k.id,
+                          child: Text(
+                            k.name.isNotEmpty ? k.name : 'Knowledge #${k.id}',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ];
+                    final isLoading = kbAsync.isLoading && items.isEmpty;
+                    return DropdownButtonFormField<int?>(
+                      initialValue: selectedSearchIndexId,
+                      items: dropdownItems,
+                      isExpanded: true,
+                      onChanged: isLoading
+                          ? null
+                          : (v) {
+                              setLocal(() {
+                                selectedSearchIndexId = v;
+                              });
+                            },
+                      decoration: InputDecoration(
+                        labelText: 'База знаний для поиска',
+                        suffixIcon: Tooltip(
+                          message:
+                              'Выберите базу знаний, по которой ассистент будет искать ответы. Можно оставить пустым или выбрать из списка.',
+                          child: const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Icon(Icons.info_outline),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 // Переключатель типа шага

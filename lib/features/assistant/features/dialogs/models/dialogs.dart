@@ -61,7 +61,8 @@ class DialogConfigShort {
     required this.description,
   });
 
-  factory DialogConfigShort.fromJson(Map<String, dynamic> json) => DialogConfigShort(
+  factory DialogConfigShort.fromJson(Map<String, dynamic> json) =>
+      DialogConfigShort(
         id: int.tryParse('${json['id']}') ?? 0,
         name: (json['name'] ?? '').toString(),
         description: (json['description'] ?? '').toString(),
@@ -116,8 +117,8 @@ class StepHookActions {
   }
 
   Map<String, dynamic> toBackendJson() => {
-        'set_slots': setSlots.map((e) => e.toBackendJson()).toList(),
-      };
+    'set_slots': setSlots.map((e) => e.toBackendJson()).toList(),
+  };
 }
 
 /// Модель шага диалога
@@ -129,9 +130,12 @@ class DialogStep {
   final List<int> requiredSlotsIds;
   final List<int> optionalSlotsIds;
   final int? next;
-  final Map<String, Map<String, int>> branchLogic; // slotId -> {value: nextStepId}
+  final Map<String, Map<String, int>>
+  branchLogic; // slotId -> {value: nextStepId}
   final StepHookActions? onEnter;
   final StepHookActions? onExit;
+  final int?
+  searchIndexId; // идентификатор индекса поиска/знаний (числовой, может быть null)
 
   const DialogStep({
     required this.id,
@@ -144,6 +148,7 @@ class DialogStep {
     required this.branchLogic,
     this.onEnter,
     this.onExit,
+    this.searchIndexId,
   });
 
   factory DialogStep.fromJson(Map<String, dynamic> json) {
@@ -159,10 +164,14 @@ class DialogStep {
     }
 
     final onEnterHook = StepHookActions.fromJson(
-      json['on_enter'] is Map ? Map<String, dynamic>.from(json['on_enter']) : null,
+      json['on_enter'] is Map
+          ? Map<String, dynamic>.from(json['on_enter'])
+          : null,
     );
     final onExitHook = StepHookActions.fromJson(
-      json['on_exit'] is Map ? Map<String, dynamic>.from(json['on_exit']) : null,
+      json['on_exit'] is Map
+          ? Map<String, dynamic>.from(json['on_exit'])
+          : null,
     );
 
     return DialogStep(
@@ -171,17 +180,25 @@ class DialogStep {
       label: (json['label'] ?? '').toString(),
       instructions: (json['instructions'] ?? '').toString(),
       requiredSlotsIds: List<int>.from(
-        (json['required_slots_ids'] as List? ?? const [])
-            .map((e) => int.tryParse('$e') ?? 0),
+        (json['required_slots_ids'] as List? ?? const []).map(
+          (e) => int.tryParse('$e') ?? 0,
+        ),
       ),
       optionalSlotsIds: List<int>.from(
-        (json['optional_slots_ids'] as List? ?? const [])
-            .map((e) => int.tryParse('$e') ?? 0),
+        (json['optional_slots_ids'] as List? ?? const []).map(
+          (e) => int.tryParse('$e') ?? 0,
+        ),
       ),
       next: json['next'] == null ? null : int.tryParse('${json['next']}'),
       branchLogic: normalized,
       onEnter: onEnterHook.isEmpty ? null : onEnterHook,
       onExit: onExitHook.isEmpty ? null : onExitHook,
+      searchIndexId: () {
+        final raw = json['search_index_id'];
+        if (raw == null) return null;
+        final parsed = int.tryParse('$raw');
+        return parsed;
+      }(),
     );
   }
 
@@ -212,6 +229,8 @@ class DialogStep {
     if (onExit != null && !onExit!.isEmpty) {
       map['on_exit'] = onExit!.toBackendJson();
     }
+    // Отправляем null или числовое значение
+    map['search_index_id'] = searchIndexId;
     return map;
   }
 }

@@ -6,18 +6,13 @@ import 'package:sentralix_app/features/assistant/features/slots/models/dialog_sl
 
 /// Состояние редактора диалогов
 class DialogsEditorState {
-  const DialogsEditorState({
-    this.selectedStepId,
-    this.linkStartStepId,
-  });
+  const DialogsEditorState({this.selectedStepId, this.linkStartStepId});
 
   final int? selectedStepId;
   final int? linkStartStepId;
 
-  DialogsEditorState copyWith({
-    int? selectedStepId,
-    int? linkStartStepId,
-  }) => DialogsEditorState(
+  DialogsEditorState copyWith({int? selectedStepId, int? linkStartStepId}) =>
+      DialogsEditorState(
         selectedStepId: selectedStepId,
         linkStartStepId: linkStartStepId,
       );
@@ -70,11 +65,8 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
     final cfgNotifier = _read.read(dialogsConfigControllerProvider.notifier);
     cfgNotifier.updateSteps(steps);
     cfgNotifier.saveFullDebounced();
-    state = DialogsEditorState(
-      selectedStepId: newId,
-      linkStartStepId: null,
-    );
-    
+    state = DialogsEditorState(selectedStepId: newId, linkStartStepId: null);
+
     return newId;
   }
 
@@ -119,14 +111,9 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
       final cfgNotifier = _read.read(dialogsConfigControllerProvider.notifier);
       cfgNotifier.updateSteps(steps);
       cfgNotifier.saveFullDebounced();
-      state = DialogsEditorState(
-        selectedStepId: start,
-        linkStartStepId: null,
-      );
-      
+      state = DialogsEditorState(selectedStepId: start, linkStartStepId: null);
     } else {
       selectStep(tappedId);
-      
     }
   }
 
@@ -154,6 +141,7 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
         branchLogic: sanitizedBranch,
         onEnter: updated.onEnter,
         onExit: updated.onExit,
+        searchIndexId: updated.searchIndexId,
       );
 
       steps[idx] = sanitized;
@@ -162,7 +150,6 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
         selectedStepId: sanitized.id,
         linkStartStepId: state.linkStartStepId,
       );
-      
     }
   }
 
@@ -222,6 +209,5 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
       selectedStepId: newId,
       linkStartStepId: state.linkStartStepId,
     );
-    
   }
 }
