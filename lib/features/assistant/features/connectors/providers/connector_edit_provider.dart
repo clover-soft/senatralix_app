@@ -21,10 +21,12 @@ class ConnectorEditController extends StateNotifier<ConnectorEditState> {
       state = state.copy(fillerSelectionStrategy: v);
   void setDictor(String v) => state = state.copy(dictor: v);
   void setSpeed(double v) => state = state.copy(speed: v);
+  void setDialogId(int? v) => state = state.copy(dialogId: v);
 
   Connector buildResult(Connector initial) => initial.copyWith(
     name: state.name.trim(),
     isActive: state.isActive,
+    dialogId: state.dialogId,
     settings: ConnectorSettings(
       dialog: ConnectorDialogSettings(
         greetingTexts: state.greetingTexts,

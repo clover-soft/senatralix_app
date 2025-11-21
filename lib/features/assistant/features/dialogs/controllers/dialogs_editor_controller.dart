@@ -48,6 +48,10 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
         optionalSlotsIds: s.optionalSlotsIds,
         next: newId,
         branchLogic: s.branchLogic,
+        onEnter: s.onEnter,
+        onExit: s.onExit,
+        searchIndexId: s.searchIndexId,
+        assistantId: s.assistantId,
       );
     }
     // Добавить новую ноду
@@ -60,6 +64,10 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
       optionalSlotsIds: const [],
       next: null,
       branchLogic: const {},
+      onEnter: null,
+      onExit: null,
+      searchIndexId: null,
+      assistantId: null,
     );
     steps.add(newStep);
     final cfgNotifier = _read.read(dialogsConfigControllerProvider.notifier);
@@ -106,6 +114,10 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
           optionalSlotsIds: s.optionalSlotsIds,
           next: tappedId,
           branchLogic: s.branchLogic,
+          onEnter: s.onEnter,
+          onExit: s.onExit,
+          searchIndexId: s.searchIndexId,
+          assistantId: s.assistantId,
         );
       }
       final cfgNotifier = _read.read(dialogsConfigControllerProvider.notifier);
@@ -142,6 +154,7 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
         onEnter: updated.onEnter,
         onExit: updated.onExit,
         searchIndexId: updated.searchIndexId,
+        assistantId: updated.assistantId,
       );
 
       steps[idx] = sanitized;
@@ -202,6 +215,10 @@ class DialogsEditorController extends StateNotifier<DialogsEditorState> {
       optionalSlotsIds: const [],
       next: null,
       branchLogic: const {},
+      onEnter: null,
+      onExit: null,
+      searchIndexId: null,
+      assistantId: null,
     );
     steps.add(newStep);
     _read.read(dialogsConfigControllerProvider.notifier).updateSteps(steps);

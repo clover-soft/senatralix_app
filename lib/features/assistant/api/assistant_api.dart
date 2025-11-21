@@ -152,41 +152,6 @@ class AssistantApi {
     await _client.delete<void>('/assistants/knowledge/$id');
   }
 
-  /// Список коннекторов, подключенных к ассистенту (возвращает external_id)
-  Future<Set<String>> fetchAssistantAttachedConnectors(
-    String assistantId, {
-    int limit = 50,
-    int offset = 0,
-  }) async {
-    final resp = await _client.get<dynamic>(
-      '/assistants/$assistantId/connectors',
-      query: {'limit': '$limit', 'offset': '$offset'},
-    );
-    final data = resp.data;
-    final list = List<Map<String, dynamic>>.from(data as List);
-    return list
-        .map((e) => (e['external_id'] as String?)?.trim())
-        .whereType<String>()
-        .toSet();
-  }
-
-  /// Назначить коннектор ассистенту
-  Future<Map<String, dynamic>> assignConnectorToAssistant({
-    required String assistantId,
-    required String externalId,
-    required String type,
-  }) async {
-    final resp = await _client.post<dynamic>(
-      '/assistants/connectors/assign',
-      data: {
-        'assistant_id': assistantId,
-        'external_id': externalId,
-        'type': type,
-      },
-    );
-    return Map<String, dynamic>.from(resp.data as Map);
-  }
-
   /// Удалить конфигурацию диалога по id (204 No Content при успехе)
   Future<void> deleteDialogConfig(int id) async {
     await _client.delete<void>('/assistants/dialog-configs/$id');
@@ -205,9 +170,7 @@ class AssistantApi {
       'name': name,
       if (description != null && description.trim().isNotEmpty)
         'description': description.trim(),
-      'config': {
-        'steps': steps.map((e) => e.toBackendJson()).toList(),
-      },
+      'config': {'steps': steps.map((e) => e.toBackendJson()).toList()},
       'metadata': metadata ?? <String, dynamic>{},
     };
     final resp = await _client.post<dynamic>(
@@ -236,9 +199,7 @@ class AssistantApi {
     final body = <String, dynamic>{
       'name': name,
       if (description != null) 'description': description,
-      'config': {
-        'steps': steps.map((e) => e.toBackendJson()).toList(),
-      },
+      'config': {'steps': steps.map((e) => e.toBackendJson()).toList()},
       'metadata': metadata ?? <String, dynamic>{},
     };
     final resp = await _client.patch<dynamic>(
@@ -267,17 +228,6 @@ class AssistantApi {
       data: body,
     );
     return Map<String, dynamic>.from(resp.data as Map);
-  }
-
-  /// Разназначить коннектор от ассистента
-  Future<void> unassignConnectorFromAssistant({
-    required String assistantId,
-    required String externalId,
-  }) async {
-    await _client.post<dynamic>(
-      '/assistants/connectors/unassign',
-      data: {'assistant_id': assistantId, 'external_id': externalId},
-    );
   }
 
   /// Список тулсов ассистента (READ)
@@ -323,9 +273,7 @@ class AssistantApi {
         'is_active': isActive,
       },
     );
-    return AssistantTool.fromJson(
-      Map<String, dynamic>.from(resp.data as Map),
-    );
+    return AssistantTool.fromJson(Map<String, dynamic>.from(resp.data as Map));
   }
 
   /// Частичное обновление инструмента
@@ -337,9 +285,7 @@ class AssistantApi {
       '/assistants/tools/$toolId/',
       data: body,
     );
-    return AssistantTool.fromJson(
-      Map<String, dynamic>.from(resp.data as Map),
-    );
+    return AssistantTool.fromJson(Map<String, dynamic>.from(resp.data as Map));
   }
 
   /// Удаление инструмента
@@ -354,10 +300,7 @@ class AssistantApi {
   }) async {
     await _client.post<dynamic>(
       '/assistants/tools/reorder/',
-      data: {
-        'assistant_id': assistantId,
-        'tool_ids': orderedIds,
-      },
+      data: {'assistant_id': assistantId, 'tool_ids': orderedIds},
     );
   }
 
@@ -402,7 +345,6 @@ class AssistantApi {
     required String name,
     String? description,
     required AssistantSettings settings,
-    int? dialogId,
   }) async {
     final body = <String, dynamic>{
       'name': name,
@@ -413,8 +355,6 @@ class AssistantApi {
       'maxTokens': settings.maxTokens,
       'instruction': settings.instruction,
       'temperature': settings.temperature,
-      // Передаём dialog_id всегда: null снимает привязку
-      'dialog_id': dialogId,
     };
     final resp = await _client.patch<dynamic>(
       '/assistants/$assistantId/core',
@@ -429,9 +369,6 @@ class AssistantApi {
           ? AssistantSettings.fromBackend(
               Map<String, dynamic>.from(data['settings'] as Map),
             )
-          : null,
-      dialogId: (data['dialog_id'] != null)
-          ? int.tryParse('${data['dialog_id']}')
           : null,
     );
   }
@@ -451,9 +388,6 @@ class AssistantApi {
                 ? AssistantSettings.fromBackend(
                     Map<String, dynamic>.from(e['settings'] as Map),
                   )
-                : null,
-            dialogId: (e['dialog_id'] != null)
-                ? int.tryParse('${e['dialog_id']}')
                 : null,
           ),
         )
@@ -555,12 +489,7 @@ class AssistantApi {
     // Перебираем шаги и обновляем их priority через PATCH
     int pr = 1;
     for (final stepId in orderedStepIds) {
-      await updateThreadCommandStep(
-        stepId: stepId,
-        body: {
-          'priority': pr,
-        },
-      );
+      await updateThreadCommandStep(stepId: stepId, body: {'priority': pr});
       pr++;
     }
   }
@@ -572,17 +501,13 @@ class AssistantApi {
   }) async {
     await updateThreadCommandStep(
       stepId: stepId,
-      body: {
-        'is_active': isActive,
-      },
+      body: {'is_active': isActive},
     );
   }
 
   /// Заглушка: удаление шага скрипта
   Future<void> deleteThreadCommandStep(int stepId) async {
-    await _client.delete<dynamic>(
-      '/assistants/thread-commands/steps/$stepId',
-    );
+    await _client.delete<dynamic>('/assistants/thread-commands/steps/$stepId');
   }
 
   /// Создать шаг команды (thread-command step)
@@ -722,7 +647,8 @@ class AssistantApi {
 
   /// Удобный метод: обновить команду из JSON (если где-то имеется сырая модель)
   Future<Map<String, dynamic>> updateThreadCommandFromItem(
-      Map<String, dynamic> itemJson) async {
+    Map<String, dynamic> itemJson,
+  ) async {
     final id = int.tryParse('${itemJson['id']}') ?? 0;
     final assistantId = int.tryParse('${itemJson['assistant_id']}') ?? 0;
     final order = int.tryParse('${itemJson['order']}') ?? 0;
@@ -772,7 +698,9 @@ class AssistantApi {
 
   /// Таймлайн треда (по internal_id)
   /// GET `/assistants/threads/{internalId}/timeline`
-  Future<List<Map<String, dynamic>>> fetchThreadTimeline(String internalId) async {
+  Future<List<Map<String, dynamic>>> fetchThreadTimeline(
+    String internalId,
+  ) async {
     final resp = await _client.get<dynamic>(
       '/assistants/threads/$internalId/timeline',
     );

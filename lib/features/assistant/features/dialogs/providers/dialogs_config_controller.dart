@@ -69,6 +69,10 @@ class DialogsConfigController extends StateNotifier<DialogsConfigState> {
         optionalSlotsIds: const [],
         next: null,
         branchLogic: const {},
+        onEnter: null,
+        onExit: null,
+        searchIndexId: null,
+        assistantId: null,
       );
       final json = await _api.createDialogConfigFull(
         name: name,
@@ -108,10 +112,8 @@ class DialogsConfigController extends StateNotifier<DialogsConfigState> {
         steps: details.steps,
         clearError: true,
       );
-      
     } catch (e) {
       state = state.copyWith(error: '$e');
-      
     }
   }
 
@@ -120,13 +122,20 @@ class DialogsConfigController extends StateNotifier<DialogsConfigState> {
     final id = state.configId;
     if (id == null) return;
     // Локально
-    state = state.copyWith(name: name, description: description, clearError: true);
+    state = state.copyWith(
+      name: name,
+      description: description,
+      clearError: true,
+    );
     // API
     try {
-      await _api.updateDialogConfig(id: id, name: name, description: description);
+      await _api.updateDialogConfig(
+        id: id,
+        name: name,
+        description: description,
+      );
     } catch (e) {
       state = state.copyWith(error: '$e');
-      
     }
   }
 
@@ -150,14 +159,14 @@ class DialogsConfigController extends StateNotifier<DialogsConfigState> {
         metadata: state.metadata,
       );
       state = state.copyWith(isSaving: false);
-      
     } catch (e) {
       state = state.copyWith(isSaving: false, error: '$e');
-      
     }
   }
 
-  Future<List<DialogStep>> _sanitizeStepsBranchLogic(List<DialogStep> steps) async {
+  Future<List<DialogStep>> _sanitizeStepsBranchLogic(
+    List<DialogStep> steps,
+  ) async {
     if (steps.isEmpty) return steps;
     List<dynamic> raw;
     try {
@@ -194,6 +203,8 @@ class DialogsConfigController extends StateNotifier<DialogsConfigState> {
         branchLogic: cleaned,
         onEnter: s.onEnter,
         onExit: s.onExit,
+        searchIndexId: s.searchIndexId,
+        assistantId: s.assistantId,
       );
     }
 
@@ -266,7 +277,6 @@ class DialogsConfigController extends StateNotifier<DialogsConfigState> {
     // Удаляем сам шаг
     steps.removeAt(idx);
     state = state.copyWith(steps: steps, clearError: true);
-    
   }
 
   /// Удалить текущий диалог (DELETE) и очистить локальное состояние провайдера
@@ -276,10 +286,8 @@ class DialogsConfigController extends StateNotifier<DialogsConfigState> {
     try {
       await _api.deleteDialogConfig(id);
       state = const DialogsConfigState();
-      
     } catch (e) {
       state = state.copyWith(error: '$e');
-      
     }
   }
 }
@@ -287,6 +295,6 @@ class DialogsConfigController extends StateNotifier<DialogsConfigState> {
 /// Провайдер контроллера конфигурации диалогов
 final dialogsConfigControllerProvider =
     StateNotifierProvider<DialogsConfigController, DialogsConfigState>((ref) {
-  final api = ref.read(assistantApiProvider);
-  return DialogsConfigController(api);
-});
+      final api = ref.read(assistantApiProvider);
+      return DialogsConfigController(api);
+    });

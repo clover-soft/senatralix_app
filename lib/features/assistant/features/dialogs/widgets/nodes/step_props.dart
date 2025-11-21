@@ -11,6 +11,8 @@ import 'package:sentralix_app/features/assistant/features/knowledge/models/knowl
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/assistant_knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/features/knowledge/providers/knowledge_provider.dart';
 import 'package:sentralix_app/features/assistant/features/dialogs/widgets/nodes/step_action_item.dart';
+import 'package:sentralix_app/features/assistant/providers/assistant_list_provider.dart';
+import 'package:sentralix_app/features/assistant/models/assistant.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -34,6 +36,10 @@ class StepProps extends ConsumerWidget {
       ),
     );
 
+    // Список ассистентов для выбора привязки шага
+    final AssistantListState assistantsState = ref.watch(assistantListProvider);
+    final List<Assistant> assistants = assistantsState.items;
+
     // Доступные ячейки памяти (слоты)
     final slotsAsync = ref.watch(dialogSlotsProvider);
     final List<DialogSlot> availableSlots = slotsAsync.maybeWhen(
@@ -48,6 +54,8 @@ class StepProps extends ConsumerWidget {
     int? nextId = current.next;
     // Локальный выбор базы знаний (числовой ID)
     int? selectedSearchIndexId = current.searchIndexId;
+    // Локальный выбор ассистента для шага (числовой ID)
+    int? selectedAssistantId = current.assistantId;
     // Локальные наборы выбранных ячеек памяти
     final Set<int> selectedOptional = {...current.optionalSlotsIds};
     final Set<int> selectedRequired = {...current.requiredSlotsIds};
@@ -142,6 +150,7 @@ class StepProps extends ConsumerWidget {
             ? null
             : StepHookActions(setSlots: exitActions),
         searchIndexId: selectedSearchIndexId,
+        assistantId: selectedAssistantId,
       );
       // 1) Обновляем локальное состояние редактора (для мгновенной перерисовки графа)
       ref.read(dialogsEditorControllerProvider.notifier).updateStep(updated);
@@ -179,6 +188,59 @@ class StepProps extends ConsumerWidget {
                     if (s.isEmpty) return 'Заполните заголовок';
                     if (s.length > 64) return 'Максимум 64 символа';
                     return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                // assistant_id (nullable, int) — комбобокс по списку ассистентов
+                StatefulBuilder(
+                  builder: (context, setLocal) {
+                    final dropdownItems = <DropdownMenuItem<int?>>[
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('— Не выбран —'),
+                      ),
+                      ...assistants.map((a) {
+                        final numId = int.tryParse(a.id);
+                        if (numId == null) return null;
+                        return DropdownMenuItem<int?>(
+                          value: numId,
+                          child: Text(
+                            a.name.isNotEmpty ? a.name : 'Ассистент #$numId',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).whereType<DropdownMenuItem<int?>>(),
+                    ];
+
+                    // Гарантируем: value либо null, либо существует среди items
+                    final hasValue = dropdownItems.any(
+                      (item) => item.value == selectedAssistantId,
+                    );
+                    final effectiveValue = hasValue
+                        ? selectedAssistantId
+                        : null;
+
+                    return DropdownButtonFormField<int?>(
+                      value: effectiveValue,
+                      items: dropdownItems,
+                      isExpanded: true,
+                      onChanged: (v) {
+                        setLocal(() {
+                          selectedAssistantId = v;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Ассистент для этого шага',
+                        suffixIcon: Tooltip(
+                          message:
+                              'Опционально: выберите конкретного ассистента, для которого предназначен этот шаг сценария.',
+                          child: const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Icon(Icons.info_outline),
+                          ),
+                        ),
+                      ),
+                    );
                   },
                 ),
                 const SizedBox(height: 12),
@@ -223,8 +285,17 @@ class StepProps extends ConsumerWidget {
                       ),
                     ];
                     final isLoading = kbAsync.isLoading && items.isEmpty;
+
+                    // Гарантируем: value либо null, либо существует среди items
+                    final hasValue = dropdownItems.any(
+                      (item) => item.value == selectedSearchIndexId,
+                    );
+                    final effectiveValue = hasValue
+                        ? selectedSearchIndexId
+                        : null;
+
                     return DropdownButtonFormField<int?>(
-                      initialValue: selectedSearchIndexId,
+                      value: effectiveValue,
                       items: dropdownItems,
                       isExpanded: true,
                       onChanged: isLoading

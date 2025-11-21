@@ -173,6 +173,7 @@ class Connector {
   final String name;
   final bool isActive;
   final ConnectorSettings settings;
+  final int? dialogId; // id сценария диалога на корневом уровне
 
   const Connector({
     required this.id,
@@ -180,6 +181,7 @@ class Connector {
     required this.name,
     required this.isActive,
     required this.settings,
+    this.dialogId,
   });
 
   Connector copyWith({
@@ -188,12 +190,14 @@ class Connector {
     String? name,
     bool? isActive,
     ConnectorSettings? settings,
+    int? dialogId,
   }) => Connector(
     id: id ?? this.id,
     type: type ?? this.type,
     name: name ?? this.name,
     isActive: isActive ?? this.isActive,
     settings: settings ?? this.settings,
+    dialogId: dialogId ?? this.dialogId,
   );
 
   factory Connector.fromJson(Map<String, dynamic> json) => Connector(
@@ -204,6 +208,9 @@ class Connector {
     settings: ConnectorSettings.fromJson(
       Map<String, dynamic>.from(json['settings'] as Map? ?? {}),
     ),
+    dialogId: json['dialog_id'] != null
+        ? int.tryParse('${json['dialog_id']}')
+        : null,
   );
 
   Map<String, dynamic> toJson() => {
@@ -212,5 +219,6 @@ class Connector {
     'name': name,
     'is_active': isActive,
     'settings': settings.toJson(),
+    'dialog_id': dialogId,
   };
 }

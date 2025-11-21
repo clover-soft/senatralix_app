@@ -7,8 +7,6 @@ import 'package:sentralix_app/features/assistant/models/assistant_settings.dart'
 import 'package:sentralix_app/features/assistant/providers/assistant_list_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 import 'package:remixicon/remixicon.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_providers.dart';
-import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
 
 /// Форма настроек ассистента (ConsumerWidget + локальный провайдер состояния)
 class AssistantSettingsForm extends ConsumerStatefulWidget {
@@ -93,27 +91,34 @@ class AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
       try {
         final updated = await api.updateAssistantCore(
           assistantId: widget.assistantId,
-          name: ref.read(assistantListProvider).byId(widget.assistantId)?.name ?? '',
-          description: ref.read(assistantListProvider).byId(widget.assistantId)?.description,
+          name:
+              ref.read(assistantListProvider).byId(widget.assistantId)?.name ??
+              '',
+          description: ref
+              .read(assistantListProvider)
+              .byId(widget.assistantId)
+              ?.description,
           settings: data,
-          dialogId: ref.read(assistantListProvider).byId(widget.assistantId)?.dialogId,
         );
         // Обновим список ассистентов и настройки по ответу сервера
-        assistantsNotifier.rename(updated.id, updated.name,
-            description: updated.description);
+        assistantsNotifier.rename(
+          updated.id,
+          updated.name,
+          description: updated.description,
+        );
         if (updated.settings != null) {
           settingsNotifier.save(updated.id, updated.settings!);
         }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Настройки сохранены')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Настройки сохранены')));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Ошибка сохранения: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Ошибка сохранения: $e')));
         }
       }
     }();
@@ -138,72 +143,83 @@ class AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
         padding: const EdgeInsets.all(16),
         children: [
           // Шапка: редактирование имени ассистента и описания
-          Builder(builder: (context) {
-            final assistants = ref.watch(assistantListProvider).items;
-            final idx = assistants.indexWhere((a) => a.id == widget.assistantId);
-            final assistant = idx >= 0 ? assistants[idx] : null;
-            final name = assistant?.name ?? '';
-            final description = assistant?.description ?? '';
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      RemixIcons.robot_2_line,
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        initialValue: name,
-                        decoration: const InputDecoration(
-                          labelText: 'Имя ассистента',
-                        ),
-                        validator: (v) {
-                          final t = (v ?? '').trim();
-                          if (t.isEmpty) return 'Введите имя';
-                          if (t.length < 2) return 'Минимум 2 символа';
-                          return null;
-                        },
-                        onChanged: (v) {
-                          final t = v.trim();
-                          if (assistant != null && t.isNotEmpty) {
-                            ref
-                                .read(assistantListProvider.notifier)
-                                .rename(widget.assistantId, t,
-                                    description: description);
-                          }
-                        },
+          Builder(
+            builder: (context) {
+              final assistants = ref.watch(assistantListProvider).items;
+              final idx = assistants.indexWhere(
+                (a) => a.id == widget.assistantId,
+              );
+              final assistant = idx >= 0 ? assistants[idx] : null;
+              final name = assistant?.name ?? '';
+              final description = assistant?.description ?? '';
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        RemixIcons.robot_2_line,
+                        color: Theme.of(context).colorScheme.secondary,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  initialValue: description,
-                  maxLines: 2,
-                  decoration: const InputDecoration(
-                    labelText: 'Описание ассистента (до 280 символов)',
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextFormField(
+                          initialValue: name,
+                          decoration: const InputDecoration(
+                            labelText: 'Имя ассистента',
+                          ),
+                          validator: (v) {
+                            final t = (v ?? '').trim();
+                            if (t.isEmpty) return 'Введите имя';
+                            if (t.length < 2) return 'Минимум 2 символа';
+                            return null;
+                          },
+                          onChanged: (v) {
+                            final t = v.trim();
+                            if (assistant != null && t.isNotEmpty) {
+                              ref
+                                  .read(assistantListProvider.notifier)
+                                  .rename(
+                                    widget.assistantId,
+                                    t,
+                                    description: description,
+                                  );
+                            }
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                  onChanged: (v) {
-                    final d = v.trim();
-                    if (assistant != null) {
-                      ref
-                          .read(assistantListProvider.notifier)
-                          .rename(widget.assistantId, assistant.name,
-                              description: d);
-                    }
-                  },
-                ),
-              ],
-            );
-          }),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    initialValue: description,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'Описание ассистента (до 280 символов)',
+                    ),
+                    onChanged: (v) {
+                      final d = v.trim();
+                      if (assistant != null) {
+                        ref
+                            .read(assistantListProvider.notifier)
+                            .rename(
+                              widget.assistantId,
+                              assistant.name,
+                              description: d,
+                            );
+                      }
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
 
           // Модель
           DropdownButtonFormField<String>(
-            initialValue:
-                models.contains(state.model) ? state.model : models.first,
+            initialValue: models.contains(state.model)
+                ? state.model
+                : models.first,
             items: models
                 .map((m) => DropdownMenuItem(value: m, child: Text(m)))
                 .toList(),
@@ -218,43 +234,6 @@ class AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
 
           const SizedBox(height: 16),
 
-          // Привязанный сценарий (dialog)
-          Consumer(builder: (context, ref, _) {
-            final dialogsAsync = ref.watch(dialogConfigsProvider);
-            final assistant = ref.watch(assistantListProvider).byId(widget.assistantId);
-            final selectedDialogId = assistant?.dialogId;
-            return dialogsAsync.when(
-              loading: () => const SizedBox.shrink(),
-              error: (e, st) => const SizedBox.shrink(),
-              data: (list) {
-                final items = <DropdownMenuItem<int?>>[
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('— не привязан —'),
-                  ),
-                  ...list.map((DialogConfigShort c) => DropdownMenuItem<int?>(
-                        value: c.id,
-                        child: Text('${c.id}: ${c.name}'),
-                      )),
-                ];
-                return DropdownButtonFormField<int?>(
-                  initialValue: selectedDialogId,
-                  items: items,
-                  onChanged: (v) {
-                    ref.read(assistantListProvider.notifier).setDialogId(
-                          widget.assistantId,
-                          v,
-                        );
-                  },
-                  decoration: const InputDecoration(
-                    labelText: 'Привязанный сценарий (dialog)',
-                    helperText: 'Выберите сценарий для ассистента',
-                  ),
-                );
-              },
-            );
-          }),
-
           // Температура
           Text(
             'Температура: ${state.temperature.toStringAsFixed(1)}',
@@ -266,9 +245,8 @@ class AssistantSettingsFormState extends ConsumerState<AssistantSettingsForm> {
             max: 1.0,
             divisions: 10,
             label: state.temperature.toStringAsFixed(1),
-            onChanged: (v) => ctrl.setTemperature(
-              double.parse(v.toStringAsFixed(1)),
-            ),
+            onChanged: (v) =>
+                ctrl.setTemperature(double.parse(v.toStringAsFixed(1))),
           ),
 
           const SizedBox(height: 8),

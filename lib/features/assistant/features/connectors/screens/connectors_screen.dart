@@ -6,7 +6,6 @@ import 'package:sentralix_app/features/assistant/features/connectors/providers/c
 import 'package:sentralix_app/features/assistant/widgets/assistant_app_bar.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_bootstrap_provider.dart';
 import 'package:sentralix_app/features/assistant/features/connectors/providers/assistant_connectors_provider.dart';
-import 'package:sentralix_app/features/assistant/features/connectors/providers/assistant_attached_connectors_provider.dart';
 import 'package:sentralix_app/features/assistant/providers/assistant_feature_settings_provider.dart';
 import 'package:sentralix_app/features/assistant/shared/widgets/assistant_feature_list_item.dart';
 import 'package:sentralix_app/features/assistant/shared/widgets/assistant_fab.dart';
@@ -25,8 +24,6 @@ class _AssistantConnectorsScreenState
   late String _assistantId;
   final _toggling =
       <String>{}; // id коннектора, который в процессе переключения
-  Set<String> _lastAttached =
-      <String>{}; // кеш последнего набора прикреплённых external_id
 
   @override
   void didChangeDependencies() {
@@ -139,24 +136,6 @@ class _AssistantConnectorsScreenState
   Widget build(BuildContext context) {
     final boot = ref.watch(assistantBootstrapProvider);
     final loader = ref.watch(assistantConnectorsProvider(_assistantId));
-    final attachedSet = ref.watch(
-      assistantAttachedConnectorsProvider(_assistantId),
-    );
-    // Вычислим актуальный набор прикреплённых коннекторов, не сбрасывая UI на время загрузки
-    Set<String> attached = _lastAttached;
-    attachedSet.when(
-      data: (s) {
-        attached = s;
-        _lastAttached = s; // обновим кеш
-      },
-      loading: () {
-        attached =
-            _lastAttached; // оставим предыдущее значение, чтобы не мигали свитчи
-      },
-      error: (_, __) {
-        attached = _lastAttached; // при ошибке тоже оставим последнее известное
-      },
-    );
     final featureSettings = ref
         .watch(assistantFeatureSettingsProvider)
         .settings;
@@ -247,9 +226,7 @@ class _AssistantConnectorsScreenState
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           final it = items[index];
-          final bool isAttached = attached.contains(
-            it.id,
-          ); // external_id совпадает с it.id (UUID)
+          final bool isActive = it.isActive;
           // Локальная блокировка только для конкретного элемента
           final bool isBusy = _toggling.contains(it.id);
           return AssistantFeatureListItem(
@@ -258,10 +235,10 @@ class _AssistantConnectorsScreenState
               RemixIcons.phone_line,
               color: Theme.of(context).colorScheme.secondary,
             ),
-            switchValue: isAttached,
-            switchTooltip: isAttached
-                ? 'Отключить коннектор от ассистента'
-                : 'Подключить коннектор к ассистенту',
+            switchValue: isActive,
+            switchTooltip: isActive
+                ? 'Сделать коннектор неактивным'
+                : 'Сделать коннектор активным',
             onSwitchChanged: isBusy
                 ? null
                 : (v) async {
@@ -271,30 +248,20 @@ class _AssistantConnectorsScreenState
                     setState(() => _toggling.add(it.id));
                     try {
                       final api = ref.read(assistantApiProvider);
-                      if (v) {
-                        await api.assignConnectorToAssistant(
-                          assistantId: _assistantId,
-                          externalId: it.id,
-                          type: 'voip',
-                        );
-                        messenger?.showSnackBar(
-                          const SnackBar(content: Text('Коннектор подключён')),
-                        );
-                      } else {
-                        await api.unassignConnectorFromAssistant(
-                          assistantId: _assistantId,
-                          externalId: it.id,
-                        );
-                        messenger?.showSnackBar(
-                          const SnackBar(content: Text('Коннектор отключён')),
-                        );
-                      }
-                      // Обновим набор подключённых
-                      ref.invalidate(assistantAttachedConnectorsProvider);
-                      await ref.read(
-                        assistantAttachedConnectorsProvider(
-                          _assistantId,
-                        ).future,
+                      final updatedConnector = await api.updateConnector(
+                        it.copyWith(isActive: v),
+                      );
+                      ref
+                          .read(connectorsProvider.notifier)
+                          .update(_assistantId, updatedConnector);
+                      messenger?.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            v
+                                ? 'Коннектор активирован'
+                                : 'Коннектор деактивирован',
+                          ),
+                        ),
                       );
                     } catch (e) {
                       messenger?.showSnackBar(
@@ -306,7 +273,7 @@ class _AssistantConnectorsScreenState
                   },
             title: it.name.isEmpty ? 'Без имени' : it.name,
             subtitle: it.id,
-            meta: isAttached ? 'Подключён к ассистенту' : 'Не подключён',
+            meta: isActive ? 'Активен' : 'Не активен',
             showDelete: true,
             deleteEnabled: it.settings.allowDelete,
             showChevron: true,

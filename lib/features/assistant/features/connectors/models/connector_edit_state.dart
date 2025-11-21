@@ -15,6 +15,7 @@ class ConnectorEditState {
     required this.fillerSelectionStrategy,
     required this.dictor,
     required this.speed,
+    this.dialogId,
   });
 
   final String name;
@@ -29,6 +30,7 @@ class ConnectorEditState {
   final String fillerSelectionStrategy;
   final String dictor;
   final double speed;
+  final int? dialogId;
 
   ConnectorEditState copy({
     String? name,
@@ -43,6 +45,7 @@ class ConnectorEditState {
     String? fillerSelectionStrategy,
     String? dictor,
     double? speed,
+    int? dialogId,
   }) => ConnectorEditState(
     name: name ?? this.name,
     isActive: isActive ?? this.isActive,
@@ -59,6 +62,7 @@ class ConnectorEditState {
         fillerSelectionStrategy ?? this.fillerSelectionStrategy,
     dictor: dictor ?? this.dictor,
     speed: speed ?? this.speed,
+    dialogId: dialogId ?? this.dialogId,
   );
 
   static ConnectorEditState fromConnector(Connector c) {
@@ -77,6 +81,7 @@ class ConnectorEditState {
       fillerSelectionStrategy: a.fillerSelectionStrategy,
       dictor: a.dictor,
       speed: a.speed,
+      dialogId: c.dialogId,
     );
   }
 }

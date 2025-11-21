@@ -136,6 +136,8 @@ class DialogStep {
   final StepHookActions? onExit;
   final int?
   searchIndexId; // идентификатор индекса поиска/знаний (числовой, может быть null)
+  final int?
+  assistantId; // идентификатор ассистента для этого шага (может быть null)
 
   const DialogStep({
     required this.id,
@@ -149,6 +151,7 @@ class DialogStep {
     this.onEnter,
     this.onExit,
     this.searchIndexId,
+    this.assistantId,
   });
 
   factory DialogStep.fromJson(Map<String, dynamic> json) {
@@ -199,6 +202,12 @@ class DialogStep {
         final parsed = int.tryParse('$raw');
         return parsed;
       }(),
+      assistantId: () {
+        final raw = json['assistant_id'];
+        if (raw == null) return null;
+        final parsed = int.tryParse('$raw');
+        return parsed;
+      }(),
     );
   }
 
@@ -231,6 +240,7 @@ class DialogStep {
     }
     // Отправляем null или числовое значение
     map['search_index_id'] = searchIndexId;
+    map['assistant_id'] = assistantId;
     return map;
   }
 }

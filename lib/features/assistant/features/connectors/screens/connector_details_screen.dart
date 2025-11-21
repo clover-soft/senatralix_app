@@ -13,6 +13,8 @@ import 'package:sentralix_app/features/assistant/features/connectors/models/sele
 import 'package:sentralix_app/features/assistant/features/connectors/models/dictor_options.dart';
 import 'package:sentralix_app/features/assistant/shared/widgets/assistant_fab.dart';
 import 'package:sentralix_app/features/assistant/shared/widgets/knowledge_markdown_editor.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/providers/dialogs_providers.dart';
+import 'package:sentralix_app/features/assistant/features/dialogs/models/dialogs.dart';
 
 class ConnectorDetailsScreen extends ConsumerWidget {
   const ConnectorDetailsScreen({super.key});
@@ -198,6 +200,49 @@ class ConnectorDetailsScreen extends ConsumerWidget {
                       onChanged: ctrl.setActive,
                       title: const Text('Включен'),
                       contentPadding: EdgeInsets.zero,
+                    ),
+                    const SizedBox(height: 8),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final dialogsAsync = ref.watch(dialogConfigsProvider);
+                        final selectedDialogId = st.dialogId;
+                        return dialogsAsync.when(
+                          loading: () => const SizedBox.shrink(),
+                          error: (e, stack) => const SizedBox.shrink(),
+                          data: (list) {
+                            final items = <DropdownMenuItem<int?>>[
+                              const DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text('— сценарий не выбран —'),
+                              ),
+                              ...list.map(
+                                (DialogConfigShort c) => DropdownMenuItem<int?>(
+                                  value: c.id,
+                                  child: Text('${c.id}: ${c.name}'),
+                                ),
+                              ),
+                            ];
+
+                            final ids = list.map((c) => c.id).toSet();
+                            final effectiveValue =
+                                selectedDialogId != null &&
+                                    ids.contains(selectedDialogId)
+                                ? selectedDialogId
+                                : null;
+
+                            return DropdownButtonFormField<int?>(
+                              value: effectiveValue,
+                              items: items,
+                              onChanged: canUpdate ? ctrl.setDialogId : null,
+                              decoration: const InputDecoration(
+                                labelText: 'Сценарий диалога',
+                                helperText:
+                                    'Выберите сценарий, который будет использоваться этим коннектором',
+                              ),
+                            );
+                          },
+                        );
+                      },
                     ),
                     Builder(
                       builder: (context) {
